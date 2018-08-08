@@ -1,0 +1,6 @@
+easy_admin:
+    entities:
+        # List the entity class name you want to manage
+        - App\Entity\Banco
+        - App\Entity\Movimiento
+#        - App\Entity\User
