@@ -1,6 +1,37 @@
 easy_admin:
     entities:
         # List the entity class name you want to manage
-        - App\Entity\Banco
-        - App\Entity\Movimiento
+        Banco:
+            class: 'App\Entity\Banco'
+            label: 'Bancos'
+            list:
+                title: 'Listado de bancos'
+                fields: [ 'nombre', 'saldo' ]
+                actions: [ 'new', 'edit', 'show' ]
+            form:
+                fields: [ 'nombre', 'saldo' ]
+                title: 'Modificar %%entity_name%%'
+            show:
+                title: '%%entity_name%%'
+                fields: [ 'nombre', 'saldo', 'movimientos' ]
+        Movimiento:
+            class: App\Entity\Movimiento
+            label: 'Movimientos'
+            list:
+                title: 'Listado de movimientos'
+        GastoFijo:
+            class: App\Entity\GastoFijo
+            label: 'Gastos fijos'
+            list:
+                title: 'Listado de Gastos Fijos'
+                fields: [ 'concepto', 'dia', 'monto', 'banco' ]
+                actions:
+                    - { name: 'new', label: 'Crear Gasto Fijo' }
+
 #        - App\Entity\User
+    site_name: '<img src="/img/logo.png" /> Cashflow'
+    design:
+        brand_color: '#17509D'
+    formats:
+        date: 'd/m/Y'
+        number: '$ %.2f'
