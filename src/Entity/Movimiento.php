@@ -22,11 +22,6 @@ class Movimiento
     private $concepto;
 
     /**
-     * @ORM\Column(type="boolean")
-     */
-    private $recurrente;
-
-    /**
      * @ORM\Column(type="date")
      */
     private $fecha;
@@ -55,18 +50,6 @@ class Movimiento
     public function setConcepto(string $concepto): self
     {
         $this->concepto = $concepto;
-
-        return $this;
-    }
-
-    public function getRecurrente(): ?bool
-    {
-        return $this->recurrente;
-    }
-
-    public function setRecurrente(bool $recurrente): self
-    {
-        $this->recurrente = $recurrente;
 
         return $this;
     }
@@ -109,6 +92,6 @@ class Movimiento
 
     public function __toString()
     {
-        return $this->getConcepto().': '.($this->importe < 0 ? '-' : '').'$'.abs($this->importe);
+        return $this->getFecha()->format('d/m/Y').': '.($this->importe < 0 ? '-' : '').'$'.abs($this->importe).' ('.$this->getConcepto().')';
     }
 }
