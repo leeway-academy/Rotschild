@@ -33,9 +33,15 @@ class Banco
      */
     private $movimientos;
 
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\GastoFijo", mappedBy="banco")
+     */
+    private $gastosFijos;
+
     public function __construct()
     {
         $this->movimientos = new ArrayCollection();
+        $this->gastosFijos = new ArrayCollection();
     }
 
     public function getId()
@@ -101,5 +107,36 @@ class Banco
     public function __toString()
     {
         return $this->getNombre();
+    }
+
+    /**
+     * @return Collection|GastoFijo[]
+     */
+    public function getGastosFijos(): Collection
+    {
+        return $this->gastosFijos;
+    }
+
+    public function addGastosFijo(GastoFijo $gastosFijo): self
+    {
+        if (!$this->gastosFijos->contains($gastosFijo)) {
+            $this->gastosFijos[] = $gastosFijo;
+            $gastosFijo->setBanco($this);
+        }
+
+        return $this;
+    }
+
+    public function removeGastosFijo(GastoFijo $gastosFijo): self
+    {
+        if ($this->gastosFijos->contains($gastosFijo)) {
+            $this->gastosFijos->removeElement($gastosFijo);
+            // set the owning side to null (unless already changed)
+            if ($gastosFijo->getBanco() === $this) {
+                $gastosFijo->setBanco(null);
+            }
+        }
+
+        return $this;
     }
 }
