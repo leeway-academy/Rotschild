@@ -37,6 +37,11 @@ class Movimiento
      */
     private $banco;
 
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $concretado = false;
+
     public function getId()
     {
         return $this->id;
@@ -93,5 +98,28 @@ class Movimiento
     public function __toString()
     {
         return $this->getFecha()->format('d/m/Y').': '.($this->importe < 0 ? '-' : '').'$'.abs($this->importe).' ('.$this->getConcepto().')';
+    }
+
+    /**
+     * @return bool
+     */
+    public function getConcretado()
+    {
+        return $this->concretado;
+    }
+
+    /**
+     * @param bool $concretado
+     * @return Movimiento
+     */
+    public function setConcretado(bool $concretado)
+    {
+        $this->concretado = $concretado;
+        return $this;
+    }
+
+    public function __construct()
+    {
+        $this->setFecha( new \DateTime() );
     }
 }
