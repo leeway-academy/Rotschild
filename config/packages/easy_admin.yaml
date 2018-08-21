@@ -14,11 +14,32 @@ easy_admin:
             show:
                 title: '%%entity_name%%'
                 fields: [ 'nombre', 'saldo', 'movimientos' ]
-        Movimiento:
+        DebitoProyectado:
             class: App\Entity\Movimiento
-            label: 'Movimientos'
+            label: 'Debitos proyectados'
             list:
-                title: 'Listado de movimientos'
+                title: 'Listado de debitos proyectados'
+                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Pagado' } ]
+                actions:
+                    - { name: 'new', label: 'Nuevo Debito' }
+                dql_filter: 'entity.concretado = 0 AND entity.importe < 0'
+            form:
+                fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
+            new:
+                title: 'Nuevo Debito Proyectado'
+        CreditoProyectado:
+            class: App\Entity\Movimiento
+            label: 'Creditos proyectados'
+            list:
+                title: 'Listado de creditos proyectados'
+                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Cobrado' } ]
+                actions:
+                    - { name: 'new', label: 'Nuevo Credito' }
+                dql_filter: 'entity.concretado = 0 AND entity.importe > 0'
+            form:
+                fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
+            new:
+                title: 'Nuevo Credito Proyectado'
         GastoFijo:
             class: App\Entity\GastoFijo
             label: 'Gastos fijos'
@@ -29,9 +50,11 @@ easy_admin:
                     - { name: 'new', label: 'Crear Gasto Fijo' }
 
 #        - App\Entity\User
-    site_name: '<img src="/img/logo.png" /> Cashflow'
+    site_name: '<img src="/img/logo.png" /> BankMgr'
     design:
         brand_color: '#17509D'
+        assets:
+            js:
+                - 'js/blasting.js'
     formats:
         date: 'd/m/Y'
-        number: '$ %.2f'
