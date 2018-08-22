@@ -45,7 +45,7 @@ easy_admin:
             label: 'Gastos fijos'
             list:
                 title: 'Listado de Gastos Fijos'
-                fields: [ 'concepto', 'dia', 'monto', 'banco' ]
+                fields: [ 'concepto', 'dia', 'importe', 'banco' ]
                 actions:
                     - { name: 'new', label: 'Crear Gasto Fijo' }
 

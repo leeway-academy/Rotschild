@@ -29,7 +29,7 @@ class GastoFijo
     /**
      * @ORM\Column(type="decimal", precision=10, scale=2)
      */
-    private $monto;
+    private $importe;
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\Banco", inversedBy="gastosFijos")
@@ -66,14 +66,14 @@ class GastoFijo
         return $this;
     }
 
-    public function getMonto()
+    public function getImporte()
     {
-        return $this->monto;
+        return $this->importe;
     }
 
-    public function setMonto($monto): self
+    public function setImporte($importe): self
     {
-        $this->monto = $monto;
+        $this->importe = $importe;
 
         return $this;
     }
