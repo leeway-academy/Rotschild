@@ -6,7 +6,7 @@ easy_admin:
             label: 'Bancos'
             list:
                 title: 'Listado de bancos'
-                fields: [ 'nombre', 'saldo' ]
+                fields: [ 'nombre', 'saldo', { property: dateOfRed, label: 'Queda en rojo el dia', type: 'date' } ]
                 actions: [ 'new', 'edit', 'show' ]
             form:
                 fields: [ 'nombre', 'saldo' ]
