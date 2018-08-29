@@ -23,7 +23,7 @@ class SaldoHistorico
     private $banco;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @ORM\Column(type="date",unique=true)
      */
     private $fecha;
 
