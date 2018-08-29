@@ -6,7 +6,7 @@ easy_admin:
             label: 'Bancos'
             list:
                 title: 'Listado de bancos'
-                fields: [ 'nombre', 'saldo', { property: dateOfRed, label: 'Queda en rojo el dia', type: 'date' } ]
+                fields: [ 'nombre', 'saldo' ]
                 actions: [ 'new', 'edit', 'show' ]
             form:
                 fields: [ 'nombre', 'saldo' ]
@@ -16,26 +16,26 @@ easy_admin:
                 fields: [ 'nombre', 'saldo', 'movimientos' ]
         DebitoProyectado:
             class: App\Entity\Movimiento
-            label: 'Debitos proyectados'
+            label: 'Debitos'
             list:
-                title: 'Listado de debitos proyectados'
+                title: 'Listado de debitos'
                 fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Pagado' } ]
                 actions:
                     - { name: 'new', label: 'Nuevo Debito' }
-                dql_filter: 'entity.concretado = 0 AND entity.importe < 0'
+                dql_filter: 'entity.importe < 0'
             form:
                 fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
             new:
                 title: 'Nuevo Debito Proyectado'
         CreditoProyectado:
             class: App\Entity\Movimiento
-            label: 'Creditos proyectados'
+            label: 'Creditos'
             list:
-                title: 'Listado de creditos proyectados'
+                title: 'Listado de creditos'
                 fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Cobrado' } ]
                 actions:
                     - { name: 'new', label: 'Nuevo Credito' }
-                dql_filter: 'entity.concretado = 0 AND entity.importe > 0'
+                dql_filter: 'AND entity.importe > 0'
             form:
                 fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
             new:
