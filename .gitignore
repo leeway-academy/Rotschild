@@ -15,3 +15,5 @@
 /.web-server-pid
 ###< symfony/web-server-bundle ###
 console
+/.idea*
+/public/img/*

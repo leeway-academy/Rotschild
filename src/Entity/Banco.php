@@ -24,11 +24,6 @@ class Banco
     private $nombre;
 
     /**
-     * @ORM\Column(type="decimal", precision=10, scale=2)
-     */
-    private $saldo;
-
-    /**
      * @ORM\OneToMany(targetEntity="App\Entity\Movimiento", mappedBy="banco")
      */
     private $movimientos;
@@ -38,10 +33,16 @@ class Banco
      */
     private $gastosFijos;
 
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\SaldoHistorico", mappedBy="banco", orphanRemoval=true)
+     */
+    private $saldosHistoricos;
+
     public function __construct()
     {
         $this->movimientos = new ArrayCollection();
         $this->gastosFijos = new ArrayCollection();
+        $this->saldosHistoricos = new ArrayCollection();
     }
 
     public function getId()
@@ -57,18 +58,6 @@ class Banco
     public function setNombre(string $nombre): self
     {
         $this->nombre = $nombre;
-
-        return $this;
-    }
-
-    public function getSaldo()
-    {
-        return $this->saldo;
-    }
-
-    public function setSaldo($saldo): self
-    {
-        $this->saldo = $saldo;
 
         return $this;
     }
@@ -117,7 +106,7 @@ class Banco
         return $this->gastosFijos;
     }
 
-    public function addGastosFijo(GastoFijo $gastosFijo): self
+    public function addGastoFijo(GastoFijo $gastosFijo): self
     {
         if (!$this->gastosFijos->contains($gastosFijo)) {
             $this->gastosFijos[] = $gastosFijo;
@@ -127,13 +116,44 @@ class Banco
         return $this;
     }
 
-    public function removeGastosFijo(GastoFijo $gastosFijo): self
+    public function removeGastoFijo(GastoFijo $gastosFijo): self
     {
         if ($this->gastosFijos->contains($gastosFijo)) {
             $this->gastosFijos->removeElement($gastosFijo);
             // set the owning side to null (unless already changed)
             if ($gastosFijo->getBanco() === $this) {
                 $gastosFijo->setBanco(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|SaldoHistorico[]
+     */
+    public function getSaldosHistoricos(): Collection
+    {
+        return $this->saldosHistoricos;
+    }
+
+    public function addSaldoHistorico(SaldoHistorico $saldoHistorico): self
+    {
+        if (!$this->saldosHistoricos->contains($saldoHistorico)) {
+            $this->saldosHistoricos[] = $saldoHistorico;
+            $saldoHistorico->setBanco($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSaldoHistorico(SaldoHistorico $saldoHistorico): self
+    {
+        if ($this->saldosHistoricos->contains($saldoHistorico)) {
+            $this->saldosHistoricos->removeElement($saldoHistorico);
+            // set the owning side to null (unless already changed)
+            if ($saldoHistorico->getBanco() === $this) {
+                $saldoHistorico->setBanco(null);
             }
         }
 
