@@ -7,14 +7,18 @@ easy_admin:
             list:
                 title: 'Listado de bancos'
                 fields: [ 'nombre' ]
-                actions: [ 'new', 'edit', 'show' ]
+                actions:
+                    - { name: 'new' }
+                    - { name: 'edit' }
+                    - { name: 'show' }
+                    - { name: 'cargar_saldo', type: 'route' }
             form:
                 fields: [ 'nombre' ]
                 title: 'Modificar %%entity_name%%'
             show:
                 title: '%%entity_name%%'
                 fields: [ 'nombre', 'saldosHistoricos', 'movimientos' ]
-        DebitoProyectado:
+        Debito:
             class: App\Entity\Movimiento
             label: 'Debitos'
             list:
@@ -26,8 +30,8 @@ easy_admin:
             form:
                 fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
             new:
-                title: 'Nuevo Debito Proyectado'
-        CreditoProyectado:
+                title: 'Nuevo Debito'
+        Credito:
             class: App\Entity\Movimiento
             label: 'Creditos'
             list:
@@ -39,7 +43,7 @@ easy_admin:
             form:
                 fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
             new:
-                title: 'Nuevo Credito Proyectado'
+                title: 'Nuevo Credito'
         GastoFijo:
             class: App\Entity\GastoFijo
             label: 'Gastos fijos'
