@@ -42,6 +42,11 @@ class Movimiento
      */
     private $concretado = false;
 
+    /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\GastoFijo", inversedBy="movimientos")
+     */
+    private $clonDe;
+
     public function getId()
     {
         return $this->id;
@@ -121,5 +126,17 @@ class Movimiento
     public function __construct()
     {
         $this->setFecha( new \DateTime() );
+    }
+
+    public function getClonDe(): ?GastoFijo
+    {
+        return $this->clonDe;
+    }
+
+    public function setClonDe(?GastoFijo $clonDe): self
+    {
+        $this->clonDe = $clonDe;
+
+        return $this;
     }
 }

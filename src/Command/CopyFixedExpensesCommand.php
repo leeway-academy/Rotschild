@@ -41,6 +41,7 @@ class CopyFixedExpensesCommand extends ContainerAwareCommand
             $fecha = $firstDay->add(new \DateInterval('P' . $gastoFijo->getDia() . 'D'));
             $output->writeln('Creando gasto de "'.$gastoFijo->getConcepto().'", dia '.$fecha->format('d/m/Y'));
             $debito = new Movimiento();
+            $debito->setClonDe($gastoFijo);
             $debito->setFecha($fecha);
             $debito->setConcepto( $gastoFijo->getConcepto() );
             $debito->setImporte( $gastoFijo->getImporte() * -1 );

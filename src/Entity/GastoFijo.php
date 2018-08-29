@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -36,6 +38,16 @@ class GastoFijo
      * @ORM\JoinColumn(nullable=false)
      */
     private $banco;
+
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\Movimiento", mappedBy="clonDe")
+     */
+    private $movimientos;
+
+    public function __construct()
+    {
+        $this->movimientos = new ArrayCollection();
+    }
 
     public function getId()
     {
@@ -86,6 +98,37 @@ class GastoFijo
     public function setBanco(?Banco $banco): self
     {
         $this->banco = $banco;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Movimiento[]
+     */
+    public function getMovimientos(): Collection
+    {
+        return $this->movimientos;
+    }
+
+    public function addMovimiento(Movimiento $movimiento): self
+    {
+        if (!$this->movimientos->contains($movimiento)) {
+            $this->movimientos[] = $movimiento;
+            $movimiento->setClonDe($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMovimiento(Movimiento $movimiento): self
+    {
+        if ($this->movimientos->contains($movimiento)) {
+            $this->movimientos->removeElement($movimiento);
+            // set the owning side to null (unless already changed)
+            if ($movimiento->getClonDe() === $this) {
+                $movimiento->setClonDe(null);
+            }
+        }
 
         return $this;
     }
