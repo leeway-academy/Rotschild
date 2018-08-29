@@ -42,13 +42,13 @@ class AdminController extends BaseAdminController
         $banco = $repository->find($id);
 
         $saldoHistorico = new SaldoHistorico();
-        $saldoHistorico->setFecha( new \DateTime() );
+        $fecha = new \DateTime();
+        $saldoHistorico->setFecha($fecha);
         $saldoHistorico->setBanco($banco);
 
         $form = $this
             ->createFormBuilder( $saldoHistorico )
             ->setAttribute('class', 'form-horizontal  new-form')
-            ->add('fecha', DateType::class )
             ->add( 'valor', NumberType::class )
             ->add('Guardar cambios', SubmitType::class)
             ->getForm();
@@ -67,6 +67,8 @@ class AdminController extends BaseAdminController
                     'form' => $form
                         ->createView(),
                     'entity' => $saldoHistorico,
+                    'banco' => $banco->getNombre(),
+                    'fecha' => $fecha,
                 ]
             );
         }
