@@ -17,7 +17,7 @@ easy_admin:
                 title: 'Modificar %%entity_name%%'
             show:
                 title: '%%entity_name%%'
-                fields: [ 'nombre', 'saldosHistoricos', 'saldosProyectados', 'movimientos' ]
+                fields: [ 'nombre', { property: 'saldos', label: 'Saldos historicos' }, { property: 'saldosProyectados', type: 'array' }, 'movimientos' ]
         Debito:
             class: App\Entity\Movimiento
             label: 'Debitos'
