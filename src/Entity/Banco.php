@@ -34,15 +34,15 @@ class Banco
     private $gastosFijos;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\SaldoHistorico", mappedBy="banco", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="SaldoBancario", mappedBy="banco", orphanRemoval=true)
      */
-    private $saldosHistoricos;
+    private $saldos;
 
     public function __construct()
     {
         $this->movimientos = new ArrayCollection();
         $this->gastosFijos = new ArrayCollection();
-        $this->saldosHistoricos = new ArrayCollection();
+        $this->saldos = new ArrayCollection();
     }
 
     public function getId()
@@ -130,33 +130,120 @@ class Banco
     }
 
     /**
-     * @return Collection|SaldoHistorico[]
+     * @return Collection|SaldoBancario[]
      */
-    public function getSaldosHistoricos(): Collection
+    public function getSaldos(): Collection
     {
-        return $this->saldosHistoricos;
+        return $this->saldos;
     }
 
-    public function addSaldoHistorico(SaldoHistorico $saldoHistorico): self
+    public function addSaldo(SaldoBancario $saldo): self
     {
-        if (!$this->saldosHistoricos->contains($saldoHistorico)) {
-            $this->saldosHistoricos[] = $saldoHistorico;
-            $saldoHistorico->setBanco($this);
+        if (!$this->saldos->contains($saldo)) {
+            $this->saldos[] = $saldo;
+            $saldo->setBanco($this);
         }
 
         return $this;
     }
 
-    public function removeSaldoHistorico(SaldoHistorico $saldoHistorico): self
+    public function removeSaldo(SaldoBancario $saldo): self
     {
-        if ($this->saldosHistoricos->contains($saldoHistorico)) {
-            $this->saldosHistoricos->removeElement($saldoHistorico);
+        if ($this->saldos->contains($saldo)) {
+            $this->saldos->removeElement($saldo);
             // set the owning side to null (unless already changed)
-            if ($saldoHistorico->getBanco() === $this) {
-                $saldoHistorico->setBanco(null);
+            if ($saldo->getBanco() === $this) {
+                $saldo->setBanco(null);
             }
         }
 
         return $this;
+    }
+
+    /**
+     * @param \DateTimeInterface|null $fecha
+     * @return float
+     */
+    public function getSaldo( \DateTimeInterface $fecha = null ): float
+    {
+        if ( empty($fecha) ) {
+            $last = $this->getSaldos()->last();
+
+            return $last ? $last->getValor() : 0;
+        } else {
+            foreach ( $this->getSaldos() as $saldo ) {
+                if ( $saldo->getFecha()->diff( $fecha ) === 0 ) {
+
+                    return $saldo->getValor();
+                }
+            }
+            $nuevoSaldo = $this->createSaldo($fecha);
+            $this->addSaldo($nuevoSaldo);
+
+            return $nuevoSaldo->getValor();
+        }
+    }
+
+    /**
+     * @param \DateTimeInterface $fecha
+     */
+    private function createSaldo(\DateTimeInterface $fecha): SaldoBancario
+    {
+        $hoy = new \DateTime();
+        if ( $fecha->diff( $hoy ) < 0 ) {
+            // Nunca deberia entrar, pero... tal vez deberia arrojar una exception
+
+            return $this->getSaldo( $fecha );
+        }
+        $saldo = $this->getSaldo();
+
+        $movimientos = array_filter($this->getMovimientos(), function (Movimiento $m) use ($fecha, $hoy) {
+            return $m->getFecha()->diff($fecha)->d <= 0 && $m->getFecha()->diff($hoy)->d > 0;
+        });
+        foreach ($movimientos as $movimiento) {
+            $saldo += $movimiento->getImporte();
+        }
+
+        $ret = new SaldoBancario();
+        $ret->setBanco( $this );
+        $ret->setValor( $saldo );
+        $ret->setFecha( $fecha );
+
+        return $ret;
+    }
+
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    public function getSaldosProyectados(): ArrayCollection
+    {
+        $hoy = new \DateTimeImmutable();
+        $period = new \DatePeriod($hoy, new \DateInterval('P1D'), 30);
+        $saldos = new ArrayCollection();
+
+        foreach ($period as $d) {
+            $saldos[] = $this->getSaldo( $d );
+        }
+
+        return $saldos;
+    }
+
+    /**
+     * @return Collection
+     * @throws \Exception
+     */
+    public function getSaldosHistoricos(): ArrayCollection
+    {
+        $hoy = new \DateTimeImmutable();
+        $ret = new ArrayCollection();
+
+        foreach ( $this->getSaldos() as $saldo ) {
+            if ( $saldo->getFecha()->diff( $hoy )->d < 0 ) {
+                $ret[] = $saldo;
+            }
+        }
+
+        return $ret;
     }
 }
