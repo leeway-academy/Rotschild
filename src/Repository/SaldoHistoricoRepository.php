@@ -2,25 +2,25 @@
 
 namespace App\Repository;
 
-use App\Entity\SaldoHistorico;
+use App\Entity\SaldoBancario;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
- * @method SaldoHistorico|null find($id, $lockMode = null, $lockVersion = null)
- * @method SaldoHistorico|null findOneBy(array $criteria, array $orderBy = null)
- * @method SaldoHistorico[]    findAll()
- * @method SaldoHistorico[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method SaldoBancario|null find($id, $lockMode = null, $lockVersion = null)
+ * @method SaldoBancario|null findOneBy(array $criteria, array $orderBy = null)
+ * @method SaldoBancario[]    findAll()
+ * @method SaldoBancario[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class SaldoHistoricoRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, SaldoHistorico::class);
+        parent::__construct($registry, SaldoBancario::class);
     }
 
 //    /**
-//     * @return SaldoHistorico[] Returns an array of SaldoHistorico objects
+//     * @return SaldoBancario[] Returns an array of SaldoBancario objects
 //     */
     /*
     public function findByExampleField($value)
@@ -37,7 +37,7 @@ class SaldoHistoricoRepository extends ServiceEntityRepository
     */
 
     /*
-    public function findOneBySomeField($value): ?SaldoHistorico
+    public function findOneBySomeField($value): ?SaldoBancario
     {
         return $this->createQueryBuilder('s')
             ->andWhere('s.exampleField = :val')
