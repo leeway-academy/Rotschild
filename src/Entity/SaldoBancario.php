@@ -3,11 +3,13 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\UniqueConstraint;
 
 /**
+ * @ORM\Table(name="saldo_bancario", uniqueConstraints={@UniqueConstraint(name="saldo_banco",columns={"fecha","banco_id"})})
  * @ORM\Entity(repositoryClass="App\Repository\SaldoHistoricoRepository")
  */
-class SaldoHistorico
+class SaldoBancario
 {
     /**
      * @ORM\Id()
@@ -23,7 +25,7 @@ class SaldoHistorico
     private $banco;
 
     /**
-     * @ORM\Column(type="date",unique=true)
+     * @ORM\Column(type="date")
      */
     private $fecha;
 
