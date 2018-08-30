@@ -3,17 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Banco;
-use App\Entity\SaldoHistorico;
-use Doctrine\DBAL\Types\FloatType;
+use App\Entity\SaldoBancario;
 use http\Exception\InvalidArgumentException;
-use Symfony\Component\Form\Extension\Core\Type\CurrencyType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Routing\Annotation\Route;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
 
@@ -41,13 +35,13 @@ class AdminController extends BaseAdminController
         $id = $request->query->get('id');
         $banco = $repository->find($id);
 
-        $saldoHistorico = new SaldoHistorico();
+        $saldo = new SaldoBancario();
         $fecha = new \DateTime();
-        $saldoHistorico->setFecha($fecha);
-        $saldoHistorico->setBanco($banco);
+        $saldo->setFecha($fecha);
+        $saldo->setBanco($banco);
 
         $form = $this
-            ->createFormBuilder( $saldoHistorico )
+            ->createFormBuilder( $saldo )
             ->setAttribute('class', 'form-horizontal  new-form')
             ->add( 'valor', NumberType::class )
             ->add('Guardar cambios', SubmitType::class)
@@ -55,7 +49,7 @@ class AdminController extends BaseAdminController
 
         $form->handleRequest($request);
         if ( $form->isSubmitted() && $form->isValid() ) {
-            $em->persist( $saldoHistorico );
+            $em->persist( $saldo );
             $em->flush();
 
             return $this->redirectToRoute('easyadmin', array('entity' => 'Banco', 'action' => 'list'));
@@ -66,7 +60,7 @@ class AdminController extends BaseAdminController
                 [
                     'form' => $form
                         ->createView(),
-                    'entity' => $saldoHistorico,
+                    'entity' => $saldo,
                     'banco' => $banco->getNombre(),
                     'fecha' => $fecha,
                 ]
