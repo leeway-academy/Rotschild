@@ -162,25 +162,23 @@ class Banco
 
     /**
      * @param \DateTimeInterface|null $fecha
-     * @return float
+     * @return SaldoBancario
      */
-    public function getSaldo( \DateTimeInterface $fecha = null ): float
+    public function getSaldo( \DateTimeInterface $fecha = null ): SaldoBancario
     {
         if ( empty($fecha) ) {
-            $last = $this->getSaldos()->last();
-
-            return $last ? $last->getValor() : 0;
+            return $this->getSaldos()->last();
         } else {
             foreach ( $this->getSaldos() as $saldo ) {
-                if ( $saldo->getFecha()->diff( $fecha ) === 0 ) {
+                if ( $saldo->getFecha()->diff( $fecha )->d === 0 ) {
 
-                    return $saldo->getValor();
+                    return $saldo;
                 }
             }
             $nuevoSaldo = $this->createSaldo($fecha);
             $this->addSaldo($nuevoSaldo);
 
-            return $nuevoSaldo->getValor();
+            return $nuevoSaldo;
         }
     }
 
@@ -190,16 +188,17 @@ class Banco
     private function createSaldo(\DateTimeInterface $fecha): SaldoBancario
     {
         $hoy = new \DateTime();
-        if ( $fecha->diff( $hoy ) < 0 ) {
+        if ( $fecha->diff( $hoy )->d < 0 ) {
             // Nunca deberia entrar, pero... tal vez deberia arrojar una exception
 
             return $this->getSaldo( $fecha );
         }
-        $saldo = $this->getSaldo();
+        $saldo = $this->getSaldo()->getValor();
 
-        $movimientos = array_filter($this->getMovimientos(), function (Movimiento $m) use ($fecha, $hoy) {
+        $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $hoy) {
             return $m->getFecha()->diff($fecha)->d <= 0 && $m->getFecha()->diff($hoy)->d > 0;
-        });
+        } );
+
         foreach ($movimientos as $movimiento) {
             $saldo += $movimiento->getImporte();
         }
@@ -213,10 +212,9 @@ class Banco
     }
 
     /**
-     * @return array
-     * @throws \Exception
+     * @return Collection|SaldoBancario[]
      */
-    public function getSaldosProyectados(): ArrayCollection
+    public function getSaldosProyectados(): Collection
     {
         $hoy = new \DateTimeImmutable();
         $period = new \DatePeriod($hoy, new \DateInterval('P1D'), 30);
@@ -227,23 +225,5 @@ class Banco
         }
 
         return $saldos;
-    }
-
-    /**
-     * @return Collection
-     * @throws \Exception
-     */
-    public function getSaldosHistoricos(): ArrayCollection
-    {
-        $hoy = new \DateTimeImmutable();
-        $ret = new ArrayCollection();
-
-        foreach ( $this->getSaldos() as $saldo ) {
-            if ( $saldo->getFecha()->diff( $hoy )->d < 0 ) {
-                $ret[] = $saldo;
-            }
-        }
-
-        return $ret;
     }
 }
