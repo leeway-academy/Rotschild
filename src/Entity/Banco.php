@@ -196,7 +196,8 @@ class Banco
         $saldo = $this->getSaldo()->getValor();
 
         $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $hoy) {
-            return $m->getFecha()->diff($fecha)->d <= 0 && $m->getFecha()->diff($hoy)->d > 0;
+
+            return $m->getFecha()->diff($hoy)->d >= 0 && $m->getFecha()->diff($fecha)->d <= 0 && !$m->getConcretado();
         } );
 
         foreach ($movimientos as $movimiento) {
