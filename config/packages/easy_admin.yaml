@@ -39,7 +39,7 @@ easy_admin:
                 fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Cobrado' } ]
                 actions:
                     - { name: 'new', label: 'Nuevo Credito' }
-                dql_filter: 'AND entity.importe > 0'
+                dql_filter: 'entity.importe > 0'
             form:
                 fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
             new:
