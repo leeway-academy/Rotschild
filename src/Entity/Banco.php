@@ -195,7 +195,8 @@ class Banco
 
             return $this->getSaldo( $fecha );
         }
-        $saldo = $this->getSaldo()->getValor();
+
+        $saldoActual = $saldo ? $saldo->getValor() : 0;
 
         $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $hoy) {
 
@@ -203,12 +204,12 @@ class Banco
         } );
 
         foreach ($movimientos as $movimiento) {
-            $saldo += $movimiento->getImporte();
+            $saldoActual += $movimiento->getImporte();
         }
 
         $ret = new SaldoBancario();
         $ret->setBanco( $this );
-        $ret->setValor( $saldo );
+        $ret->setValor( $saldoActual );
         $ret->setFecha( $fecha );
 
         return $ret;
