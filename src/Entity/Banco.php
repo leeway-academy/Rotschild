@@ -164,12 +164,14 @@ class Banco
      * @param \DateTimeInterface|null $fecha
      * @return SaldoBancario
      */
-    public function getSaldo( \DateTimeInterface $fecha = null ): SaldoBancario
+    public function getSaldo( \DateTimeInterface $fecha = null ): ?SaldoBancario
     {
+        $saldos = $this->getSaldos();
         if ( empty($fecha) ) {
-            return $this->getSaldos()->last();
+
+            return !empty($saldos) ? $saldos->last() : null;
         } else {
-            foreach ( $this->getSaldos() as $saldo ) {
+            foreach ( $saldos as $saldo ) {
                 if ( $saldo->getFecha()->diff( $fecha )->d === 0 ) {
 
                     return $saldo;
