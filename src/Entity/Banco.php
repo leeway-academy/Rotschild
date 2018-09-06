@@ -169,7 +169,7 @@ class Banco
         $saldos = $this->getSaldos();
         if ( empty($fecha) ) {
 
-            return !empty($saldos) ? $saldos->last() : null;
+            return !$saldos->isEmpty() ? $saldos->last() : null;
         } else {
             foreach ( $saldos as $saldo ) {
                 if ( $saldo->getFecha()->diff( $fecha )->d === 0 ) {
