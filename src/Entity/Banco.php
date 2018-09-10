@@ -191,20 +191,17 @@ class Banco
      */
     public function createSaldo(\DateTimeInterface $fecha): SaldoBancario
     {
-        $hoy = new \DateTime();
-        if ( $fecha->diff( $hoy )->d < 0 ) {
-            // Nunca deberia entrar, pero... tal vez deberia arrojar una exception
-
-            return $this->getSaldo( $fecha );
+        if ( $saldo = $this->getSaldo() ) {
+            $saldoActual = $saldo->getValor();
+            $fechaInicial = $saldo->getFecha();
+        } else {
+            $saldoActual = 0;
+            $fechaInicial = new \DateTimeImmutable();
         }
 
-        $saldo = $this->getSaldo();
+        $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $fechaInicial) {
 
-        $saldoActual = $saldo ? $saldo->getValor() : 0;
-
-        $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $hoy) {
-
-            return $m->getFecha()->diff($hoy)->d >= 0 && $m->getFecha()->diff($fecha)->d <= 0 && !$m->getConcretado();
+            return $m->getFecha()->getTimestamp() > $fechaInicial->getTimestamp() && $m->getFecha()->getTimestamp() < $fecha->getTimestamp() && !$m->getConcretado();
         } );
 
         foreach ($movimientos as $movimiento) {
