@@ -77,6 +77,15 @@ class AdminController extends BaseAdminController
         $easyadmin = $this->request->attributes->get('easyadmin');
         $banco = $easyadmin['item'];
 
+        $hoy = new \DateTimeImmutable();
+
+        foreach ( $banco->getSaldos() as $saldo ) {
+            if ( $hoy->diff( $saldo->getFecha() )->d > 15 ) {
+                $banco->removeSaldo( $saldo );
+            } else {
+                break;
+            }
+        }
         $period = new \DatePeriod( new \DateTimeImmutable(), new \DateInterval('P1D'), 365 );
 
         foreach ( $period as $dia ) {
