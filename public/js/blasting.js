@@ -1,9 +1,9 @@
 $('.action-save').click(function(){
-    if ( $('#debitoproyectado_importe').length ) {
-        $('#debitoproyectado_importe').val( Math.abs($('#debitoproyectado_importe').val() ) * - 1 );
+    if ( $('#debito_importe').length ) {
+        $('#debito_importe').val( Math.abs($('#debito_importe').val() ) * - 1 );
     }
 
-    if ( $('#creditoproyectado_importe').length ) {
-        $('#creditoproyectado_importe').val( Math.abs($('#creditoproyectado_importe').val() ) );
+    if ( $('#credito_importe').length ) {
+        $('#credito_importe').val( Math.abs($('#credito_importe').val() ) );
     }
 });
