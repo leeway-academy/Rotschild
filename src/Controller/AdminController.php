@@ -80,13 +80,13 @@ class AdminController extends BaseAdminController
         $hoy = new \DateTimeImmutable();
 
         foreach ( $banco->getSaldos() as $saldo ) {
-            if ( $hoy->diff( $saldo->getFecha() )->d > 15 ) {
+            if ( $hoy->diff( $saldo->getFecha() )->d > 15 ) { // @todo Extract to config
                 $banco->removeSaldo( $saldo );
             } else {
                 break;
             }
         }
-        $period = new \DatePeriod( new \DateTimeImmutable(), new \DateInterval('P1D'), 365 );
+        $period = new \DatePeriod( new \DateTimeImmutable(), new \DateInterval('P1D'), 180 ); // @todo Extract to config
 
         foreach ( $period as $dia ) {
             $banco->addSaldo( $banco->createSaldo( $dia ) );
