@@ -37,7 +37,7 @@ class AdminController extends BaseAdminController
         $banco = $repository->find($id);
 
         $saldo = new SaldoBancario();
-        $fecha = new \DateTime();
+        $fecha = new \DateTime('Yesterday');
         $saldo->setFecha($fecha);
         $saldo->setBanco($banco);
 
