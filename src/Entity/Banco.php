@@ -186,8 +186,9 @@ class Banco
 
     /**
      * @param \DateTimeInterface $fecha
+     * @return SaldoBancario
      */
-    private function createSaldo(\DateTimeInterface $fecha): SaldoBancario
+    public function createSaldo(\DateTimeInterface $fecha): SaldoBancario
     {
         $hoy = new \DateTime();
         if ( $fecha->diff( $hoy )->d < 0 ) {
@@ -195,6 +196,8 @@ class Banco
 
             return $this->getSaldo( $fecha );
         }
+
+        $saldo = $this->getSaldo();
 
         $saldoActual = $saldo ? $saldo->getValor() : 0;
 
@@ -213,21 +216,5 @@ class Banco
         $ret->setFecha( $fecha );
 
         return $ret;
-    }
-
-    /**
-     * @return Collection|SaldoBancario[]
-     */
-    public function getSaldosProyectados(): Collection
-    {
-        $hoy = new \DateTimeImmutable();
-        $period = new \DatePeriod($hoy, new \DateInterval('P1D'), 30);
-        $saldos = new ArrayCollection();
-
-        foreach ($period as $d) {
-            $saldos[] = $this->getSaldo( $d );
-        }
-
-        return $saldos;
     }
 }

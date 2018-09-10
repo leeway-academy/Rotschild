@@ -10,6 +10,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
+use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
 
 class AdminController extends BaseAdminController
 {
@@ -66,5 +67,37 @@ class AdminController extends BaseAdminController
                 ]
             );
         }
+    }
+
+    protected function showBancoAction()
+    {
+        $this->dispatch(EasyAdminEvents::PRE_SHOW);
+
+        $id = $this->request->query->get('id');
+        $easyadmin = $this->request->attributes->get('easyadmin');
+        $banco = $easyadmin['item'];
+
+        $period = new \DatePeriod( new \DateTimeImmutable(), new \DateInterval('P1D'), 365 );
+
+        foreach ( $period as $dia ) {
+            $banco->addSaldo( $banco->createSaldo( $dia ) );
+        }
+
+        $fields = $this->entity['show']['fields'];
+        $deleteForm = $this->createDeleteForm($this->entity['name'], $id);
+
+        $this->dispatch(EasyAdminEvents::POST_SHOW, array(
+            'deleteForm' => $deleteForm,
+            'fields' => $fields,
+            'entity' => $banco,
+        ));
+
+        $parameters = array(
+            'entity' => $banco,
+            'fields' => $fields,
+            'delete_form' => $deleteForm->createView(),
+        );
+
+        return $this->executeDynamicMethod('render<EntityName>Template', array('show', $this->entity['templates']['show'], $parameters));
     }
 }
