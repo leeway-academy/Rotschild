@@ -25,6 +25,7 @@ class Banco
 
     /**
      * @ORM\OneToMany(targetEntity="App\Entity\Movimiento", mappedBy="banco")
+     * @ORM\OrderBy({"fecha"="ASC"})
      */
     private $movimientos;
 
