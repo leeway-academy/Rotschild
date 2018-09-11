@@ -36,6 +36,7 @@ class Banco
 
     /**
      * @ORM\OneToMany(targetEntity="SaldoBancario", mappedBy="banco", orphanRemoval=true)
+     * @ORM\OrderBy({"fecha"="ASC"})
      */
     private $saldos;
 
