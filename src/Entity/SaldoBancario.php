@@ -19,7 +19,7 @@ class SaldoBancario
     private $id;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Banco", inversedBy="saldosHistoricos")
+     * @ORM\ManyToOne(targetEntity="App\Entity\Banco", inversedBy="saldos")
      * @ORM\JoinColumn(nullable=false)
      */
     private $banco;
@@ -77,6 +77,6 @@ class SaldoBancario
 
     public function __toString()
     {
-        return $this->getFecha()->format('d/m/Y').': '.$this->getValor();
+        return $this->getFecha()->format('d/m/Y').': $'.number_format( $this->getValor(), 2, ',','.' );
     }
 }
