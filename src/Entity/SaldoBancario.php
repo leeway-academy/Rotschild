@@ -75,6 +75,10 @@ class SaldoBancario
         return $this;
     }
 
+    /**
+     * @return string
+     * @todo This should probably be moved closer to the template layer in order to keep compatibility with different locales
+     */
     public function __toString()
     {
         return $this->getFecha()->format('d/m/Y').': $'.number_format( $this->getValor(), 2, ',','.' );
