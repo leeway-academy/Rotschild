@@ -36,10 +36,8 @@ class AdminController extends BaseAdminController
         $id = $request->query->get('id');
         $banco = $repository->find($id);
 
-        $saldo = new SaldoBancario();
         $fecha = new \DateTime('Yesterday');
-        $saldo->setFecha($fecha);
-        $saldo->setBanco($banco);
+        $saldo = $banco->getSaldo($fecha);
 
         $form = $this
             ->createFormBuilder( $saldo )
@@ -59,8 +57,7 @@ class AdminController extends BaseAdminController
             return $this->render(
                 'admin/cargar_saldo.html.twig',
                 [
-                    'form' => $form
-                        ->createView(),
+                    'form' => $form->createView(),
                     'entity' => $saldo,
                     'banco' => $banco->getNombre(),
                     'fecha' => $fecha,

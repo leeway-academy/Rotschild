@@ -1,3 +1,21 @@
 {% extends '@EasyAdmin/default/new.html.twig' %}
 
 {% block content_title %}Saldo del Banco {{ banco }} al día {{ fecha | date('d-m-Y') }} (Proyectado: <b>$ {{ proyectado }}.-</b>){% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+
+    <script type="text/javascript">
+        var saldoProyectado = {{ proyectado }};
+        $("form").submit( function ( e, n ) {
+            var saldoCargado = $('input[type="text"]').val();
+            if ( saldoCargado != saldoProyectado ) {
+                alert( 'El saldo cargado no coincide con el proyectado');
+
+                return false;
+            }
+
+            return true;
+        });
+    </script>
+{% endblock %}
