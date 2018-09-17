@@ -123,4 +123,18 @@ class AdminController extends BaseAdminController
 
         $this->em->flush();
     }
+
+    protected function removeGastoFijoEntity( GastoFijo $gastoFijo )
+    {
+        $hoy = new \DateTimeImmutable();
+
+        foreach ( $gastoFijo->getMovimientos() as $movimiento ) {
+            if ( $movimiento->getFecha()->diff( $hoy )->d >= 0 ) {
+                $this->em->remove($movimiento);
+            }
+        }
+
+        $this->em->remove($gastoFijo);
+        $this->em->flush();
+    }
 }
