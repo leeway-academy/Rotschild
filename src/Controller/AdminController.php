@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Banco;
-use App\Entity\SaldoBancario;
+use App\Entity\GastoFijo;
 use http\Exception\InvalidArgumentException;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -106,5 +106,21 @@ class AdminController extends BaseAdminController
         );
 
         return $this->executeDynamicMethod('render<EntityName>Template', array('show', $this->entity['templates']['show'], $parameters));
+    }
+
+    protected function updateGastoFijoEntity( GastoFijo $gastoFijo )
+    {
+        $hoy = new \DateTimeImmutable();
+
+        foreach ( $gastoFijo->getMovimientos() as $movimiento ) {
+            if ( $movimiento->getFecha()->diff( $hoy )->d >= 0 ) {
+                $movimiento->setConcepto( $gastoFijo->getConcepto() );
+                $movimiento->setImporte( $gastoFijo->getImporte() * -1 );
+                $movimiento->setBanco( $gastoFijo->getBanco() );
+                $this->em->persist($movimiento);
+            }
+        }
+
+        $this->em->flush();
     }
 }
