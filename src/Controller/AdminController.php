@@ -61,7 +61,7 @@ class AdminController extends BaseAdminController
                     'entity' => $saldo,
                     'banco' => $banco->getNombre(),
                     'fecha' => $fecha,
-                    'proyectado' => $banco->getSaldo( $fecha )->getValor(),
+                    'proyectado' => $banco->getSaldoProyectado( $fecha )->getValor(),
                 ]
             );
         }
