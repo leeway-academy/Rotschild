@@ -34,6 +34,29 @@ class SaldoBancario
      */
     private $valor;
 
+    /**
+     * @return mixed
+     */
+    public function getDiferenciaConProyectado()
+    {
+        return $this->diferenciaConProyectado;
+    }
+
+    /**
+     * @param mixed $diferenciaConProyectado
+     * @return SaldoBancario
+     */
+    public function setDiferenciaConProyectado($diferenciaConProyectado)
+    {
+        $this->diferenciaConProyectado = $diferenciaConProyectado;
+        return $this;
+    }
+
+    /**
+     * @ORM\Column(type="decimal", precision=10, scale=2, columnDefinition="{default=0}")
+     */
+    private $diferenciaConProyectado = 0;
+
     public function getId()
     {
         return $this->id;

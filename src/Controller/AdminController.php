@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Banco;
 use App\Entity\GastoFijo;
+use App\Entity\SaldoBancario;
 use http\Exception\InvalidArgumentException;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -37,7 +38,12 @@ class AdminController extends BaseAdminController
         $banco = $repository->find($id);
 
         $fecha = new \DateTime('Yesterday');
-        $saldo = $banco->getSaldo($fecha);
+
+        if ( ( $saldo = $banco->getSaldo($fecha) ) == null ) {
+            $saldo = new SaldoBancario();
+            $saldo->setFecha( $fecha );
+            $saldo->setBanco( $banco );
+        }
 
         $form = $this
             ->createFormBuilder( $saldo )
@@ -46,8 +52,11 @@ class AdminController extends BaseAdminController
             ->add('Guardar cambios', SubmitType::class)
             ->getForm();
 
+        $saldoProyectado = $banco->getSaldoProyectado($fecha)->getValor();
+
         $form->handleRequest($request);
         if ( $form->isSubmitted() && $form->isValid() ) {
+            $saldo->setDiferenciaConProyectado( $saldo->getValor() - $saldoProyectado );
             $em->persist( $saldo );
             $em->flush();
 
@@ -61,7 +70,7 @@ class AdminController extends BaseAdminController
                     'entity' => $saldo,
                     'banco' => $banco->getNombre(),
                     'fecha' => $fecha,
-                    'proyectado' => $banco->getSaldoProyectado( $fecha )->getValor(),
+                    'proyectado' => $saldoProyectado,
                 ]
             );
         }
