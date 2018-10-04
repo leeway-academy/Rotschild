@@ -35,7 +35,7 @@ class Banco
     private $gastosFijos;
 
     /**
-     * @ORM\OneToMany(targetEntity="SaldoBancario", mappedBy="banco", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="SaldoBancario", mappedBy="banco", orphanRemoval=true, indexBy="fecha")
      * @ORM\OrderBy({"fecha"="ASC"})
      */
     private $saldos;
@@ -142,7 +142,7 @@ class Banco
     public function addSaldo(SaldoBancario $saldo): self
     {
         if (!$this->saldos->contains($saldo)) {
-            $this->saldos[] = $saldo;
+            $this->saldos[ $saldo->getFecha()->format('Y-m-d') ] = $saldo;
             $saldo->setBanco($this);
         }
 
@@ -173,16 +173,8 @@ class Banco
 
             return !$saldos->isEmpty() ? $saldos->last() : null;
         } else {
-            foreach ( $saldos as $saldo ) {
-                if ( $saldo->getFecha()->diff( $fecha )->d === 0 ) {
 
-                    return $saldo;
-                }
-            }
-            $nuevoSaldo = $this->createSaldo($fecha);
-            $this->addSaldo($nuevoSaldo);
-
-            return $nuevoSaldo;
+            return $saldos->containsKey( $fecha->format('Y-m-d') ) ? $saldos->get( $fecha->format('Y-m-d') ) : null;
         }
     }
 
@@ -190,30 +182,36 @@ class Banco
      * @param \DateTimeInterface $fecha
      * @return SaldoBancario
      */
-    public function createSaldo(\DateTimeInterface $fecha): SaldoBancario
+    public function getSaldoProyectado(\DateTimeInterface $fecha): SaldoBancario
     {
-        if ( $saldo = $this->getSaldo() ) {
-            $saldoActual = $saldo->getValor();
-            $fechaInicial = $saldo->getFecha();
-        } else {
-            $saldoActual = 0;
-            $fechaInicial = new \DateTimeImmutable();
+        $unDia = new \DateInterval('P1D');
+        $fechaInicial = $fecha->sub( new \DateInterval('P1D') );
+        $saldos = $this->getSaldos();
+
+        $saldoActual = new SaldoBancario();
+        $saldoActual->setValor(0);
+        $saldoActual->setBanco( $this );
+
+        $primerSaldo = $saldos->first();
+        if ( $primerSaldo ) {
+            $primeraFecha = $primerSaldo->getFecha()->format('Y-m-d');
+            while ( $fechaInicial->format('Y-m-d') != $primeraFecha && !$saldos->containsKey( $fechaInicial->format('Y-m-d') ) ) {
+                $fechaInicial = $fechaInicial->sub($unDia);
+            }
+            $saldoActual = clone $saldos->get( $fechaInicial->format('Y-m-d') );
         }
 
         $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $fechaInicial) {
 
-            return $m->getFecha()->getTimestamp() > $fechaInicial->getTimestamp() && $m->getFecha()->getTimestamp() < $fecha->getTimestamp() && !$m->getConcretado();
+            return $m->getFecha()->getTimestamp() >= $fechaInicial->getTimestamp() && $m->getFecha()->getTimestamp() < $fecha->getTimestamp() && !$m->getConcretado();
         } );
 
         foreach ($movimientos as $movimiento) {
-            $saldoActual += $movimiento->getImporte();
+            $saldoActual->setValor( $saldoActual->getValor() + $movimiento->getImporte() );
         }
 
-        $ret = new SaldoBancario();
-        $ret->setBanco( $this );
-        $ret->setValor( $saldoActual );
-        $ret->setFecha( $fecha );
+        $saldoActual->setFecha( $fecha );
 
-        return $ret;
+        return $saldoActual;
     }
 }
