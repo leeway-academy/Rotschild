@@ -40,6 +40,36 @@ class Banco
      */
     private $saldos;
 
+    /**
+     * @ORM\Column(type="smallint", nullable=false, options={"default"=0})
+     */
+    private $xlsFirstRow = 0;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $xlsStopWord;
+
+    /**
+     * @ORM\Column(type="smallint", nullable=false, options={"default"=0})
+     */
+    private $xlsConceptCol = 0;
+
+    /**
+     * @ORM\Column(type="smallint", nullable=false, options={"default"=0})
+     */
+    private $xlsAmountCol;
+
+    /**
+     * @ORM\Column(type="smallint", nullable=false, options={"default"=0})
+     */
+    private $xlsDateCol;
+
+    /**
+     * @ORM\Column(type="string", nullable=false, options={"default"="d/m/Y"})
+     */
+    private $xlsDateFormat;
+
     public function __construct()
     {
         $this->movimientos = new ArrayCollection();
@@ -213,5 +243,20 @@ class Banco
         $saldoActual->setFecha( $fecha );
 
         return $saldoActual;
+    }
+
+    /**
+     * @return array
+     */
+    public function getXLSStructure(): array
+    {
+        return [
+            'firstRow' => $this->xlsFirstRow,
+            'stopWord' => $this->xlsStopWord,
+            'conceptCol' => $this->xlsConceptCol,
+            'amountCol' => $this->xlsAmountCol,
+            'dateCol' => $this->xlsDateCol,
+            'dateFormat' => $this->xlsDateFormat,
+        ];
     }
 }
