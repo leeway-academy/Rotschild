@@ -207,6 +207,7 @@ class AdminController extends BaseAdminController
 
                 $em->persist( $transaction );
                 $row++;
+                $dateContents = $shit->getCellByColumnAndRow( $xlsStructure['dateCol'], $row )->getValue();
             }
 
             $em->flush();
