@@ -98,6 +98,9 @@
     "jdorn/sql-formatter": {
         "version": "v1.2.17"
     },
+    "markbaker/complex": {
+        "version": "1.4.6"
+    },
     "monolog/monolog": {
         "version": "1.23.0"
     },
@@ -118,6 +121,9 @@
     },
     "phpdocumentor/type-resolver": {
         "version": "0.4.0"
+    },
+    "phpoffice/phpspreadsheet": {
+        "version": "1.4.1"
     },
     "psr/cache": {
         "version": "1.0.1"
