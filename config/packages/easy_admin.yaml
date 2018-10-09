@@ -12,12 +12,13 @@ easy_admin:
                     - { name: 'edit' }
                     - { name: 'show' }
                     - { name: 'cargar_saldo', type: 'route' }
+                    - { name: 'cargar_extracto', type: 'route' }
             form:
                 fields: [ 'nombre' ]
                 title: 'Modificar %%entity_name%%'
             show:
                 title: '%%entity_name%%'
-                fields: [ 'nombre', { property: 'saldos', label: 'Saldos', template: 'saldos.html.twig' }, 'movimientos' ]
+                fields: [ 'nombre', { property: 'saldos', label: 'Saldos', template: 'saldos.html.twig' }, { property: 'saldosProyectados', label: 'Saldos proyectados', template: 'saldos.html.twig' }, 'movimientos' ]
         Debito:
             class: App\Entity\Movimiento
             label: 'Debitos'

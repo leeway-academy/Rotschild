@@ -16,7 +16,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
 class AdminController extends BaseAdminController
 {
     /**
-     * @param Banco $banco
      * @Route(name="cargar_saldo",path="/banco/cargarSaldo")
      */
     public function cargarSaldoAction( Request $request )
@@ -96,7 +95,7 @@ class AdminController extends BaseAdminController
         $period = new \DatePeriod( new \DateTimeImmutable(), new \DateInterval('P1D'), 180 ); // @todo Extract to config
 
         foreach ( $period as $dia ) {
-            $banco->addSaldo( $banco->createSaldo( $dia ) );
+            $banco->saldosProyectados[ $dia->format( 'Y-m-d') ] = $banco->getSaldoProyectado( $dia );
         }
 
         $fields = $this->entity['show']['fields'];
