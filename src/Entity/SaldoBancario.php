@@ -53,7 +53,7 @@ class SaldoBancario
     }
 
     /**
-     * @ORM\Column(type="decimal", precision=10, scale=2, columnDefinition="{default=0}")
+     * @ORM\Column(type="decimal", precision=10, scale=2, options="{default=0}")
      */
     private $diferenciaConProyectado = 0;
 
