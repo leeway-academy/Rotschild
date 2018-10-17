@@ -63,5 +63,11 @@ easy_admin:
         assets:
             js:
                 - 'js/blasting.js'
+        menu:
+            - Banco
+            - Debito
+            - Credito
+            - GastoFijo
+            - { label: 'Cargar cheques propios', route: 'cargar_cheques_propios'}
     formats:
         date: 'd/m/Y'
