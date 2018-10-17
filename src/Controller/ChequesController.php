@@ -8,31 +8,22 @@
 
 namespace App\Controller;
 
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Entity\Movimiento;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
-class ChequesController
+class ChequesController extends Controller
 {
     /**
      * @Route(name="cargar_cheques_propios",path="/cargarChequesPropios")
      */
     public function cargarChequesPropios( Request $request )
     {
-        if ( 'Banco' !== $request->get('entity') ) {
-
-            throw new InvalidArgumentException();
-        }
-
-        if ( empty( $request->get('id') ) ) {
-
-            throw new InvalidArgumentException();
-        }
-
         $em = $this->getDoctrine()->getManager();
-        $repository = $this->getDoctrine()->getRepository('App:Banco');
-
-        $id = $request->query->get('id');
-        $banco = $repository->find($id);
 
         $form = $this
             ->createFormBuilder( null, [ 'data_class' => null ] )
@@ -50,37 +41,37 @@ class ChequesController
 
         $form->handleRequest($request);
         if ( $form->isSubmitted() && $form->isValid() ) {
-            /** @todo Procesar upload */
             $file = $form['File']->getData();
             $spreadsheet = IOFactory::load( $file );
 
-            $xlsStructure = $banco->getXLSStructure();
             $shit = $spreadsheet->getActiveSheet();
-            $row = $xlsStructure['firstRow'];
-            $dateContents = $shit->getCellByColumnAndRow( $xlsStructure['dateCol'], $row )->getValue();
-            while ( ( !empty( $xlsStructure['stopWord'] ) && substr( $dateContents, 0, strlen( $xlsStructure['stopWord'] ) ) !== $xlsStructure['stopWord'] ) || ( empty($xlsStructure['stopWord'] ) && !empty( $dateContents ) ) ) {
-                $date = \DateTime::createFromFormat( $xlsStructure['dateFormat'], $dateContents );
-                $amount = $shit->getCellByColumnAndRow( $xlsStructure['amountCol'], $row )->getValue();
-                $concept = $shit->getCellByColumnAndRow( $xlsStructure['conceptCol'], $row )->getValue();
+            $row = 2;
+            $checkNbr = $shit->getCellByColumnAndRow( 1, $row )->getValue();
+            if ( ( $bank = $em->getRepository('App:Banco')->findOneBy(['codigo' => $shit->getCellByColumnAndRow( 7, $row )->getValue()] ) ) === null ) {
+                // @todo Fill in with error handling code
+
+                return;
+            }
+            while ( !empty( $checkNbr ) ) {
                 $transaction = new Movimiento();
-                $transaction->setBanco( $banco );
-                $transaction->setImporte( $amount );
-                $transaction->setFecha( $date );
-                $transaction->setConcepto( $concept );
+                $transaction->setBanco( $bank );
+                $transaction->setImporte( $shit->getCellByColumnAndRow( 8, $row )->getValue() * -1 );
+                $value = $shit->getCellByColumnAndRow(3, $row)->getValue();
+                $transaction->setFecha( \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value) );
+                $transaction->setConcepto( 'Cheque '.$shit->getCellByColumnAndRow( 2, $row )->getValue() . ' ('.$shit->getCellByColumnAndRow( 5, $row )->getValue().')' );
 
                 $em->persist( $transaction );
                 $row++;
-                $dateContents = $shit->getCellByColumnAndRow( $xlsStructure['dateCol'], $row )->getValue();
+                $checkNbr = $shit->getCellByColumnAndRow( 1, $row )->getValue();
             }
 
             $em->flush();
         }
 
         return $this->render(
-            'admin/cargar_extracto.html.twig',
+            'admin/cargar_cheques_propios.html.twig',
             [
                 'form' => $form->createView(),
-                'banco' => $banco->getNombre(),
             ]
         );
     }
