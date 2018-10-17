@@ -70,6 +70,29 @@ class Banco
      */
     private $xlsDateFormat;
 
+    /**
+     * @ORM\Column(type="smallint", nullable=true)
+     */
+    private $codigo;
+
+    /**
+     * @return mixed
+     */
+    public function getCodigo()
+    {
+        return $this->codigo;
+    }
+
+    /**
+     * @param mixed $codigo
+     * @return Banco
+     */
+    public function setCodigo($codigo)
+    {
+        $this->codigo = $codigo;
+        return $this;
+    }
+
     public function __construct()
     {
         $this->movimientos = new ArrayCollection();
