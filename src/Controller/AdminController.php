@@ -193,12 +193,12 @@ class AdminController extends BaseAdminController
 
             $xlsStructure = $banco->getXLSStructure();
             $shit = $spreadsheet->getActiveSheet();
-            $row = $xlsStructure['firstRow'];
-            $dateContents = $shit->getCellByColumnAndRow( $xlsStructure['dateCol'], $row )->getValue();
-            while ( ( !empty( $xlsStructure['stopWord'] ) && substr( $dateContents, 0, strlen( $xlsStructure['stopWord'] ) ) !== $xlsStructure['stopWord'] ) || ( empty($xlsStructure['stopWord'] ) && !empty( $dateContents ) ) ) {
-                $date = \DateTime::createFromFormat( $xlsStructure['dateFormat'], $dateContents );
-                $amount = $shit->getCellByColumnAndRow( $xlsStructure['amountCol'], $row )->getValue();
-                $concept = $shit->getCellByColumnAndRow( $xlsStructure['conceptCol'], $row )->getValue();
+            $row = $xlsStructure->getFirstRow();
+            $dateContents = $shit->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue();
+            while ( ( !empty( $xlsStructure->getStopWord() ) && substr( $dateContents, 0, strlen( $xlsStructure->getStopWord() ) ) !== $xlsStructure->getStopWord() ) || ( empty($xlsStructure->getStopWord() ) && !empty( $dateContents ) ) ) {
+                $date = \DateTime::createFromFormat( $xlsStructure->getDateFormat(), $dateContents );
+                $amount = $shit->getCellByColumnAndRow( $xlsStructure->getAmountCol(), $row )->getValue();
+                $concept = $shit->getCellByColumnAndRow( $xlsStructure->getConceptCol(), $row )->getValue();
                 $transaction = new Movimiento();
                 $transaction->setBanco( $banco );
                 $transaction->setImporte( $amount );
@@ -207,7 +207,7 @@ class AdminController extends BaseAdminController
 
                 $em->persist( $transaction );
                 $row++;
-                $dateContents = $shit->getCellByColumnAndRow( $xlsStructure['dateCol'], $row )->getValue();
+                $dateContents = $shit->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue();
             }
 
             $em->flush();
