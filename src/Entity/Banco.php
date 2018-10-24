@@ -45,8 +45,8 @@ class Banco
      */
     private $codigo;
 
-    /*
-     * @ORM\OneToOne(targetEntity="App\Entity\XLSBankStructure", inversedBy="banco")
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\BankXLSStructure", mappedBy="banco")
      */
     private $xlsStructure = null;
 
@@ -244,18 +244,18 @@ class Banco
     }
 
     /**
-     * @return XLSBankStructure
+     * @return BankXLSStructure
      */
-    public function getXLSStructure(): ?XLSBankStructure
+    public function getXLSStructure(): ?BankXLSStructure
     {
-        return $this->XLSStructure();
+        return $this->xlsStructure;
     }
 
     /**
-     * @param XLSBankStructure|null $xlsStructure
+     * @param BankXLSStructure|null $xlsStructure
      * @return Banco
      */
-    public function setXLSStructure( XLSBankStructure $xlsStructure = null )
+    public function setXLSStructure(BankXLSStructure $xlsStructure = null )
     {
         $this->xlsStructure = $xlsStructure;
 
