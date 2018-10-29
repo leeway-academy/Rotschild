@@ -68,6 +68,6 @@ easy_admin:
             - Debito
             - Credito
             - GastoFijo
-            - { label: 'Cargar cheques propios', route: 'cargar_cheques_propios'}
+            - { label: 'Importar reportes de Excel', route: 'import_excel_reports'}
     formats:
         date: 'd/m/Y'
