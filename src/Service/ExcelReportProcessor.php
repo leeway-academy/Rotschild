@@ -15,17 +15,23 @@ class ExcelReportProcessor
 {
     public function getBankSummaryTransactions( Spreadsheet $spreadsheet, BankXLSStructure $xlsStructure ): array
     {
-        $row = 1;
+        $row = $xlsStructure->getFirstRow();
         $worksheet = $spreadsheet->getActiveSheet();
         $ret = [];
 
         $stopWord = $xlsStructure->getStopWord();
-        $firstWord = substr( $worksheet->getCellByColumnAndRow( 1, $row )->getValue(), 0, strlen( $stopWord ) );
+        $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
+        $firstWord = !empty($stopWord) ? substr( $firstValue, 0, strlen( $stopWord ) ) : $firstValue;
 
-        while ( $firstWord != $stopWord) {
-            $ret[] = [];
+        while ( ( !empty($stopWord) && $firstWord != $stopWord ) || (empty($stopWord) && !empty($firstWord) ) ) {
+            $ret[] = [
+                'date' => \DateTime::createFromFormat( $xlsStructure->getDateFormat(), $worksheet->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row ) ),
+                'concept' => $worksheet->getCellByColumnAndRow( $xlsStructure->getConceptCol(), $row )->getValue(),
+                'amount' => $worksheet->getCellByColumnAndRow( $xlsStructure->getAmountCol(), $row )->getValue(),
+            ];
             $row++;
-            $firstWord = substr( $worksheet->getCellByColumnAndRow( 1, $row )->getValue(), 0, strlen( $stopWord ) );
+            $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
+            $firstWord = !empty($stopWord) ? substr( $firstValue, 0, strlen( $stopWord ) ) : $firstValue;
         }
 
         return $ret;
