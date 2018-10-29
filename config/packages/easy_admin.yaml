@@ -12,7 +12,6 @@ easy_admin:
                     - { name: 'edit' }
                     - { name: 'show' }
                     - { name: 'cargar_saldo', type: 'route' }
-                    - { name: 'cargar_extracto', type: 'route' }
             form:
                 fields: [ 'nombre' ]
                 title: 'Modificar %%entity_name%%'

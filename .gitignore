@@ -16,4 +16,6 @@
 console
 /.idea*
 /public/img/*
+/reports/*
 TODO
+
