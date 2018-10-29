@@ -17,9 +17,9 @@ class BankXLSStructure
     private $id;
 
     /**
-     * @ORM\Column(type="smallint", options={"default=0"})
+     * @ORM\Column(type="smallint", options={"default=1"})
      */
-    private $firstRow;
+    private $firstRow = 1;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
@@ -27,19 +27,19 @@ class BankXLSStructure
     private $stopWord;
 
     /**
-     * @ORM\Column(type="smallint", options={"default=0"})
+     * @ORM\Column(type="smallint", options={"default=1"})
      */
-    private $conceptCol;
+    private $conceptCol = 1;
 
     /**
-     * @ORM\Column(type="smallint", options={"default=0"})
+     * @ORM\Column(type="smallint", options={"default=1"})
      */
-    private $amountCol;
+    private $amountCol = 1;
 
     /**
-     * @ORM\Column(type="smallint", options={"default=0"})
+     * @ORM\Column(type="smallint", options={"default=1"})
      */
-    private $dateCol;
+    private $dateCol = 1;
 
     /**
      * @ORM\Column(type="string", length=255, options={"default=d/m/Y"})
