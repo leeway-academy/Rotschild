@@ -9,7 +9,7 @@
 namespace App\Tests;
 
 use App\Entity\BankXLSStructure;
-use App\Service\ExcelReportProcessor;
+use App\Service\ExcelReportsProcessor;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PHPUnit\Framework\TestCase;
 
@@ -34,7 +34,7 @@ class ExcelReportProcessorTest extends TestCase
     }
     public function testGetBankSummaryTransactionsWillReturnArray()
     {
-        $reportProcessor = new ExcelReportProcessor();
+        $reportProcessor = new ExcelReportsProcessor();
 
         $transactions = $reportProcessor->getBankSummaryTransactions( new Spreadsheet(), new BankXLSStructure() );
 
@@ -43,7 +43,7 @@ class ExcelReportProcessorTest extends TestCase
 
     public function testGetBankSummaryTransactionsWillStopWordIfAvailable()
     {
-        $reportProcessor = new ExcelReportProcessor();
+        $reportProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
         $xlsStructure
@@ -68,7 +68,7 @@ class ExcelReportProcessorTest extends TestCase
 
     public function testGetBankSummaryTransactionsWillStopOnBlankIfNoStopWordAvailable()
     {
-        $reportProcessor = new ExcelReportProcessor();
+        $reportProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
 
@@ -86,7 +86,7 @@ class ExcelReportProcessorTest extends TestCase
 
     public function testGetBankSummaryTransactionsWillStartOnFirstRow()
     {
-        $reportProcessor = new ExcelReportProcessor();
+        $reportProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
         $xlsStructure->setFirstRow(2 );
@@ -109,7 +109,7 @@ class ExcelReportProcessorTest extends TestCase
     public function testGetBankSummaryWillUseColumnInformationFromXlsStructure( \DateTimeImmutable $d, string $concept, float $amount, $dateFormat )
     {
         $dateFormat = 'Y/m/d';
-        $reportProcessor = new ExcelReportProcessor();
+        $reportProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
         $xlsStructure
@@ -140,7 +140,7 @@ class ExcelReportProcessorTest extends TestCase
      */
     public function testGetBankSummaryWillUseDatFormatFromXlsStructure( \DateTimeImmutable $d, string $concept, float $amount, $dateFormat )
     {
-        $reportProcessor = new ExcelReportProcessor();
+        $reportProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
         $xlsStructure

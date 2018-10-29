@@ -11,7 +11,7 @@ namespace App\Service;
 use App\Entity\BankXLSStructure;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
-class ExcelReportProcessor
+class ExcelReportsProcessor
 {
     public function getBankSummaryTransactions( Spreadsheet $spreadsheet, BankXLSStructure $xlsStructure ): array
     {
