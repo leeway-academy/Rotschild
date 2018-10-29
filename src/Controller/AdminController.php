@@ -290,7 +290,12 @@ class AdminController extends BaseAdminController
      */
     public function matchBankSummary( Request $request, Banco $bank, string $reportFileName )
     {
-        $formBuilder = $this->createFormBuilder();
+        $formBuilder = $this->createFormBuilder(
+            null,
+            [
+                'allow_extra_fields' => true,
+            ]
+        );
         $session = $request->getSession();
 
         if ( $request->isMethod('POST') ) {
@@ -300,8 +305,8 @@ class AdminController extends BaseAdminController
             if ( $form->isSubmitted() && $form->isValid() ) {
                 $repo = $this->getDoctrine()->getRepository('App:Movimiento');
                 $manager = $this->getDoctrine()->getManager();
-                foreach ( $form->getData() as $datum ) {
-                    if ( $movimiento = $repo->find( $datum->getName( )) ) {
+                foreach ( $form->getExtraData() as $datum ) {
+                    if ( $movimiento = $repo->find( $datum ) ) {
                         $movimiento->setConcretado( true );
                         $manager->persist($movimiento);
                     }
@@ -329,7 +334,20 @@ class AdminController extends BaseAdminController
                 return !$m->getConcretado();
             } );
 
+            $debits = $projectedTransactions->filter( function( Movimiento $m ) {
+                return $m->getImporte() < 0;
+            });
+
+            $credits = $projectedTransactions->filter( function( Movimiento $m ) {
+                return $m->getImporte() > 0;
+            });
+
             foreach ( $actualTransactions as $k => $t ) {
+                if ( $t['amount'] > 0 ) {
+                    $projectedTransactions = $credits;
+                } else {
+                    $projectedTransactions = $debits;
+                }
                 $formBuilder->add(
                     'match_'.$k,
                     ChoiceType::class,
@@ -339,6 +357,7 @@ class AdminController extends BaseAdminController
 
                             return $choiceValue.'';
                         },
+                        'choice_value' => 'id',
                         'required' => false,
                     ]
                 );
