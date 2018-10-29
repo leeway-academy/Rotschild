@@ -7,6 +7,9 @@ use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
 use App\Entity\SaldoBancario;
 use http\Exception\InvalidArgumentException;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -15,9 +18,17 @@ use Symfony\Component\Routing\Annotation\Route;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
 use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use App\Service\ExcelReportsProcessor;
 
 class AdminController extends BaseAdminController
 {
+    private $excelReportsProcessor;
+
+    public function __construct(ExcelReportsProcessor $excelReportProcessor )
+    {
+        $this->setExcelReportProcessor( $excelReportProcessor );
+    }
+
     /**
      * @Route(name="cargar_saldo",path="/banco/cargarSaldo")
      */
@@ -149,80 +160,205 @@ class AdminController extends BaseAdminController
         $this->em->flush();
     }
 
-
     /**
-     * @Route(name="cargar_extracto",path="/banco/cargarExtracto")
+     * @param Request $request
+     * @Route(path="/importExcelReports", name="import_excel_reports")
      */
-    public function cargarExtractoAction( Request $request )
+    public function importExcelReportsAction( Request $request )
     {
-        if ( 'Banco' !== $request->get('entity') ) {
+        $formBuilder = $this->createFormBuilder()
+            ->setAttribute('class', 'form-vertical new-form');
 
-            throw new InvalidArgumentException();
-        }
-
-        if ( empty( $request->get('id') ) ) {
-
-            throw new InvalidArgumentException();
-        }
-
-        $em = $this->getDoctrine()->getManager();
-        $repository = $this->getDoctrine()->getRepository('App:Banco');
-
-        $id = $request->query->get('id');
-        $banco = $repository->find($id);
-
-        if ( $xlsStructure = $banco->getXLSStructure() ) {
-            $form = $this
-                ->createFormBuilder( null, [ 'data_class' => null ] )
-                ->setAttribute('class', 'form-horizontal new-form')
-                ->add(
-                    'File',
-                    FileType::class,
-                    [
-                        'label' => 'Archivo',
-                        'required' => true,
-                    ]
-                )
-                ->add('Subir', SubmitType::class)
-                ->getForm();
-
-            $form->handleRequest($request);
-            if ( $form->isSubmitted() && $form->isValid() ) {
-                /** @todo Procesar upload */
-                $file = $form['File']->getData();
-                $spreadsheet = IOFactory::load( $file );
-
-                $xlsStructure = $banco->getXLSStructure();
-                $shit = $spreadsheet->getActiveSheet();
-                $row = $xlsStructure->getFirstRow();
-                $dateContents = $shit->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue();
-                while ( ( !empty( $xlsStructure->getStopWord() ) && substr( $dateContents, 0, strlen( $xlsStructure->getStopWord() ) ) !== $xlsStructure->getStopWord() ) || ( empty($xlsStructure->getStopWord() ) && !empty( $dateContents ) ) ) {
-                    $date = \DateTime::createFromFormat( $xlsStructure->getDateFormat(), $dateContents );
-                    $amount = $shit->getCellByColumnAndRow( $xlsStructure->getAmountCol(), $row )->getValue();
-                    $concept = $shit->getCellByColumnAndRow( $xlsStructure->getConceptCol(), $row )->getValue();
-                    $transaction = new Movimiento();
-                    $transaction->setBanco( $banco );
-                    $transaction->setImporte( $amount );
-                    $transaction->setFecha( $date );
-                    $transaction->setConcepto( $concept );
-
-                    $em->persist( $transaction );
-                    $row++;
-                    $dateContents = $shit->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue();
-                }
-
-                $em->flush();
-            }
-
-            return $this->render(
-                'admin/cargar_extracto.html.twig',
+        $banks = $this->getDoctrine()->getRepository('App:Banco')->findAll();
+        foreach ( $banks as $bank ) {
+            $formBuilder->add(
+                'BankSummary_'.$bank->getId(),
+                FileType::class,
                 [
-                    'form' => $form->createView(),
-                    'banco' => $banco->getNombre(),
+                    'label' => 'Extracto del banco '.$bank->getNombre(),
+                    'required' => false,
                 ]
             );
         }
 
-        return $this->redirect('/');
+        $formBuilder
+            ->add(
+                'IssuedChecks',
+                FileType::class,
+                [
+                    'label' => 'Cheques propios emitidos',
+                    'required' => false,
+                ]
+            )
+            ->add(
+                'AppliedChecks',
+                FileType::class,
+                [
+                    'label' => 'Cheques aplicados',
+                    'required' => false,
+                ]
+            )
+        ;
+
+        $form = $formBuilder
+            ->add(
+                'Import',
+                SubmitType::class,
+                [
+                    'attr' => [
+                        'class' => 'btn btn-primary action-save',
+                    ],
+                    'label' => 'Importar',
+                ]
+            )
+            ->getForm();
+
+        $form->handleRequest( $request );
+
+        if ( $form->isSubmitted() && $form->isValid() ) {
+            /** @todo Prepare for importantion services */
+            $session = $request->getSession();
+
+            $excelReports = [];
+            foreach ( $form->getData() as $name => $item ) {
+                if ( !is_null($item) && $item->getType() == 'file' && in_array( $item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel' ] ) ) {
+                    $fileName = md5(uniqid('', true)).'.'.$item->guessExtension();
+                    $item->move( $this->getParameter('reports_path'), $fileName );
+                    $excelReports[$name] = $fileName;
+                }
+            }
+
+            $session->set( 'excelReports', $excelReports );
+
+            return $this->proccessExcelReports( $request );
+        }
+
+        return $this->render(
+            'admin/import_excel_reports.html.twig',
+            [
+                'form' => $form->createView(),
+            ]
+        );
+    }
+
+    /**
+     */
+    public function proccessExcelReports( Request $request )
+    {
+        $session = $request->getSession();
+        $reports = $session->get('excelReports');
+
+        if ( !empty( $reports ) ) {
+            list( $reportName, $reportFileName ) = [ current( array_keys( $reports ) ), current( $reports ) ];
+            if ( substr( $reportName, 0, strlen('BankSummary_') ) ) {
+                $bankId = preg_split('/_/', $reportName )[1];
+
+                return $this->redirectToRoute( 'match_bank_summary', [ 'id' => $bankId, 'reportFileName' => $reportFileName ] );
+            } elseif ( $reportName == 'IssuedChecks' ) {
+
+            } else {
+
+            }
+        }
+
+        return $this->redirectToRoute('easyadmin');
+    }
+
+    /**
+     * @param ExcelReportsProcessor $excelReportProcessor
+     */
+    public function setExcelReportProcessor(ExcelReportsProcessor $excelReportProcessor ): AdminController
+    {
+        $this->excelReportsProcessor = $excelReportProcessor;
+
+        return $this;
+    }
+
+    /**
+     * @return ExcelReportsProcessor
+     */
+    public function getExcelReportProcessor() : ExcelReportsProcessor
+    {
+        return $this->excelReportsProcessor;
+    }
+
+    /**
+     * @param Banco $banco
+     * @param $reportFileName
+     * @Route(path="/banco/{id}/processarExtracto/{reportFileName}", name="match_bank_summary")
+     * @ParamConverter("bank", class="App\Entity\Banco")
+     */
+    public function matchBankSummary( Request $request, Banco $bank, string $reportFileName )
+    {
+        $formBuilder = $this->createFormBuilder();
+        $session = $request->getSession();
+
+        if ( $request->isMethod('POST') ) {
+            $form = $formBuilder->getForm();
+            $form->handleRequest( $request );
+
+            if ( $form->isSubmitted() && $form->isValid() ) {
+                $repo = $this->getDoctrine()->getRepository('App:Movimiento');
+                $manager = $this->getDoctrine()->getManager();
+                foreach ( $form->getData() as $datum ) {
+                    if ( $movimiento = $repo->find( $datum->getName( )) ) {
+                        $movimiento->setConcretado( true );
+                        $manager->persist($movimiento);
+                    }
+                }
+
+                $manager->flush();
+            }
+
+            $excelReports = array_filter( $session->get('excelReports'), function( $e ) use ( $reportFileName ) {
+                return $e != $reportFileName;
+            });
+
+            $session->set( 'excelReports', $excelReports );
+
+            return $this->proccessExcelReports( $request );
+        } else {
+            $excelReportsProcessor = $this->getExcelReportProcessor();
+
+            $actualTransactions = $excelReportsProcessor->getBankSummaryTransactions(
+                IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName),
+                $bank->getXLSStructure()
+            );
+
+            $projectedTransactions = $bank->getMovimientos()->filter( function( Movimiento $m ) {
+                return !$m->getConcretado();
+            } );
+
+            foreach ( $actualTransactions as $k => $t ) {
+                $formBuilder->add(
+                    'match_'.$k,
+                    ChoiceType::class,
+                    [
+                        'choices' => $projectedTransactions,
+                        'choice_label' => function( $choiceValue, $key, $value ) {
+
+                            return $choiceValue.'';
+                        },
+                        'required' => false,
+                    ]
+                );
+            }
+
+            $formBuilder->add(
+                'submit',
+                SubmitType::class,
+                [
+                    'label' => 'Asociar',
+                ]
+            );
+            return $this->render(
+                'admin/match_bank_summary.html.twig',
+                [
+                    'bank' => $bank,
+                    'actualTransactions' => $actualTransactions,
+                    'form' => $formBuilder->getForm()->createView(),
+                ]
+            );
+        }
     }
 }
