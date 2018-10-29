@@ -5,6 +5,7 @@
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
     locale: 'es_AR'
+    reports_path: '%kernel.project_dir%/reports'
 
 services:
     # default configuration for services in *this* file
