@@ -31,8 +31,9 @@ class ExcelReportsProcessor
         $firstWord = !empty($stopWord) ? substr( $firstValue, 0, strlen( $stopWord ) ) : $firstValue;
 
         while ( ( !empty($stopWord) && $firstWord != $stopWord ) || (empty($stopWord) && !empty($firstWord) ) ) {
+            $dateValue = $worksheet->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue();
             $ret[] = [
-                'date' => Date::excelToDateTimeObject( $worksheet->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue() ),
+                'date' => is_int( $dateValue) ? Date::excelToDateTimeObject( $dateValue ) : \DateTimeImmutable::createFromFormat( $xlsStructure->getDateFormat(), $dateValue ),
                 'concept' => $worksheet->getCellByColumnAndRow( $xlsStructure->getConceptCol(), $row )->getValue(),
                 'amount' => $worksheet->getCellByColumnAndRow( $xlsStructure->getAmountCol(), $row )->getValue(),
             ];

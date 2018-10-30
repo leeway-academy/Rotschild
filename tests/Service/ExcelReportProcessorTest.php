@@ -180,6 +180,43 @@ class ExcelReportProcessorTest extends TestCase
         $this->assertEquals( $concept, $transaction['concept'] );
     }
 
+    /**
+     * @param \DateTimeImmutable $d
+     * @param string $concept
+     * @param string $amount
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @dataProvider bankSummaryRowProvider
+     */
+    public function testGetBankSummaryWillUseDateFormatFromXlsStructure( \DateTimeImmutable $d, string $concept, float $amount )
+    {
+        $reportsProcessor = new ExcelReportsProcessor();
+
+        $dateFormat = 'Y-M-d';
+        $xlsStructure = new BankXLSStructure();
+        $xlsStructure
+            ->setDateFormat($dateFormat)
+            ->setDateCol( 1 )
+            ->setAmountCol( 2 )
+            ->setConceptCol( 3 )
+        ;
+
+        $spreadsheet = new Spreadsheet();
+        $worksheet = $spreadsheet->getActiveSheet();
+        $worksheet->insertNewRowBefore( 1, 2 );
+        $worksheet->getCellByColumnAndRow(1, 1 )->setValue( $d->format($dateFormat) );
+        $worksheet->getCellByColumnAndRow(2, 1 )->setValue($amount );
+        $worksheet->getCellByColumnAndRow(3, 1 )->setValue($concept );
+
+        $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure);
+        $transaction = current($transactions);
+
+        $this->assertEquals( $d->format('d-m-Y'), $transaction['date']->format('d-m-Y') );
+        $this->assertEquals( $amount, $transaction['amount'] );
+        $this->assertEquals( $concept, $transaction['concept'] );
+    }
+
+    /*************************/
+
     public function issuedChecksRowProvider(): array
     {
         return [
