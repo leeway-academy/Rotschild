@@ -10,6 +10,7 @@ namespace App\Tests;
 
 use App\Entity\BankXLSStructure;
 use App\Service\ExcelReportsProcessor;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PHPUnit\Framework\TestCase;
 
@@ -21,40 +22,69 @@ class ExcelReportProcessorTest extends TestCase
             [
                 new \DateTimeImmutable(),
                 'An expense',
-                -300,
-                'd/M/y',
+                -300
             ],
             [
                 new \DateTimeImmutable(),
                 'An income',
-                500,
-                'Y-m-d',
+                500
             ],
         ];
     }
 
-    public function testGetBankSummaryTransactionsWillReturnArray()
+    /**
+     * @param \DateTimeImmutable $d
+     * @param string $concept
+     * @param string $amount
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @dataProvider bankSummaryRowProvider
+     */
+    public function testGetBankSummaryTransactionsWillReturnArray( \DateTimeImmutable $d, string $concept, string $amount )
     {
         $reportsProcessor = new ExcelReportsProcessor();
 
-        $transactions = $reportsProcessor->getBankSummaryTransactions( new Spreadsheet(), new BankXLSStructure() );
+        $spreadsheet = new Spreadsheet();
+        $worksheet = $spreadsheet->getActiveSheet();
+        $worksheet->insertNewRowBefore( 1, 2 );
+        $worksheet->getCellByColumnAndRow(4, 1 )->setValue( Date::dateTimeToExcel( $d ) );
+        $worksheet->getCellByColumnAndRow(2, 2 )->setValue( $concept );
+        $worksheet->getCellByColumnAndRow(3, 2 )->setValue( $amount );
+
+        $xlsStructure = new BankXLSStructure();
+        $xlsStructure->setConceptCol( 2 );
+        $xlsStructure->setAmountCol( 3 );
+        $xlsStructure->setDateCol( 4 );
+
+        $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure );
 
         $this->assertTrue( is_array( $transactions ) );
     }
 
-    public function testGetBankSummaryTransactionsWillStopWordIfAvailable()
+    /**
+     * @param \DateTimeImmutable $d
+     * @param string $concept
+     * @param string $amount
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @dataProvider bankSummaryRowProvider
+     */
+    public function testGetBankSummaryTransactionsWillStopWordIfAvailable(\DateTimeImmutable $d, string $concept, string $amount)
     {
         $reportsProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
         $xlsStructure
+            ->setDateCol( 1 )
+            ->setAmountCol( 2 )
+            ->setConceptCol( 3 )
             ->setStopWord( 'Stop' )
         ;
 
         $spreadsheet = new Spreadsheet();
         $worksheet = $spreadsheet->getActiveSheet();
         $worksheet->insertNewRowBefore( 1, 2 );
-        $worksheet->getCellByColumnAndRow(1, 1 )->setValue( (new \DateTimeImmutable())->format('Y/m/d') );
+        $worksheet->getCellByColumnAndRow(1, 1 )->setValue( Date::dateTimeToExcel( $d ) );
+        $worksheet->getCellByColumnAndRow(2, 1 )->setValue( $amount );
+        $worksheet->getCellByColumnAndRow(3, 1 )->setValue( $concept );
         $worksheet->getCellByColumnAndRow(1, 2 )->setValue( 'Stop' );
 
         $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure);
@@ -62,38 +92,60 @@ class ExcelReportProcessorTest extends TestCase
         $this->assertCount( 1, $transactions );
     }
 
-    public function testGetBankSummaryTransactionsWillStopOnBlankIfNoStopWordAvailable()
+    /**
+     * @param \DateTimeImmutable $d
+     * @param string $concept
+     * @param string $amount
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @dataProvider bankSummaryRowProvider
+     */
+    public function testGetBankSummaryTransactionsWillStopOnBlankIfNoStopWordAvailable(\DateTimeImmutable $d, string $concept, string $amount)
     {
         $reportsProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
+        $xlsStructure
+            ->setDateCol(1)
+            ->setConceptCol(2)
+            ->setAmountCol(3)
+            ;
 
         $spreadsheet = new Spreadsheet();
         $worksheet = $spreadsheet->getActiveSheet();
         $worksheet->insertNewRowBefore( 1, 2 );
-        $worksheet->getCellByColumnAndRow(1, 1 )->setValue((new \DateTimeImmutable())->format('Y/m/d') );
-        $worksheet->getCellByColumnAndRow(1, 2 )->setValue( (new \DateTimeImmutable())->format('Y/m/d') );
-        $worksheet->getCellByColumnAndRow(1, 3 )->setValue( (new \DateTimeImmutable())->format('Y/m/d') );
+        $worksheet->getCellByColumnAndRow(1, 1 )->setValue( Date::dateTimeToExcel($d) );
+        $worksheet->getCellByColumnAndRow(1, 2 )->setValue( Date::dateTimeToExcel($d) );
+        $worksheet->getCellByColumnAndRow(1, 3 )->setValue( Date::dateTimeToExcel($d) );
 
         $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure);
 
         $this->assertCount( 3, $transactions );
     }
 
-    public function testGetBankSummaryTransactionsWillStartOnFirstRow()
+    /**
+     * @param \DateTimeImmutable $d
+     * @param string $concept
+     * @param string $amount
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @dataProvider bankSummaryRowProvider
+     */
+    public function testGetBankSummaryTransactionsWillStartOnFirstRow(\DateTimeImmutable $d, string $concept, string $amount)
     {
         $reportsProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
-        $xlsStructure->setFirstRow(2 );
+        $xlsStructure
+            ->setDateCol(1)
+            ->setFirstRow(2 )
+            ;
 
         $spreadsheet = new Spreadsheet();
         $worksheet = $spreadsheet->getActiveSheet();
         $worksheet->insertNewRowBefore( 1, 2 );
-        $worksheet->getCellByColumnAndRow(1, 1 )->setValue((new \DateTimeImmutable())->format('Y/m/d') );
-        $worksheet->getCellByColumnAndRow(1, 2 )->setValue( (new \DateTimeImmutable())->format('Y/m/d') );
+        $worksheet->getCellByColumnAndRow(1, 1 )->setValue( Date::dateTimeToExcel($d) );
+        $worksheet->getCellByColumnAndRow(1, 2 )->setValue( Date::dateTimeToExcel($d) );
 
-        $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure);
+        $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure );
 
         $this->assertCount( 1, $transactions );
     }
@@ -102,14 +154,12 @@ class ExcelReportProcessorTest extends TestCase
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @dataProvider bankSummaryRowProvider
      */
-    public function testGetBankSummaryWillUseColumnInformationFromXlsStructure( \DateTimeImmutable $d, string $concept, float $amount, $dateFormat )
+    public function testGetBankSummaryWillUseColumnInformationFromXlsStructure( \DateTimeImmutable $d, string $concept, string $amount )
     {
-        $dateFormat = 'Y/m/d';
         $reportsProcessor = new ExcelReportsProcessor();
 
         $xlsStructure = new BankXLSStructure();
         $xlsStructure
-            ->setDateFormat($dateFormat)
             ->setDateCol( 1 )
             ->setAmountCol( 2 )
             ->setConceptCol( 3 )
@@ -118,38 +168,7 @@ class ExcelReportProcessorTest extends TestCase
         $spreadsheet = new Spreadsheet();
         $worksheet = $spreadsheet->getActiveSheet();
         $worksheet->insertNewRowBefore( 1, 2 );
-        $worksheet->getCellByColumnAndRow(1, 1 )->setValue($d->format($dateFormat) );
-        $worksheet->getCellByColumnAndRow(2, 1 )->setValue($amount );
-        $worksheet->getCellByColumnAndRow(3, 1 )->setValue($concept );
-
-        $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure);
-        $transaction = current($transactions);
-
-        $this->assertEquals( $d->format('d-m-Y'), $transaction['date']->format('d-m-Y') );
-        $this->assertEquals( $amount, $transaction['amount'] );
-        $this->assertEquals( $concept, $transaction['concept'] );
-    }
-
-    /**
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @dataProvider bankSummaryRowProvider
-     */
-    public function testGetBankSummaryWillUseDatFormatFromXlsStructure( \DateTimeImmutable $d, string $concept, float $amount, $dateFormat )
-    {
-        $reportsProcessor = new ExcelReportsProcessor();
-
-        $xlsStructure = new BankXLSStructure();
-        $xlsStructure
-            ->setDateFormat($dateFormat)
-            ->setDateCol( 1 )
-            ->setAmountCol( 2 )
-            ->setConceptCol( 3 )
-        ;
-
-        $spreadsheet = new Spreadsheet();
-        $worksheet = $spreadsheet->getActiveSheet();
-        $worksheet->insertNewRowBefore( 1, 2 );
-        $worksheet->getCellByColumnAndRow(1, 1 )->setValue($d->format($dateFormat) );
+        $worksheet->getCellByColumnAndRow(1, 1 )->setValue( Date::dateTimeToExcel( $d ) );
         $worksheet->getCellByColumnAndRow(2, 1 )->setValue($amount );
         $worksheet->getCellByColumnAndRow(3, 1 )->setValue($concept );
 

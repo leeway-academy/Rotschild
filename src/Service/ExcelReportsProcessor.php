@@ -9,6 +9,7 @@
 namespace App\Service;
 
 use App\Entity\BankXLSStructure;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class ExcelReportsProcessor
@@ -31,7 +32,7 @@ class ExcelReportsProcessor
 
         while ( ( !empty($stopWord) && $firstWord != $stopWord ) || (empty($stopWord) && !empty($firstWord) ) ) {
             $ret[] = [
-                'date' => \DateTime::createFromFormat( $xlsStructure->getDateFormat(), $worksheet->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row ) ),
+                'date' => Date::excelToDateTimeObject( $worksheet->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue() ),
                 'concept' => $worksheet->getCellByColumnAndRow( $xlsStructure->getConceptCol(), $row )->getValue(),
                 'amount' => $worksheet->getCellByColumnAndRow( $xlsStructure->getAmountCol(), $row )->getValue(),
             ];
