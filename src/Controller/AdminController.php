@@ -338,9 +338,7 @@ class AdminController extends BaseAdminController
 
             return $this->proccessExcelReports( $request );
         } else {
-            $excelReportsProcessor = $this->getExcelReportProcessor();
-
-            $actualTransactions = $excelReportsProcessor->getBankSummaryTransactions(
+            $actualTransactions = $this->getExcelReportProcessor()->getBankSummaryTransactions(
                 IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName),
                 $bank->getXLSStructure()
             );
@@ -450,7 +448,7 @@ class AdminController extends BaseAdminController
             $objectManager->flush();
             $this->markReportAsProcessed( $request, $reportFileName );
 
-            return $this->redirectToRoute('import_excel_reports');
+            return $this->proccessExcelReports( $request );
         } else {
 
             return $this->render(
