@@ -9,6 +9,7 @@ use App\Entity\SaldoBancario;
 use http\Exception\InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
@@ -216,7 +217,6 @@ class AdminController extends BaseAdminController
         $form->handleRequest( $request );
 
         if ( $form->isSubmitted() && $form->isValid() ) {
-            /** @todo Prepare for importantion services */
             $session = $request->getSession();
 
             $excelReports = [];
@@ -242,6 +242,8 @@ class AdminController extends BaseAdminController
     }
 
     /**
+     * @param Request $request
+     * Router method (coordinator of Excel Reports processing)
      */
     public function proccessExcelReports( Request $request )
     {
@@ -250,14 +252,32 @@ class AdminController extends BaseAdminController
 
         if ( !empty( $reports ) ) {
             list( $reportName, $reportFileName ) = [ current( array_keys( $reports ) ), current( $reports ) ];
-            if ( substr( $reportName, 0, strlen('BankSummary_') ) ) {
+            if ( substr( $reportName, 0, strlen('BankSummary_') ) === 'BankSummary_' ) {
                 $bankId = preg_split('/_/', $reportName )[1];
 
-                return $this->redirectToRoute( 'match_bank_summary', [ 'id' => $bankId, 'reportFileName' => $reportFileName ] );
+                return $this->redirectToRoute(
+                    'match_bank_summary',
+                    [
+                        'id' => $bankId,
+                        'reportFileName' => $reportFileName
+                    ]
+                );
             } elseif ( $reportName == 'IssuedChecks' ) {
 
+                return $this->redirectToRoute(
+                    'confirm_issued_checks',
+                    [
+                        'reportFileName' => $reportFileName,
+                    ]
+                );
             } else {
 
+                return $this->redirectToRoute(
+                    'process_applied_checks',
+                    [
+                        'reportFileName' => $reportFileName,
+                    ]
+                );
             }
         }
 
@@ -285,7 +305,7 @@ class AdminController extends BaseAdminController
     /**
      * @param Banco $banco
      * @param $reportFileName
-     * @Route(path="/banco/{id}/processarExtracto/{reportFileName}", name="match_bank_summary")
+     * @Route(path="/banco/{id}/processSummary/{reportFileName}", name="match_bank_summary")
      * @ParamConverter("bank", class="App\Entity\Banco")
      */
     public function matchBankSummary( Request $request, Banco $bank, string $reportFileName )
@@ -296,7 +316,6 @@ class AdminController extends BaseAdminController
                 'allow_extra_fields' => true,
             ]
         );
-        $session = $request->getSession();
 
         if ( $request->isMethod('POST') ) {
             $form = $formBuilder->getForm();
@@ -315,11 +334,7 @@ class AdminController extends BaseAdminController
                 $manager->flush();
             }
 
-            $excelReports = array_filter( $session->get('excelReports'), function( $e ) use ( $reportFileName ) {
-                return $e != $reportFileName;
-            });
-
-            $session->set( 'excelReports', $excelReports );
+            $this->markReportAsProcessed($request, $reportFileName);
 
             return $this->proccessExcelReports( $request );
         } else {
@@ -379,5 +394,90 @@ class AdminController extends BaseAdminController
                 ]
             );
         }
+    }
+
+    /**
+     * @param Request $request
+     * @Route(path="/confirmIssuedChecks/{reportFileName}", name="confirm_issued_checks")
+     */
+    public function confirmIssuedChecks( Request $request, string $reportFileName )
+    {
+        $formBuilder = $this->createFormBuilder();
+
+        $checks = $this->getExcelReportProcessor()->getIssuedChecks(
+            IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName)
+        );
+
+        $banks = $this->getDoctrine()->getRepository('App:Banco')->findAll();
+
+        foreach ( $checks as $k => &$check ) {
+            $check['bank'] = current( array_filter( $banks, function( $b ) use ( $check ) {
+
+                return $b->getCodigo() == intval( $check['bankCode'] );
+            }) );
+            $formBuilder->add(
+                'check_'.$k,
+                CheckboxType::class,
+                [
+                    'value' => 1,
+                ]
+            );
+        }
+        // TODO create debits according to check information
+
+        $formBuilder->add(
+            'submit',
+            SubmitType::class,
+            [
+                'label' => 'Confirmar',
+            ]
+        );
+
+        $form = $formBuilder->getForm();
+        $form->handleRequest( $request );
+
+        if ( $form->isSubmitted() && $form->isValid() ) {
+            $objectManager = $this->getDoctrine()->getManager();
+            foreach ( $form->getData() as $k => $datum ) {
+                $movimiento = new Movimiento();
+                $checkInfo = $checks[preg_split('/_/', $k)[1]];
+                $movimiento->setConcepto( 'Cheque '. $checkInfo['checkNumber'] );
+                $movimiento->setFecha( $checkInfo['date'] );
+                $movimiento->setImporte( $checkInfo['amount'] * -1 );
+                $movimiento->setBanco( $checkInfo['bank'] );
+                $objectManager->persist( $movimiento );
+            }
+            $objectManager->flush();
+            $this->markReportAsProcessed( $request, $reportFileName );
+
+            return $this->redirectToRoute('import_excel_reports');
+        } else {
+
+            return $this->render(
+                'admin/confirm_issued_checks.html.twig',
+                [
+                    'form' => $form->createView(),
+                    'checks' => $checks,
+                ]
+            );
+        }
+    }
+
+    public function processAppliedChecks( Request $request )
+    {
+        // @TODO load spreadsheet information and offer the operator the option to match the checks
+    }
+
+    /**
+     * @param Request $request
+     * @param string $reportFileName
+     */
+    private function markReportAsProcessed(Request $request, string $reportFileName): void
+    {
+        $session = $request->getSession();
+        $excelReports = array_filter($session->get('excelReports'), function ($e) use ($reportFileName) {
+            return $e != $reportFileName;
+        });
+        $session->set('excelReports', $excelReports);
     }
 }
