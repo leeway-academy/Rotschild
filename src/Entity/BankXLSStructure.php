@@ -42,6 +42,11 @@ class BankXLSStructure
     private $dateCol = 1;
 
     /**
+     * @ORM\Column(type="string", length=255, options={"default=d/m/Y"}, nullable=true)
+     */
+    private $dateFormat;
+
+    /**
      * @ORM\OneToOne(targetEntity="App\Entity\Banco", cascade={"persist", "remove"}, inversedBy="xlsStructure")
      * @ORM\JoinColumn(nullable=false)
      */
@@ -108,6 +113,18 @@ class BankXLSStructure
     public function setDateCol(int $dateCol): self
     {
         $this->dateCol = $dateCol;
+
+        return $this;
+    }
+
+    public function getDateFormat(): ?string
+    {
+        return $this->dateFormat;
+    }
+
+    public function setDateFormat(string $dateFormat): self
+    {
+        $this->dateFormat = $dateFormat;
 
         return $this;
     }
