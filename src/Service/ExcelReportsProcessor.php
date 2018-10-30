@@ -13,6 +13,12 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class ExcelReportsProcessor
 {
+    /**
+     * @param Spreadsheet $spreadsheet
+     * @param BankXLSStructure $xlsStructure
+     * @return array
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     */
     public function getBankSummaryTransactions( Spreadsheet $spreadsheet, BankXLSStructure $xlsStructure ): array
     {
         $row = $xlsStructure->getFirstRow();
@@ -32,6 +38,33 @@ class ExcelReportsProcessor
             $row++;
             $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
             $firstWord = !empty($stopWord) ? substr( $firstValue, 0, strlen( $stopWord ) ) : $firstValue;
+        }
+
+        return $ret;
+    }
+
+    /**
+     * @param Spreadsheet $spreadsheet
+     * @return array
+     */
+    public function getIssuedChecks( Spreadsheet $spreadsheet ) : array
+    {
+        $worksheet = $spreadsheet->getActiveSheet();
+        $ret = [];
+
+        // Ignore headers row
+        $row = 2;
+        $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
+
+        while ( !empty($firstValue) ) {
+            $ret[] = [
+                'date' => \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject( $worksheet->getCellByColumnAndRow( 4, $row )->getValue() ),
+                'amount' => $worksheet->getCellByColumnAndRow( 8, $row )->getValue(),
+                'bankCode' => $worksheet->getCellByColumnAndRow( 7, $row )->getValue(),
+                'checkNumber' => $worksheet->getCellByColumnAndRow( 2, $row )->getValue(),
+            ];
+            $row++;
+            $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
         }
 
         return $ret;
