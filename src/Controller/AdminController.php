@@ -320,13 +320,8 @@ class AdminController extends BaseAdminController
             return !$m->getConcretado();
         } );
 
-        $debits = $projectedTransactions->filter( function( Movimiento $m ) {
-            return $m->getImporte() < 0;
-        });
-
-        $credits = $projectedTransactions->filter( function( Movimiento $m ) {
-            return $m->getImporte() > 0;
-        });
+        $debits = $bank->getDebitosProyectados();
+        $credits = $bank->getCreditosProyectados();
 
         $formBuilder = $this->createFormBuilder();
         foreach ( $actualTransactions as $k => $t ) {

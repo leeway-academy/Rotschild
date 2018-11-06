@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -260,5 +261,44 @@ class Banco
         $this->xlsStructure = $xlsStructure;
 
         return $this;
+    }
+
+    /**
+     * @param int|null $limit
+     *
+     * @return Collection
+     */
+    public function getDebitosProyectados( int $limit = null ): Collection
+    {
+        $criteria = Criteria::create()
+            ->andWhere(Criteria::expr()->eq('concretado', false))
+            ->andWhere(Criteria::expr()->lt('importe', 0))
+            ->orderBy(['fecha' => 'ASC'])
+        ;
+
+        if ( $limit ) {
+            $criteria->setMaxResults( $limit );
+        }
+
+        return $this->movimientos->matching( $criteria );
+    }
+
+    /**
+     * @param int|null $limit
+     * @return Collection
+     */
+    public function getCreditosProyectados( int $limit = null ) : Collection
+    {
+        $criteria = Criteria::create()
+            ->andWhere(Criteria::expr()->eq('concretado', false))
+            ->andWhere(Criteria::expr()->gt('importe', 0))
+            ->orderBy(['fecha' => 'ASC'])
+        ;
+
+        if ( $limit ) {
+            $criteria->setMaxResults( $limit );
+        }
+
+        return $this->movimientos->matching( $criteria );
     }
 }
