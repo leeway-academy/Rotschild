@@ -6,6 +6,7 @@ use App\Entity\Banco;
 use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
 use App\Entity\SaldoBancario;
+use Doctrine\Common\Collections\Criteria;
 use http\Exception\InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
@@ -310,79 +311,71 @@ class AdminController extends BaseAdminController
      */
     public function matchBankSummary( Request $request, Banco $bank, string $reportFileName )
     {
-        $formBuilder = $this->createFormBuilder(
-            null,
+        $actualTransactions = $this->getExcelReportProcessor()->getBankSummaryTransactions(
+            IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName),
+            $bank->getXLSStructure()
+        );
+
+        $projectedTransactions = $bank->getMovimientos()->filter( function( Movimiento $m ) {
+            return !$m->getConcretado();
+        } );
+
+        $debits = $projectedTransactions->filter( function( Movimiento $m ) {
+            return $m->getImporte() < 0;
+        });
+
+        $credits = $projectedTransactions->filter( function( Movimiento $m ) {
+            return $m->getImporte() > 0;
+        });
+
+        $formBuilder = $this->createFormBuilder();
+        foreach ( $actualTransactions as $k => $t ) {
+            if ( $t['amount'] > 0 ) {
+                $projectedTransactions = $credits;
+            } else {
+                $projectedTransactions = $debits;
+            }
+            $formBuilder->add(
+                'match_'.$k,
+                ChoiceType::class,
+                [
+                    'choices' => $projectedTransactions,
+                    'choice_label' => function( $choiceValue, $key, $value ) {
+
+                        return $choiceValue.'';
+                    },
+                    'choice_value' => 'id',
+                    'required' => false,
+                ]
+            );
+        }
+
+        $formBuilder->add(
+            'submit',
+            SubmitType::class,
             [
-                'allow_extra_fields' => true,
+                'label' => 'Asociar',
             ]
         );
 
-        if ( $request->isMethod('POST') ) {
-            $form = $formBuilder->getForm();
-            $form->handleRequest( $request );
-
-            if ( $form->isSubmitted() && $form->isValid() ) {
-                $repo = $this->getDoctrine()->getRepository('App:Movimiento');
-                $manager = $this->getDoctrine()->getManager();
-                foreach ( $form->getExtraData() as $datum ) {
-                    if ( $movimiento = $repo->find( $datum ) ) {
-                        $movimiento->setConcretado( true );
-                        $manager->persist($movimiento);
-                    }
+        $form = $formBuilder->getForm();
+        $form->handleRequest( $request );
+        if ( $form->isSubmitted() && $form->isValid() ) {
+            $repo = $this->getDoctrine()->getRepository('App:Movimiento');
+            $manager = $this->getDoctrine()->getManager();
+            foreach ( $form->getExtraData() as $datum ) {
+                if ( $movimiento = $repo->find( $datum ) ) {
+                    $movimiento->setConcretado( true );
+                    $manager->persist($movimiento);
                 }
-
-                $manager->flush();
             }
+            $manager->flush();
 
             $this->markReportAsProcessed($request, $reportFileName);
 
             return $this->proccessExcelReports( $request );
         } else {
-            $actualTransactions = $this->getExcelReportProcessor()->getBankSummaryTransactions(
-                IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName),
-                $bank->getXLSStructure()
-            );
 
-            $projectedTransactions = $bank->getMovimientos()->filter( function( Movimiento $m ) {
-                return !$m->getConcretado();
-            } );
-
-            $debits = $projectedTransactions->filter( function( Movimiento $m ) {
-                return $m->getImporte() < 0;
-            });
-
-            $credits = $projectedTransactions->filter( function( Movimiento $m ) {
-                return $m->getImporte() > 0;
-            });
-
-            foreach ( $actualTransactions as $k => $t ) {
-                if ( $t['amount'] > 0 ) {
-                    $projectedTransactions = $credits;
-                } else {
-                    $projectedTransactions = $debits;
-                }
-                $formBuilder->add(
-                    'match_'.$k,
-                    ChoiceType::class,
-                    [
-                        'choices' => $projectedTransactions,
-                        'choice_label' => function( $choiceValue, $key, $value ) {
-
-                            return $choiceValue.'';
-                        },
-                        'choice_value' => 'id',
-                        'required' => false,
-                    ]
-                );
-            }
-
-            $formBuilder->add(
-                'submit',
-                SubmitType::class,
-                [
-                    'label' => 'Asociar',
-                ]
-            );
             return $this->render(
                 'admin/match_bank_summary.html.twig',
                 [
@@ -467,7 +460,6 @@ class AdminController extends BaseAdminController
 
     public function processAppliedChecks( Request $request, string $reportFileName )
     {
-        // @TODO load spreadsheet information and offer the operator the option to match the checks
         $formBuilder = $this->createFormBuilder();
 
         $checks = $this->getExcelReportProcessor()->getAppliedChecks(
@@ -475,12 +467,11 @@ class AdminController extends BaseAdminController
         );
 
         $bancos = $this->getDoctrine()->getRepository('App:Banco')->findAll();
-        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->findAll(
-            [
-                'importe < 0',
-                'concretado = 0',
-            ]
-        );
+        $criteria = Criteria::create()
+            ->where( Criteria::expr()->lt('importe', 0) )
+            ->andWhere( Criteria::expr()->eq('concretado', false ))
+        ;
+        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->matching( $criteria );
 
         foreach ($checks as $k => $check) {
             $formBuilder->add(
@@ -512,17 +503,46 @@ class AdminController extends BaseAdminController
         }
 
         $formBuilder->add(
-            'submit',
+            'aplicar',
             SubmitType::class,
             [
 
             ]
         );
 
+        $form = $formBuilder->getForm();
+
+        $form->handleRequest( $request );
+        if ( $form->isSubmitted() && $form->isValid() ) {
+            $em = $this->getDoctrine()->getManager();
+            foreach ( $checks as $k => $check ) {
+                if ( !empty( $form['bank_'.$k] ) ) {
+                    $recipientBank = $form['bank_'.$k]->getData();
+                    $movimiento = new Movimiento();
+                    $movimiento
+                        ->setBanco( $recipientBank )
+                        ->setImporte( $check['amount'] )
+                        ->setFecha( $check['creditDate'] )
+                    ;
+                } elseif ( !empty( $form['debit_'.$k] ) ) {
+                    $movimiento = $form['debit_'.$k]->getData();
+                    $movimiento->setConcretado( true );
+                }
+
+                $em->persist( $movimiento );
+            }
+
+            $em->flush();
+
+            $this->markReportAsProcessed($request, $reportFileName);
+
+            return $this->proccessExcelReports( $request );
+        }
+
         return $this->render(
             'admin/process_applied_checks.html.twig',
             [
-                'form' => $formBuilder->getForm()->createView(),
+                'form' => $form->createView(),
                 'checks' => $checks,
             ]
         );

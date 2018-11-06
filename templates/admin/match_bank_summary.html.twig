@@ -20,7 +20,7 @@
                             <td>&nbsp;</td>
                             <td>{{ t.concept }}</td>
                             <td>&nbsp;</td>
-                            <td>{{ t.amount }}</td>
+                            <td>{% if t.amount > 0 %} ${{ t.amount | number_format(2, ',', '.') }}{% else %} -${{ (t.amount * -1) | number_format(2, ',', '.') }}{% endif %}</td>
                         </tr>
                     </table>
                 </td>

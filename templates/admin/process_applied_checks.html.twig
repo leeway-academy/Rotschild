@@ -5,14 +5,14 @@
 {% block main %}
     {{ form_start(form) }}
         {{ form_errors(form) }}
-    <table width="30%">
+    <table width="50%">
         <thead>
             <tr>
                 <th>N&uacute;mero</th>
                 <th>&nbsp;</th>
                 <th>Monto</th>
                 <th>&nbsp;</th>
-                <th align="center">Destino</th>
+                <th><span style="alignment: center">Destino</span></th>
                 <th>&nbsp;</th>
             </tr>
         </thead>
@@ -21,7 +21,7 @@
             <tr>
                 <td>{{ c.checkNumber }}</td>
                 <td>&nbsp;</td>
-                <td>$ {{ c.amount }}</td>
+                <td> ${{ c.amount | number_format(2, ',', '.') }}</td>
                 <td>&nbsp;</td>
                 <td>
                     <table>

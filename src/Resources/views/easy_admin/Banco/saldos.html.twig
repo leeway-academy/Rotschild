@@ -5,7 +5,7 @@
             <td>{% if v.valor <= 0 %}<span style="font-weight: bold; color: red">{% endif %}{{ v.fecha | date("d/m/Y") }}: {% if v.valor <= 0 %}</span>{% endif %}</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
-            <td>{% if v.valor <= 0 %}<span style="font-weight: bold; color: red">{% endif %}${{ v.valor | number_format(2, ',', '.') }}{% if v.valor <= 0 %}</span>{% endif %}</td>
+            <td>{% if v.valor <= 0 %}<span style="font-weight: bold; color: red">{% endif %} ${{ v.valor | number_format(2, ',', '.') }}{% if v.valor <= 0 %}</span>{% endif %}</td>
         </tr>
     {% endfor %}
     </table>
