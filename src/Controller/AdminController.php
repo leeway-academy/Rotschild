@@ -421,7 +421,6 @@ class AdminController extends BaseAdminController
                 ]
             );
         }
-        // TODO create debits according to check information
 
         $formBuilder->add(
             'submit',
@@ -461,9 +460,72 @@ class AdminController extends BaseAdminController
         }
     }
 
-    public function processAppliedChecks( Request $request )
+    /**
+     * @param Request $request
+     * @Route(path="/processedAppliedChecks/{reportFileName}", name="process_applied_checks")
+     */
+
+    public function processAppliedChecks( Request $request, string $reportFileName )
     {
         // @TODO load spreadsheet information and offer the operator the option to match the checks
+        $formBuilder = $this->createFormBuilder();
+
+        $checks = $this->getExcelReportProcessor()->getAppliedChecks(
+            IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName)
+        );
+
+        $bancos = $this->getDoctrine()->getRepository('App:Banco')->findAll();
+        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->findAll(
+            [
+                'importe < 0',
+                'concretado = 0',
+            ]
+        );
+
+        foreach ($checks as $k => $check) {
+            $formBuilder->add(
+                'bank_'.$k,
+                ChoiceType::class,
+                [
+                    'choices' => $bancos,
+                    'choice_label' => function( $choiceValue, $key, $value ) {
+
+                        return $choiceValue.'';
+                    },
+                    'choice_value' => 'id',
+                    'required' => false,
+                ]
+            );
+            $formBuilder->add(
+                'debit_'.$k,
+                ChoiceType::class,
+                [
+                    'choices' => $debits,
+                    'choice_label' => function( $choiceValue, $key, $value ) {
+
+                        return $choiceValue.'';
+                    },
+                    'choice_value' => 'id',
+                    'required' => false,
+                ]
+            );
+        }
+
+        $formBuilder->add(
+            'submit',
+            SubmitType::class,
+            [
+
+            ]
+        );
+
+        return $this->render(
+            'admin/process_applied_checks.html.twig',
+            [
+                'form' => $formBuilder->getForm()->createView(),
+                'checks' => $checks,
+            ]
+        );
     }
 
     /**

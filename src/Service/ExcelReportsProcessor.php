@@ -14,6 +14,33 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class ExcelReportsProcessor
 {
+    private $config = [];
+
+    /**
+     * @return array
+     */
+    public function getConfig(): array
+    {
+        return $this->config;
+    }
+
+    /**
+     * @param array $config
+     */
+    public function setConfig(array $config): void
+    {
+        $this->config = $config;
+    }
+
+    /**
+     * ExcelReportsProcessor constructor.
+     * @param array $config
+     */
+    public function __construct( array $config = [] )
+    {
+        $this->setConfig( $config );
+    }
+
     /**
      * @param Spreadsheet $spreadsheet
      * @param BankXLSStructure $xlsStructure
@@ -63,6 +90,39 @@ class ExcelReportsProcessor
                 'date' => \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject( $worksheet->getCellByColumnAndRow( 4, $row )->getValue() ),
                 'amount' => $worksheet->getCellByColumnAndRow( 8, $row )->getValue(),
                 'bankCode' => $worksheet->getCellByColumnAndRow( 7, $row )->getValue(),
+                'checkNumber' => $worksheet->getCellByColumnAndRow( 2, $row )->getValue(),
+            ];
+            $row++;
+            $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
+        }
+
+        return $ret;
+    }
+
+    /**
+     * @param Spreadsheet $spreadsheet
+     * @return array
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     */
+    public function getAppliedChecks( Spreadsheet $spreadsheet ) : array
+    {
+        $worksheet = $spreadsheet->getActiveSheet();
+        $ret = [];
+
+        // Ignore headers row
+        $row = 2;
+        $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
+
+        while ( !empty($firstValue) ) {
+            $checkDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject( $worksheet->getCellByColumnAndRow( 3, $row )->getValue() );
+            $checkType = $worksheet->getCellByColumnAndRow( 8, $row );
+            $creditDate = clone $checkDate;
+            if ( strtoupper($checkType ) == strtoupper( $this->getConfig()['deferred_checks_type'] ) ) {
+                 $creditDate->add( new \DateInterval('P2D') );
+            }
+            $ret[] = [
+                'creditDate' => $creditDate,
+                'amount' => $worksheet->getCellByColumnAndRow( 12, $row )->getValue(),
                 'checkNumber' => $worksheet->getCellByColumnAndRow( 2, $row )->getValue(),
             ];
             $row++;

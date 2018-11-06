@@ -9,7 +9,9 @@
 namespace App\Tests;
 
 use App\Entity\BankXLSStructure;
+use App\Repository\BancoRepository;
 use App\Service\ExcelReportsProcessor;
+use Doctrine\ORM\EntityManager;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PHPUnit\Framework\TestCase;
@@ -288,12 +290,12 @@ class ExcelReportProcessorTest extends TestCase
         $numRows = rand( 1, 10 );
         $worksheet->insertNewRowBefore( 1, $numRows );
 
-        for ( $i = 0; $i < $numRows; $i++ ) {
-            $worksheet->getCellByColumnAndRow(1, $i + 2 )->setValue( 'Non empty' );
-            $worksheet->getCellByColumnAndRow(4, $i + 2 )->setValue( \PhpOffice\PhpSpreadsheet\Shared\Date::dateTimeToExcel($d) );
-            $worksheet->getCellByColumnAndRow(2, $i + 2 )->setValue( $checkNbr );
-            $worksheet->getCellByColumnAndRow(7, $i + 2 )->setValue( $bankCode );
-            $worksheet->getCellByColumnAndRow(8, $i + 2 )->setValue( $amount );
+        for ( $i = 2; $i < $numRows; $i++ ) {
+            $worksheet->getCellByColumnAndRow(1, $i )->setValue( 'Non empty' );
+            $worksheet->getCellByColumnAndRow(4, $i )->setValue( \PhpOffice\PhpSpreadsheet\Shared\Date::dateTimeToExcel($d) );
+            $worksheet->getCellByColumnAndRow(2, $i )->setValue( $checkNbr );
+            $worksheet->getCellByColumnAndRow(7, $i )->setValue( $bankCode );
+            $worksheet->getCellByColumnAndRow(8, $i )->setValue( $amount );
         }
 
         $checks = $reportsProcessor->getIssuedChecks( $spreadsheet );
@@ -305,7 +307,7 @@ class ExcelReportProcessorTest extends TestCase
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @dataProvider issuedChecksRowProvider
      */
-    public function testGetIssuedChecksWillFetchDataCorrectly( \DateTimeImmutable $d, string $checkNbr, string $bankCode, string $amount )
+    public function testGetIssuedChecksWillFetchDataCorrectly( \DateTimeImmutable $d, string $checkNbr, string $bankCode, string $amount ): void
     {
         $reportsProcessor = new ExcelReportsProcessor();
 
@@ -326,6 +328,99 @@ class ExcelReportProcessorTest extends TestCase
             $this->assertEquals( $check['checkNumber'], $checkNbr );
             $this->assertEquals( $check['amount'], $amount );
             $this->assertEquals( $check['bankCode'], $bankCode );
+        }
+    }
+
+    public function appliedChecksDataProvider()
+    {
+        return [
+            [
+                '92411140',
+                new \DateTimeImmutable('10/26/2018'),
+                'Diferido',
+                'BANCO RIO CUENTA CORRIENTE',
+                '5.787,08'
+            ],
+            [
+                '320093',
+                new \DateTimeImmutable('10/25/2018'),
+                'Comun',
+                'PROVEEDORES - NACIONALES $',
+                '3,558.61',
+            ]
+        ];
+    }
+
+    /**
+     * @param string $checkNbr
+     * @param \DateTimeInterface $checkDate
+     * @param string $checkType
+     * @param string $destination
+     * @param string $amount
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @dataProvider appliedChecksDataProvider
+     */
+    public function testGetAppliedChecksWillStopOnBlankFirstColumn( string $checkNbr, \DateTimeInterface $checkDate, string $checkType, string $destination, string $amount ): void
+    {
+        $reportsProcessor = new ExcelReportsProcessor();
+
+        $spreadsheet = new Spreadsheet();
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        $numRows = rand( 3, 10 );
+        $worksheet->insertNewRowBefore( 1, $numRows );
+
+        // First row is header
+        for ( $i = 2; $i < $numRows; $i++ ) {
+            $worksheet->getCellByColumnAndRow(1, $i )->setValue( 1000 + $i );
+            $worksheet->getCellByColumnAndRow(2, $i )->setValue( $checkNbr );
+            $worksheet->getCellByColumnAndRow(3, $i )->setValue( Date::dateTimeToExcel($checkDate) );
+            $worksheet->getCellByColumnAndRow(8, $i )->setValue( $checkType );
+            $worksheet->getCellByColumnAndRow(11, $i )->setValue( $destination );
+            $worksheet->getCellByColumnAndRow(12, $i )->setValue( $amount );
+        }
+
+        $checks = $reportsProcessor->getAppliedChecks( $spreadsheet );
+
+        $this->assertCount( $numRows - 2, $checks );
+    }
+
+    /**
+     * @param string $checkNbr
+     * @param \DateTimeInterface $checkDate
+     * @param string $checkType
+     * @param string $destination
+     * @param string $amount
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     * @dataProvider appliedChecksDataProvider
+     */
+    public function testGetAppliedChecksWillDetermineCreditDateByCheckType( string $checkNbr, \DateTimeInterface $checkDate, string $checkType, string $destination, string $amount ): void
+    {
+        $config = [
+            'deferred_checks_type' => 'Diferido',
+            'regular_checks_type' => 'Comun',
+        ];
+
+        $reportsProcessor = new ExcelReportsProcessor(
+            $config
+        );
+
+        $spreadsheet = new Spreadsheet();
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        $worksheet->insertNewRowBefore( 1, 2 );
+
+        // First row is header
+        $worksheet->getCellByColumnAndRow(1, 2 )->setValue( 1000 );
+        $worksheet->getCellByColumnAndRow(3, 2 )->setValue( Date::dateTimeToExcel($checkDate) );
+        $worksheet->getCellByColumnAndRow(8, 2 )->setValue( $checkType );
+
+        $checks = $reportsProcessor->getAppliedChecks( $spreadsheet );
+
+        if ( $checkType == $config['deferred_checks_type'] ) {
+            $this->assertEquals( $checkDate->add( new \DateInterval('P2D') )->format('y/m/d'), $checks[0]['creditDate']->format('y/m/d') );
+        } else {
+            $this->assertEquals( $checkDate->format('y/m/d'), $checks[0]['creditDate']->format('y/m/d') );
         }
     }
 }

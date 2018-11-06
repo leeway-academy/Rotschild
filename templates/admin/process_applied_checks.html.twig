@@ -1,0 +1,44 @@
+{% extends '@EasyAdmin/default/layout.html.twig' %}
+
+{% block content_title %}Cheques aplicados{% endblock %}
+
+{% block main %}
+    {{ form_start(form) }}
+        {{ form_errors(form) }}
+    <table width="30%">
+        <thead>
+            <tr>
+                <th>N&uacute;mero</th>
+                <th>&nbsp;</th>
+                <th>Monto</th>
+                <th>&nbsp;</th>
+                <th align="center">Destino</th>
+                <th>&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in checks %}
+            <tr>
+                <td>{{ c.checkNumber }}</td>
+                <td>&nbsp;</td>
+                <td>$ {{ c.amount }}</td>
+                <td>&nbsp;</td>
+                <td>
+                    <table>
+                        <tr>
+                            <td>{{ form_widget(attribute(form, 'bank_' ~ loop.index0 )) }}</td>
+                            <td>&nbsp;</td>
+                            <td>{{ form_widget(attribute(form, 'debit_' ~ loop.index0 )) }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+{% endblock %}
