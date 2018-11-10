@@ -10,6 +10,8 @@
             <tr>
                 <th>N&uacute;mero</th>
                 <th>&nbsp;</th>
+                <th>Fecha</th>
+                <th>&nbsp;</th>
                 <th>Monto</th>
                 <th>&nbsp;</th>
                 <th><span style="alignment: center">Destino</span></th>
@@ -20,6 +22,8 @@
         {% for c in checks %}
             <tr>
                 <td>{{ c.checkNumber }}</td>
+                <td>&nbsp;</td>
+                <td>{{ c.creditDate | date('d/m/Y')}}</td>
                 <td>&nbsp;</td>
                 <td> ${{ c.amount | number_format(2, ',', '.') }}</td>
                 <td>&nbsp;</td>
@@ -41,4 +45,19 @@
 
 {% block body_javascript %}
     {{ parent() }}
+    <script type="text/javascript">
+        $('select').each( function( i, s ) {
+            $(s).change( function () {
+                parts = s.id.split(/_/);
+                if ( s.id.indexOf('bank') > -1 ) {
+                    targetId = 'form_debit_' + parts[2];
+                } else if ( s.id.indexOf('debit') > -1 ) {
+                    targetId = 'form_bank_' + parts[2];
+                } else {
+                    alert( 'Changing something else');
+                }
+                $('#' + targetId + " option:selected").removeAttr("selected");
+            })
+        } );
+    </script>
 {% endblock %}
