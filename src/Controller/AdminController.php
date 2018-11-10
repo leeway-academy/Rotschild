@@ -501,7 +501,6 @@ class AdminController extends BaseAdminController
             'aplicar',
             SubmitType::class,
             [
-
             ]
         );
 
@@ -511,20 +510,22 @@ class AdminController extends BaseAdminController
         if ( $form->isSubmitted() && $form->isValid() ) {
             $em = $this->getDoctrine()->getManager();
             foreach ( $checks as $k => $check ) {
-                if ( !empty( $form['bank_'.$k] ) ) {
-                    $recipientBank = $form['bank_'.$k]->getData();
-                    $movimiento = new Movimiento();
-                    $movimiento
-                        ->setBanco( $recipientBank )
-                        ->setImporte( $check['amount'] )
-                        ->setFecha( $check['creditDate'] )
-                    ;
-                } elseif ( !empty( $form['debit_'.$k] ) ) {
-                    $movimiento = $form['debit_'.$k]->getData();
-                    $movimiento->setConcretado( true );
+                $movimiento = $form['debit_'.$k]->getData();
+                $recipientBank = $form['bank_'.$k]->getData();
+                if ( !empty( $recipientBank ) || !empty( $movimiento ) ) {
+                    if ( !empty( $recipientBank ) ) {
+                        $movimiento = new Movimiento();
+                        $movimiento
+                            ->setBanco( $recipientBank )
+                            ->setImporte( $check['amount'] )
+                            ->setFecha( $check['creditDate'] )
+                            ->setConcepto( 'Acreditacion de cheque '.$check['checkNumber'] )
+                        ;
+                    } elseif ( !empty( $movimiento ) ) {
+                        $movimiento->setConcretado( true );
+                    }
+                    $em->persist( $movimiento );
                 }
-
-                $em->persist( $movimiento );
             }
 
             $em->flush();
