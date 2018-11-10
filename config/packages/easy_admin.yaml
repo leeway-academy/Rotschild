@@ -63,10 +63,10 @@ easy_admin:
             js:
                 - 'js/blasting.js'
         menu:
-            - Banco
+            - { label: 'Importar reportes de Excel', route: 'import_excel_reports'}
+            - GastoFijo
             - Debito
             - Credito
-            - GastoFijo
-            - { label: 'Importar reportes de Excel', route: 'import_excel_reports'}
+            - Banco
     formats:
         date: 'd/m/Y'
