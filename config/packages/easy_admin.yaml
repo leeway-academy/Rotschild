@@ -52,7 +52,7 @@ easy_admin:
                 fields: [ 'concepto', 'dia', 'importe', 'banco' ]
                 actions:
                     - { name: 'new', label: 'Crear Gasto Fijo' }
-            new:
+            form:
                 fields: [ 'concepto', 'dia', 'importe', 'banco' ]
 
 #        - App\Entity\User
