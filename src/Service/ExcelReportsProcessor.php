@@ -122,7 +122,7 @@ class ExcelReportsProcessor
             }
             $ret[] = [
                 'creditDate' => $creditDate,
-                'amount' => $worksheet->getCellByColumnAndRow( 12, $row )->getValue(),
+                'amount' => $worksheet->getCellByColumnAndRow( 11, $row )->getValue(),
                 'checkNumber' => $worksheet->getCellByColumnAndRow( 2, $row )->getValue(),
             ];
             $row++;
