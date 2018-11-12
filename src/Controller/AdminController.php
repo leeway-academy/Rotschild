@@ -21,6 +21,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminContr
 use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Service\ExcelReportsProcessor;
+use Symfony\Component\Validator\Constraints\DateTime;
 
 class AdminController extends BaseAdminController
 {
@@ -132,15 +133,60 @@ class AdminController extends BaseAdminController
         return $this->executeDynamicMethod('render<EntityName>Template', array('show', $this->entity['templates']['show'], $parameters));
     }
 
+    /**
+     * @param GastoFijo $gastoFijo
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    protected function persistGastoFijoEntity( GastoFijo $gastoFijo )
+    {
+        $this->em->persist($gastoFijo);
+        $this->em->flush();
+
+        $curDate = new \DateTimeImmutable();
+
+        if ( $curDate->format('d') > $gastoFijo->getDia() ) {
+            $curDate = new \DateTimeImmutable( $gastoFijo->getDia().'-'.$curDate->format('m-Y') );
+        } else {
+            $curDate = (new \DateTimeImmutable('first day of next month'))->add(new \DateInterval('P'.($gastoFijo->getDia() - 1).'D' ) );
+        }
+
+        if ( ( $fechaFin = $gastoFijo->getFechaFin() ) === null ) {
+            $fechaFin = $curDate->add(new \DateInterval('P12M'));
+        }
+
+        $oneMonth = new \DateInterval('P1M');
+        while ( $curDate->diff( $fechaFin )->days > 0 ) {
+            $movimiento = new Movimiento();
+            $movimiento
+                ->setConcepto( $gastoFijo->getConcepto() )
+                ->setFecha( $curDate )
+                ->setImporte( $gastoFijo->getImporte() * -1 )
+                ->setBanco( $gastoFijo->getBanco() )
+                ->setClonDe( $gastoFijo )
+            ;
+
+            $this->em->persist( $movimiento );
+            $curDate = $curDate->add($oneMonth);
+        }
+
+
+        $this->em->flush();
+    }
+    /**
+     * @param GastoFijo $gastoFijo
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
     protected function updateGastoFijoEntity( GastoFijo $gastoFijo )
     {
         $hoy = new \DateTimeImmutable();
 
         foreach ( $gastoFijo->getMovimientos() as $movimiento ) {
-            if ( $movimiento->getFecha()->diff( $hoy )->d >= 0 ) {
-                $movimiento->setConcepto( $gastoFijo->getConcepto() );
-                $movimiento->setImporte( $gastoFijo->getImporte() * -1 );
-                $movimiento->setBanco( $gastoFijo->getBanco() );
+            if ($movimiento->getFecha()->diff($hoy)->d >= 0) {
+                $movimiento->setConcepto($gastoFijo->getConcepto());
+                $movimiento->setImporte($gastoFijo->getImporte() * -1);
+                $movimiento->setBanco($gastoFijo->getBanco());
                 $this->em->persist($movimiento);
             }
         }
@@ -148,6 +194,11 @@ class AdminController extends BaseAdminController
         $this->em->flush();
     }
 
+    /**
+     * @param GastoFijo $gastoFijo
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
     protected function removeGastoFijoEntity( GastoFijo $gastoFijo )
     {
         $hoy = new \DateTimeImmutable();
