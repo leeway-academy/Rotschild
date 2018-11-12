@@ -131,25 +131,28 @@ class ExcelReportProcessorTest extends TestCase
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @dataProvider bankSummaryRowProvider
      */
-    public function testGetBankSummaryTransactionsWillStartOnFirstRow(\DateTimeImmutable $d, string $concept, string $amount)
+    public function testGetBankSummaryTransactionsWillStartOnFirstRowAfterFirstHeader(\DateTimeImmutable $d, string $concept, string $amount)
     {
         $reportsProcessor = new ExcelReportsProcessor();
 
+        $firstHeader = 'Muc';
         $xlsStructure = new BankXLSStructure();
         $xlsStructure
             ->setDateCol(1)
-            ->setFirstRow(2 )
+            ->setFirstRow(1 )
+            ->setFirstHeader($firstHeader )
             ;
 
         $spreadsheet = new Spreadsheet();
         $worksheet = $spreadsheet->getActiveSheet();
-        $worksheet->insertNewRowBefore( 1, 2 );
-        $worksheet->getCellByColumnAndRow(1, 1 )->setValue( Date::dateTimeToExcel($d) );
-        $worksheet->getCellByColumnAndRow(1, 2 )->setValue( Date::dateTimeToExcel($d) );
+        $worksheet->insertNewRowBefore( 1, 7 );
+        $worksheet->getCellByColumnAndRow( 1, 4 )->setValue( $firstHeader );
+        $worksheet->getCellByColumnAndRow(1, 5 )->setValue( Date::dateTimeToExcel($d) );
+        $worksheet->getCellByColumnAndRow(1, 6 )->setValue( Date::dateTimeToExcel($d) );
 
         $transactions = $reportsProcessor->getBankSummaryTransactions( $spreadsheet, $xlsStructure );
 
-        $this->assertCount( 1, $transactions );
+        $this->assertCount( 2, $transactions );
     }
 
     /**

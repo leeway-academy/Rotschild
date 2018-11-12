@@ -49,14 +49,23 @@ class ExcelReportsProcessor
      */
     public function getBankSummaryTransactions( Spreadsheet $spreadsheet, BankXLSStructure $xlsStructure ): array
     {
-        $row = $xlsStructure->getFirstRow();
         $worksheet = $spreadsheet->getActiveSheet();
         $ret = [];
 
         $stopWord = $xlsStructure->getStopWord();
+        $row = 1;
+
         $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
         $firstWord = !empty($stopWord) ? substr( $firstValue, 0, strlen( $stopWord ) ) : $firstValue;
+        $firstHeader = $xlsStructure->getFirstHeader();
 
+        while ( !empty( $firstHeader ) && $firstWord != $firstHeader ) {
+            $row++;
+            $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
+            $firstWord = !empty($stopWord) ? substr( $firstValue, 0, strlen( $stopWord ) ) : $firstValue;
+        }
+
+        $row += $xlsStructure->getFirstRow();
         while ( ( !empty($stopWord) && $firstWord != $stopWord ) || (empty($stopWord) && !empty($firstWord) ) ) {
             $dateValue = $worksheet->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue();
             $ret[] = [
