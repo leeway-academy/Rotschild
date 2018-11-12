@@ -44,6 +44,11 @@ class GastoFijo
      */
     private $movimientos;
 
+    /**
+     * @ORM\Column(type="datetime", nullable=true)
+     */
+    private $fechaFin;
+
     public function __construct()
     {
         $this->movimientos = new ArrayCollection();
@@ -129,6 +134,18 @@ class GastoFijo
                 $movimiento->setClonDe(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getFechaFin(): ?\DateTimeInterface
+    {
+        return $this->fechaFin;
+    }
+
+    public function setFechaFin(?\DateTimeInterface $fechaFin): self
+    {
+        $this->fechaFin = $fechaFin;
 
         return $this;
     }
