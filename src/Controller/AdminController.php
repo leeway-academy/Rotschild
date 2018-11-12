@@ -161,7 +161,7 @@ class AdminController extends BaseAdminController
             $movimiento
                 ->setConcepto( $gastoFijo->getConcepto() )
                 ->setFecha( $curDate )
-                ->setImporte( $gastoFijo->getImporte() * -1 )
+                ->setImporte( $gastoFijo->getImporte() * - 1 )
                 ->setBanco( $gastoFijo->getBanco() )
                 ->setClonDe( $gastoFijo )
             ;
