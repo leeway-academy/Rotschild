@@ -52,6 +52,11 @@ class BankXLSStructure
      */
     private $banco;
 
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $firstHeader;
+
     public function getId()
     {
         return $this->id;
@@ -137,6 +142,18 @@ class BankXLSStructure
     public function setBanco(Banco $banco): self
     {
         $this->banco = $banco;
+
+        return $this;
+    }
+
+    public function getFirstHeader(): ?string
+    {
+        return $this->firstHeader;
+    }
+
+    public function setFirstHeader(?string $firstHeader): self
+    {
+        $this->firstHeader = $firstHeader;
 
         return $this;
     }
