@@ -47,6 +47,11 @@ class Movimiento
      */
     private $clonDe;
 
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\RenglonExtracto", mappedBy="movimiento", cascade={"persist", "remove"})
+     */
+    private $renglonExtracto;
+
     public function getId()
     {
         return $this->id;
@@ -136,6 +141,24 @@ class Movimiento
     public function setClonDe(?GastoFijo $clonDe): self
     {
         $this->clonDe = $clonDe;
+
+        return $this;
+    }
+
+    public function getRenglonExtracto(): ?RenglonExtracto
+    {
+        return $this->renglonExtracto;
+    }
+
+    public function setRenglonExtracto(?RenglonExtracto $renglonExtracto): self
+    {
+        $this->renglonExtracto = $renglonExtracto;
+
+        // set (or unset) the owning side of the relation if necessary
+        $newMovimiento = $renglonExtracto === null ? null : $this;
+        if ($newMovimiento !== $renglonExtracto->getMovimiento()) {
+            $renglonExtracto->setMovimiento($newMovimiento);
+        }
 
         return $this;
     }
