@@ -52,6 +52,11 @@ class Banco
     private $xlsStructure = null;
 
     /**
+     * @ORM\OneToMany(targetEntity="App\Entity\ExtractoBancario", mappedBy="banco", orphanRemoval=true)
+     */
+    private $extractos;
+
+    /**
      * @return mixed
      */
     public function getCodigo()
@@ -74,6 +79,7 @@ class Banco
         $this->movimientos = new ArrayCollection();
         $this->gastosFijos = new ArrayCollection();
         $this->saldos = new ArrayCollection();
+        $this->extractos = new ArrayCollection();
     }
 
     public function getId()
@@ -300,5 +306,36 @@ class Banco
         }
 
         return $this->movimientos->matching( $criteria );
+    }
+
+    /**
+     * @return Collection|ExtractoBancario[]
+     */
+    public function getExtractos(): Collection
+    {
+        return $this->extractos;
+    }
+
+    public function addExtracto(ExtractoBancario $extracto): self
+    {
+        if (!$this->extractos->contains($extracto)) {
+            $this->extractos[] = $extracto;
+            $extracto->setBanco($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExtracto(ExtractoBancario $extracto): self
+    {
+        if ($this->extractos->contains($extracto)) {
+            $this->extractos->removeElement($extracto);
+            // set the owning side to null (unless already changed)
+            if ($extracto->getBanco() === $this) {
+                $extracto->setBanco(null);
+            }
+        }
+
+        return $this;
     }
 }
