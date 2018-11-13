@@ -63,10 +63,16 @@ easy_admin:
             js:
                 - 'js/blasting.js'
         menu:
-            - { label: 'Importar reportes de Excel', route: 'import_excel_reports'}
+            - { label: 'Importar reportes', route: 'import_excel_reports', default: true }
+            - { label: 'Conciliación' }
+            - { label: ' Extractos bancarios', route: 'match_bank_summaries' }
+            - { label: ' Cheques emitidos', route: 'confirm_issued_checks' }
+            - { label: ' Cheques aplicados', route: 'process_applied_checks'}
+            - { label: 'Movimientos'}
             - GastoFijo
             - Debito
             - Credito
+            - { label: 'Configuración' }
             - Banco
     formats:
         date: 'd/m/Y'
