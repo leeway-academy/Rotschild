@@ -15,9 +15,8 @@ final class Version20181113175756 extends AbstractMigration
         // this up() migration is auto-generated, please modify it to your needs
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'sqlite', 'Migration can only be executed safely on \'sqlite\'.');
 
-        $this->addSql('CREATE TABLE renglon_extracto (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, extracto_id INTEGER NOT NULL, movimiento_id INTEGER DEFAULT NULL, linea INTEGER NOT NULL, fecha DATE NOT NULL, concepto VARCHAR(255) NOT NULL, importe NUMERIC(10, 2) NOT NULL)');
+        $this->addSql('CREATE TABLE renglon_extracto (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, extracto_id INTEGER NOT NULL, linea INTEGER NOT NULL, fecha DATE NOT NULL, concepto VARCHAR(255) NOT NULL, importe NUMERIC(10, 2) NOT NULL)');
         $this->addSql('CREATE INDEX IDX_76CB3034B916CD13 ON renglon_extracto (extracto_id)');
-        $this->addSql('CREATE UNIQUE INDEX UNIQ_76CB303458E7D5A2 ON renglon_extracto (movimiento_id)');
         $this->addSql('CREATE TABLE extracto_bancario (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, banco_id INTEGER NOT NULL, fecha DATE NOT NULL, archivo VARCHAR(255) NOT NULL)');
         $this->addSql('CREATE INDEX IDX_C41BE019CC04A73E ON extracto_bancario (banco_id)');
         $this->addSql('DROP INDEX IDX_3A3CFAB4CC04A73E');
