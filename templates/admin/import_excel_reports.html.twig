@@ -5,9 +5,14 @@
 {% block main %}
     {{ form_start(form) }}
         {% for row in form.children %}
-            {{ form_row(row) }}
-            <hr>
+            {% if row.vars.type is defined %}
+                {% if row.vars.type in ['file'] %}
+                    <div>{{ form_label(row) }} &nbsp; {{ form_widget(row) }}</div>
+                    <hr/>
+                {% endif %}
+            {% endif %}
         {% endfor %}
+    </table>
     {{ form_end(form) }}
 {% endblock %}
 
