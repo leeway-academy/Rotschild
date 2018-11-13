@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Banco;
+use App\Entity\ExtractoBancario;
 use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
+use App\Entity\RenglonExtracto;
 use App\Entity\SaldoBancario;
 use Doctrine\Common\Collections\Criteria;
 use http\Exception\InvalidArgumentException;
@@ -15,6 +17,7 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
@@ -269,20 +272,24 @@ class AdminController extends BaseAdminController
         $form->handleRequest( $request );
 
         if ( $form->isSubmitted() && $form->isValid() ) {
-            $session = $request->getSession();
+            $em = $this->getDoctrine()->getManager();
 
-            $excelReports = [];
             foreach ( $form->getData() as $name => $item ) {
                 if ( !is_null($item) && $item->getType() == 'file' && in_array( $item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel' ] ) ) {
-                    $fileName = md5(uniqid('', true)).'.'.$item->guessExtension();
+                    $parts = preg_split('/_/', $name );
+                    $fileName = $parts[0];
+
+                    if ( $parts[0] == 'BankSummary' ) {
+                        $bank = $em->getRepository('App:Banco')->find($parts[1]);
+                        $fileName .= '_'.$bank->getNombre();
+                    }
+
+                    $fileName .= '_'.(new \DateTimeImmutable())->format('d-m-y').'.'.$item->guessExtension();
                     $item->move( $this->getParameter('reports_path'), $fileName );
-                    $excelReports[$name] = $fileName;
                 }
             }
 
-            $session->set( 'excelReports', $excelReports );
-
-            return $this->proccessExcelReports( $request );
+            return $this->redirectToRoute('import_excel_reports');
         }
 
         return $this->render(
@@ -293,48 +300,6 @@ class AdminController extends BaseAdminController
         );
     }
 
-    /**
-     * @param Request $request
-     * Router method (coordinator of Excel Reports processing)
-     */
-    public function proccessExcelReports( Request $request )
-    {
-        $session = $request->getSession();
-        $reports = $session->get('excelReports');
-
-        if ( !empty( $reports ) ) {
-            list( $reportName, $reportFileName ) = [ current( array_keys( $reports ) ), current( $reports ) ];
-            if ( substr( $reportName, 0, strlen('BankSummary_') ) === 'BankSummary_' ) {
-                $bankId = preg_split('/_/', $reportName )[1];
-
-                return $this->redirectToRoute(
-                    'match_bank_summary',
-                    [
-                        'id' => $bankId,
-                        'reportFileName' => $reportFileName
-                    ]
-                );
-            } elseif ( $reportName == 'IssuedChecks' ) {
-
-                return $this->redirectToRoute(
-                    'confirm_issued_checks',
-                    [
-                        'reportFileName' => $reportFileName,
-                    ]
-                );
-            } else {
-
-                return $this->redirectToRoute(
-                    'process_applied_checks',
-                    [
-                        'reportFileName' => $reportFileName,
-                    ]
-                );
-            }
-        }
-
-        return $this->redirectToRoute('easyadmin');
-    }
 
     /**
      * @param ExcelReportsProcessor $excelReportProcessor
@@ -355,89 +320,163 @@ class AdminController extends BaseAdminController
     }
 
     /**
-     * @param Banco $banco
-     * @param $reportFileName
-     * @Route(path="/banco/{id}/processSummary/{reportFileName}", name="match_bank_summary")
-     * @ParamConverter("bank", class="App\Entity\Banco")
+     * @param Request $request
+     * @Route(path="/matchBankSummaries", name="match_bank_summaries")
      */
-    public function matchBankSummary( Request $request, Banco $bank, string $reportFileName )
+    public function matchBankSummaries( Request $request )
     {
-        $actualTransactions = $this->getExcelReportProcessor()->getBankSummaryTransactions(
-            IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName),
-            $bank->getXLSStructure()
-        );
+        $em = $this->getDoctrine()->getManager();
+        $banks = $em->getRepository('App:Banco')->findAll();
 
-        $projectedTransactions = $bank->getMovimientos()->filter( function( Movimiento $m ) {
-            return !$m->getConcretado();
-        } );
-
-        $debits = $bank->getDebitosProyectados();
-        $credits = $bank->getCreditosProyectados();
-
-        $formBuilder = $this->createFormBuilder();
-        foreach ( $actualTransactions as $k => $t ) {
-            if ( $t['amount'] > 0 ) {
-                $projectedTransactions = $credits;
-            } else {
-                $projectedTransactions = $debits;
-            }
-            $formBuilder->add(
-                'match_'.$k,
+        $form = $this
+            ->createFormBuilder(
+                null,
+                [
+                    'allow_extra_fields' => true,
+                ]
+            )
+            ->add(
+                'bank',
                 ChoiceType::class,
                 [
-                    'choices' => $projectedTransactions,
-                    'choice_label' => function( $choiceValue, $key, $value ) {
+                    'choices' => $banks,
+                    'choice_label' => function( Banco $b ) {
 
-                        return $choiceValue.'';
+                        return $b->__toString();
                     },
-                    'choice_value' => 'id',
+                    'choice_value' => function( Banco $b = null ) {
+
+                        return !empty($b) ? $b->getId() : null;
+                    },
+                    'label' => 'Banco',
                     'required' => false,
                 ]
-            );
-        }
+            )
+            ->add(
+                'submit',
+                SubmitType::class,
+                [
+                    'label' => 'Confirmar',
+                    'attr' => [
+                        'class' => 'btn btn-primary',
+                        ],
+                ]
+            )
+            ->getForm()
+        ;
 
-        $formBuilder->add(
-            'submit',
-            SubmitType::class,
-            [
-                'label' => 'Asociar',
-            ]
-        );
-
-        $form = $formBuilder->getForm();
         $form->handleRequest( $request );
+
         if ( $form->isSubmitted() && $form->isValid() ) {
-            $repo = $this->getDoctrine()->getRepository('App:Movimiento');
-            $manager = $this->getDoctrine()->getManager();
-            foreach ( $form->getExtraData() as $datum ) {
-                if ( $movimiento = $repo->find( $datum ) ) {
-                    $movimiento->setConcretado( true );
-                    $manager->persist($movimiento);
+            $keyword = 'match_';
+            $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
+            $movimientoRepository = $em->getRepository('App:Movimiento');
+            foreach ( $form->getData() as $name => $datum ) {
+                if ( substr( $name, 0, strlen( $keyword ) == $keyword ) ) {
+                    $summaryLineId = preg_split('/_/', $name )[1];
+
+                    if ( $summaryLine = $renglonExtractoRepository->find( $summaryLineId ) ) {
+                        $em->remove( $summaryLine );
+                    }
+                    if ( $tx = $movimientoRepository->find( $datum ) ) {
+                        $tx->setConcretado(true);
+                        $em->persist($tx);
+                    }
                 }
             }
-            $manager->flush();
 
-            $this->markReportAsProcessed($request, $reportFileName);
+            $em->flush();
 
-            return $this->proccessExcelReports( $request );
-        } else {
-
-            return $this->render(
-                'admin/match_bank_summary.html.twig',
-                [
-                    'bank' => $bank,
-                    'actualTransactions' => $actualTransactions,
-                    'form' => $formBuilder->getForm()->createView(),
-                ]
-            );
+            return $this->redirectToRoute('match_bank_summaries');
         }
+
+        return $this->render(
+            'admin/match_bank_summaries.html.twig',
+            [
+                'form' => $form->createView(),
+            ]
+        );
+    }
+
+    /**
+     * @param Banco $banco
+     * @Route(name="get_unmatched_summary_lines", path="/bank/{id}/unmatchedSummaryLines")
+     */
+    public function getUnmatchedSummaryLines( Request $request, Banco $banco )
+    {
+        if ( !$request->isXmlHttpRequest() ) {
+
+            throw new BadRequestHttpException('This method should be called via ajax', null, 400);
+        }
+
+        $ret = [];
+        foreach ( $banco->getExtractos() as $extracto ) {
+            foreach( $extracto->getRenglones() as $renglon ) {
+                $ret[ $renglon->getId() ] =
+                    [
+                        'date' => $renglon->getFecha()->format('d-m-y'),
+                        'concept' => $renglon->getConcepto(),
+                        'amount' => $renglon->getImporte(),
+                    ];
+            }
+        }
+
+        return new JsonResponse( $ret );
+    }
+
+    /**
+     * @param Banco $banco
+     * @Route(name="get_projected_debits", path="/bank/{id}/projectedDebits")
+     */
+    public function getProjectedDebits( Request $request, Banco $banco )
+    {
+        if ( !$request->isXmlHttpRequest() ) {
+
+            throw new BadRequestHttpException('This method should be called via ajax', null, 400);
+        }
+
+        $ret = [];
+        foreach ( $banco->getDebitosProyectados() as $debitoProyectado ) {
+            $ret[ $debitoProyectado->getId() ] =
+                [
+                    'date' => $debitoProyectado->getFecha()->format('d-m-y'),
+                    'concept' => $debitoProyectado->getConcepto(),
+                    'amount' => $debitoProyectado->getImporte(),
+                ];
+        }
+
+        return new JsonResponse( $ret );
+    }
+
+    /**
+     * @param Banco $banco
+     * @Route(name="get_projected_credits", path="/bank/{id}/projectedCredits")
+     */
+    public function getProjectedCrebits( Request $request, Banco $banco )
+    {
+        if ( !$request->isXmlHttpRequest() ) {
+
+            throw new BadRequestHttpException('This method should be called via ajax', null, 400);
+        }
+
+        $ret = [];
+        foreach ( $banco->getCreditosProyectados() as $creditoProyectado ) {
+            $ret[ $creditoProyectado->getId() ] =
+                [
+                    'date' => $creditoProyectado->getFecha()->format('d-m-y'),
+                    'concept' => $creditoProyectado->getConcepto(),
+                    'amount' => $creditoProyectado->getImporte(),
+                ];
+        }
+
+        return new JsonResponse( $ret );
     }
 
     /**
      * @param Request $request
-     * @Route(path="/confirmIssuedChecks/{reportFileName}", name="confirm_issued_checks")
+     * @Route(path="/confirmIssuedChecks", name="confirm_issued_checks")
      */
-    public function confirmIssuedChecks( Request $request, string $reportFileName )
+    public function confirmIssuedChecks( Request $request )
     {
         $formBuilder = $this->createFormBuilder();
 
@@ -501,10 +540,10 @@ class AdminController extends BaseAdminController
 
     /**
      * @param Request $request
-     * @Route(path="/processedAppliedChecks/{reportFileName}", name="process_applied_checks")
+     * @Route(path="/processedAppliedChecks", name="process_applied_checks")
      */
 
-    public function processAppliedChecks( Request $request, string $reportFileName )
+    public function processAppliedChecks( Request $request )
     {
         $formBuilder = $this->createFormBuilder();
 
@@ -593,18 +632,5 @@ class AdminController extends BaseAdminController
                 'checks' => $checks,
             ]
         );
-    }
-
-    /**
-     * @param Request $request
-     * @param string $reportFileName
-     */
-    private function markReportAsProcessed(Request $request, string $reportFileName): void
-    {
-        $session = $request->getSession();
-        $excelReports = array_filter($session->get('excelReports'), function ($e) use ($reportFileName) {
-            return $e != $reportFileName;
-        });
-        $session->set('excelReports', $excelReports);
     }
 }
