@@ -23,7 +23,7 @@ easy_admin:
             label: 'Debitos'
             list:
                 title: 'Listado de debitos'
-                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Pagado' } ]
+                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Pagado', type: 'boolean' } ]
                 actions:
                     - { name: 'new', label: 'Nuevo Debito' }
                 dql_filter: 'entity.importe < 0'
@@ -36,7 +36,7 @@ easy_admin:
             label: 'Creditos'
             list:
                 title: 'Listado de creditos'
-                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Cobrado' } ]
+                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Cobrado', type: 'boolean' } ]
                 actions:
                     - { name: 'new', label: 'Nuevo Credito' }
                 dql_filter: 'entity.importe > 0'
