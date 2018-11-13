@@ -69,7 +69,7 @@ class ExcelReportsProcessor
         while ( ( !empty($stopWord) && $firstWord != $stopWord ) || (empty($stopWord) && !empty($firstWord) ) ) {
             $dateValue = $worksheet->getCellByColumnAndRow( $xlsStructure->getDateCol(), $row )->getValue();
             $ret[] = [
-                'date' => is_int( $dateValue) ? Date::excelToDateTimeObject( $dateValue ) : \DateTimeImmutable::createFromFormat( $xlsStructure->getDateFormat(), $dateValue ),
+                'date' => is_numeric( $dateValue ) ? Date::excelToDateTimeObject( $dateValue ) : \DateTimeImmutable::createFromFormat( $xlsStructure->getDateFormat(), $dateValue ),
                 'concept' => $worksheet->getCellByColumnAndRow( $xlsStructure->getConceptCol(), $row )->getValue(),
                 'amount' => $worksheet->getCellByColumnAndRow( $xlsStructure->getAmountCol(), $row )->getValue(),
             ];
