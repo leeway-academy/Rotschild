@@ -23,11 +23,6 @@ class RenglonExtracto
     private $extracto;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\Movimiento", inversedBy="renglonExtracto", cascade={"persist", "remove"})
-     */
-    private $movimiento;
-
-    /**
      * @ORM\Column(type="integer")
      */
     private $linea;
@@ -60,18 +55,6 @@ class RenglonExtracto
     public function setExtracto(?ExtractoBancario $extracto): self
     {
         $this->extracto = $extracto;
-
-        return $this;
-    }
-
-    public function getMovimiento(): ?Movimiento
-    {
-        return $this->movimiento;
-    }
-
-    public function setMovimiento(?Movimiento $movimiento): self
-    {
-        $this->movimiento = $movimiento;
 
         return $this;
     }
