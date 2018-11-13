@@ -3,7 +3,12 @@
 {% block content_title %}Importacion de reportes de Excel{% endblock %}
 
 {% block main %}
-    {{ form(form) }}
+    {{ form_start(form) }}
+        {% for row in form.children %}
+            {{ form_row(row) }}
+            <hr>
+        {% endfor %}
+    {{ form_end(form) }}
 {% endblock %}
 
 {% block body_javascript %}
