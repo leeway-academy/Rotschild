@@ -1,0 +1,87 @@
+{% extends '@EasyAdmin/default/layout.html.twig' %}
+
+{% block content_title %}Conciliación de extractos bancarios{% endblock %}
+
+{% block main %}
+    {{ form_start(form) }}
+    {{ form_row(form.bank) }}
+    <div id="matching" style="display: none; position: relative">
+        <table id="transactions" width="100%" border="1">
+            <thead>
+            <tr>
+                <th>Texto del extracto</th>
+                <th>Movimiento presupuestado</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div id="result"></div>
+    </div>
+    <div id="noUnmatched" style="display: none;; position: relative">
+        <p>No se encuentran extractos para conciliar</p>
+    </div>
+    <div style="position: relative">&nbsp;</div>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+    <script type="text/javascript">
+        $('#form_bank').change(function(){
+            if ( bankId = $('#form_bank').val() ) {
+                var urlDebits = '/bank/' + bankId + '/projectedDebits';
+                var urlCredits = '/bank/' + bankId + '/projectedCredits';
+
+                var projectedDebits = [];
+                var projectedCredits = [];
+
+                $.when(
+                    $.ajax(urlDebits),
+                    $.ajax(urlCredits)
+                ).done( function( a1, a2 ) {
+                    projectedDebits = a1[0];
+                    projectedCredits = a2[0];
+                } );
+
+                var url = '/bank/' + bankId + '/unmatchedSummaryLines';
+
+                $.get(
+                    url,
+                    function( data ) {
+                        if ( Object.keys(data).length > 0 ) {
+                            $.each( data, function ( i, d ) {
+                                var selectMarkUp = '<select name="form_match_' + i +'">' +
+                                    '<option value=""></option>';
+
+                                var projectedTransactions = parseFloat( d['amount'] ) > 0 ? projectedCredits : projectedDebits;
+                                $.each( projectedTransactions, function ( k, t ) {
+                                    selectMarkUp += '<option value="' + k + '">' + t['date'] + ' ' + t['concept'] + ' ' + t['amount'] + '</option>';
+                                } );
+
+                                selectMarkUp += '</select>';
+
+                                var markup = '' +
+                                    '<tr>' +
+                                    '<td>' + d['date'] + '\t' + d['concept'] + '\t' + d['amount'] + '</td>' +
+                                    '<td>' + selectMarkUp + '</td>'
+                                '</tr>';
+                                $('#transactions tbody').append( markup );
+                            } );
+                            $('#noUnmatched').hide();
+                            $('#matching').show();
+                            $('#form_submit').show();
+                        } else {
+                            $('#matching').hide();
+                            $('#noUnmatched').show();
+                            $('#form_submit').hide();
+                        }
+                    }
+                );
+            } else {
+                $('#matching').hide();
+                $('#form_submit').hide();
+            }
+        });
+    </script>
+{% endblock %}
