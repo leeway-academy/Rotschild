@@ -63,11 +63,14 @@ easy_admin:
             js:
                 - 'js/blasting.js'
         menu:
-            - { label: 'Importar reportes', route: 'import_excel_reports', default: true }
+            - { label: 'Importar' }
+            - { label: 'Extractos bancarios', route: 'import_bank_summaries', default: true }
+            - { label: 'Cheques emitidos', route: 'import_issued_checks', default: true }
+            - { label: 'Cheques aplicados', route: 'import_applied_checks', default: true }
             - { label: 'Conciliación' }
-            - { label: ' Extractos bancarios', route: 'match_bank_summaries' }
-            - { label: ' Cheques emitidos', route: 'confirm_issued_checks' }
-            - { label: ' Cheques aplicados', route: 'process_applied_checks'}
+            - { label: 'Extractos bancarios', route: 'match_bank_summaries' }
+            - { label: 'Cheques emitidos', route: 'confirm_issued_checks' }
+            - { label: 'Cheques aplicados', route: 'process_applied_checks'}
             - { label: 'Movimientos'}
             - GastoFijo
             - Debito

@@ -218,14 +218,18 @@ class AdminController extends BaseAdminController
 
     /**
      * @param Request $request
-     * @Route(path="/importExcelReports", name="import_excel_reports")
+     * @Route(path="/import/bankSummaries", name="import_bank_summaries")
      */
-    public function importExcelReportsAction( Request $request )
+    public function importBankSummaries( Request $request )
     {
         $formBuilder = $this->createFormBuilder()
             ->setAttribute('class', 'form-vertical new-form');
 
-        $banks = $this->getDoctrine()->getRepository('App:Banco')->findAll();
+        $banks = $this
+            ->getDoctrine()
+            ->getRepository('App:Banco')
+            ->findAll();
+
         foreach ( $banks as $bank ) {
             $formBuilder->add(
                 'BankSummary_'.$bank->getId(),
@@ -236,25 +240,6 @@ class AdminController extends BaseAdminController
                 ]
             );
         }
-
-        $formBuilder
-            ->add(
-                'IssuedChecks',
-                FileType::class,
-                [
-                    'label' => 'Cheques propios emitidos',
-                    'required' => false,
-                ]
-            )
-            ->add(
-                'AppliedChecks',
-                FileType::class,
-                [
-                    'label' => 'Cheques aplicados',
-                    'required' => false,
-                ]
-            )
-        ;
 
         $form = $formBuilder
             ->add(
@@ -286,10 +271,39 @@ class AdminController extends BaseAdminController
 
                     $fileName .= '_'.(new \DateTimeImmutable())->format('d-m-y').'.'.$item->guessExtension();
                     $item->move( $this->getParameter('reports_path'), $fileName );
+
+                    $lines = $this->getExcelReportProcessor()->getBankSummaryTransactions(
+                        IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR. $fileName ),
+                        $bank->getXLSStructure()
+                    );
+
+                    $extracto = new ExtractoBancario();
+                    $extracto
+                        ->setArchivo( $fileName )
+                        ->setBanco( $bank )
+                        ->setFecha( new \DateTimeImmutable() )
+                    ;
+                    $em->persist( $extracto );
+                    foreach ( $lines as $k => $line ) {
+                        $summaryLine = new RenglonExtracto();
+                        $summaryLine
+                            ->setImporte( $line['amount'] )
+                            ->setFecha( $line['date'] )
+                            ->setConcepto( $line['concept'] )
+                            ->setLinea( $k )
+                            ;
+                        $em->persist( $summaryLine );
+                        $extracto->addRenglon( $summaryLine );
+                    }
+
+                    $em->flush();
                 }
             }
 
-            return $this->redirectToRoute('import_excel_reports');
+            $this->addFlash(
+                'notice',
+                'Extractos importados'
+            );
         }
 
         return $this->render(
@@ -298,6 +312,24 @@ class AdminController extends BaseAdminController
                 'form' => $form->createView(),
             ]
         );
+    }
+
+    /**
+     * @param Request $request
+     * @Route(name="import_issued_checks", path="/import/issuedChecks")
+     */
+    public function importIssuedChecks( Request $request )
+    {
+
+    }
+
+    /**
+     * @param Request $request
+     * @Route(name="import_applied_checks", path="/import/appliedChecks")
+     */
+    public function importAppliedChecks( Request $request )
+    {
+
     }
 
 
