@@ -236,18 +236,46 @@ class Banco
             $saldoActual = clone $saldos->get( $fechaInicial->format('Y-m-d') );
         }
 
-        $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $fechaInicial) {
-
-            return $m->getFecha()->getTimestamp() >= $fechaInicial->getTimestamp() && $m->getFecha()->getTimestamp() < $fecha->getTimestamp() && !$m->getConcretado();
-        } );
-
-        foreach ($movimientos as $movimiento) {
+        foreach ($this->getMovimientoEntre( $fechaInicial, $fecha, false ) as $movimiento) {
             $saldoActual->setValor( $saldoActual->getValor() + $movimiento->getImporte() );
         }
 
         $saldoActual->setFecha( $fecha );
 
         return $saldoActual;
+    }
+
+    /**
+     * @param \DateTimeInterface $fechaInicio
+     * @param \DateTimeInterface $fechaFin
+     * @return Collection
+     */
+    public function getMovimientoEntre(\DateTimeInterface $fechaInicio, \DateTimeInterface $fechaFin, bool $concretados = null ) : Collection
+    {
+        $criteria = Criteria::create()
+            ->andWhere(
+                Criteria::expr()
+                    ->gte('fecha', $fechaInicio)
+            )
+            ->andWhere(
+                Criteria::expr()
+                    ->lt('fecha', $fechaFin)
+            );
+
+        if ( $concretados === true || $concretados === false ) {
+            $criteria->andWhere( Criteria::expr()->eq('concretado', $concretados ) );
+        }
+
+        $count = 0;
+        foreach( $this->getMovimientos() as $mov ) {
+            if ( $mov->getImporte() < 0 ) {
+                $count++;
+            }
+        }
+
+        $movimientos = $this->getMovimientos()->matching( $criteria );
+
+        return $movimientos;
     }
 
     /**
