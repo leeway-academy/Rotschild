@@ -353,7 +353,7 @@ class AdminController extends BaseAdminController
 
     /**
      * @param Request $request
-     * @Route(path="/matchBankSummaries", name="match_bank_summaries")
+     * @Route(path="/bank/matchSummaries", name="match_bank_summaries")
      */
     public function matchBankSummaries( Request $request )
     {
@@ -419,8 +419,6 @@ class AdminController extends BaseAdminController
             }
 
             $em->flush();
-
-            return $this->redirectToRoute('match_bank_summaries');
         }
 
         return $this->render(
