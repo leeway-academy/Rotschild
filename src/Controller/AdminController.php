@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Banco;
+use App\Entity\ChequeEmitido;
 use App\Entity\ExtractoBancario;
 use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
@@ -30,22 +31,22 @@ class AdminController extends BaseAdminController
 {
     private $excelReportsProcessor;
 
-    public function __construct(ExcelReportsProcessor $excelReportProcessor )
+    public function __construct(ExcelReportsProcessor $excelReportProcessor)
     {
-        $this->setExcelReportProcessor( $excelReportProcessor );
+        $this->setExcelReportProcessor($excelReportProcessor);
     }
 
     /**
      * @Route(name="cargar_saldo",path="/banco/cargarSaldo")
      */
-    public function cargarSaldoAction( Request $request )
+    public function cargarSaldoAction(Request $request)
     {
-        if ( 'Banco' !== $request->get('entity') ) {
+        if ('Banco' !== $request->get('entity')) {
 
             throw new InvalidArgumentException();
         }
 
-        if ( empty( $request->get('id') ) ) {
+        if (empty($request->get('id'))) {
 
             throw new InvalidArgumentException();
         }
@@ -58,25 +59,25 @@ class AdminController extends BaseAdminController
 
         $fecha = new \DateTime('Yesterday');
 
-        if ( ( $saldo = $banco->getSaldo($fecha) ) == null ) {
+        if (($saldo = $banco->getSaldo($fecha)) == null) {
             $saldo = new SaldoBancario();
-            $saldo->setFecha( $fecha );
-            $saldo->setBanco( $banco );
+            $saldo->setFecha($fecha);
+            $saldo->setBanco($banco);
         }
 
         $form = $this
-            ->createFormBuilder( $saldo )
+            ->createFormBuilder($saldo)
             ->setAttribute('class', 'form-horizontal  new-form')
-            ->add( 'valor', NumberType::class )
+            ->add('valor', NumberType::class)
             ->add('Guardar cambios', SubmitType::class)
             ->getForm();
 
         $saldoProyectado = $banco->getSaldoProyectado($fecha)->getValor();
 
         $form->handleRequest($request);
-        if ( $form->isSubmitted() && $form->isValid() ) {
-            $saldo->setDiferenciaConProyectado( $saldo->getValor() - $saldoProyectado );
-            $em->persist( $saldo );
+        if ($form->isSubmitted() && $form->isValid()) {
+            $saldo->setDiferenciaConProyectado($saldo->getValor() - $saldoProyectado);
+            $em->persist($saldo);
             $em->flush();
 
             return $this->redirectToRoute('easyadmin', array('entity' => 'Banco', 'action' => 'list'));
@@ -105,17 +106,17 @@ class AdminController extends BaseAdminController
 
         $hoy = new \DateTimeImmutable();
 
-        foreach ( $banco->getSaldos() as $saldo ) {
-            if ( $hoy->diff( $saldo->getFecha() )->d > 15 ) { // @todo Extract to config
-                $banco->removeSaldo( $saldo );
+        foreach ($banco->getSaldos() as $saldo) {
+            if ($hoy->diff($saldo->getFecha())->d > 15) { // @todo Extract to config
+                $banco->removeSaldo($saldo);
             } else {
                 break;
             }
         }
-        $period = new \DatePeriod( new \DateTimeImmutable(), new \DateInterval('P1D'), 180 ); // @todo Extract to config
+        $period = new \DatePeriod(new \DateTimeImmutable(), new \DateInterval('P1D'), 180); // @todo Extract to config
 
-        foreach ( $period as $dia ) {
-            $banco->saldosProyectados[ $dia->format( 'Y-m-d') ] = $banco->getSaldoProyectado( $dia );
+        foreach ($period as $dia) {
+            $banco->saldosProyectados[$dia->format('Y-m-d')] = $banco->getSaldoProyectado($dia);
         }
 
         $fields = $this->entity['show']['fields'];
@@ -141,51 +142,51 @@ class AdminController extends BaseAdminController
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    protected function persistGastoFijoEntity( GastoFijo $gastoFijo )
+    protected function persistGastoFijoEntity(GastoFijo $gastoFijo)
     {
         $this->em->persist($gastoFijo);
         $this->em->flush();
 
         $curDate = new \DateTimeImmutable();
 
-        if ( $curDate->format('d') > $gastoFijo->getDia() ) {
-            $curDate = new \DateTimeImmutable( $gastoFijo->getDia().'-'.$curDate->format('m-Y') );
+        if ($curDate->format('d') > $gastoFijo->getDia()) {
+            $curDate = new \DateTimeImmutable($gastoFijo->getDia() . '-' . $curDate->format('m-Y'));
         } else {
-            $curDate = (new \DateTimeImmutable('first day of next month'))->add(new \DateInterval('P'.($gastoFijo->getDia() - 1).'D' ) );
+            $curDate = (new \DateTimeImmutable('first day of next month'))->add(new \DateInterval('P' . ($gastoFijo->getDia() - 1) . 'D'));
         }
 
-        if ( ( $fechaFin = $gastoFijo->getFechaFin() ) === null ) {
+        if (($fechaFin = $gastoFijo->getFechaFin()) === null) {
             $fechaFin = $curDate->add(new \DateInterval('P12M'));
         }
 
         $oneMonth = new \DateInterval('P1M');
-        while ( $curDate->diff( $fechaFin )->days > 0 ) {
+        while ($curDate->diff($fechaFin)->days > 0) {
             $movimiento = new Movimiento();
             $movimiento
-                ->setConcepto( $gastoFijo->getConcepto() )
-                ->setFecha( $curDate )
-                ->setImporte( $gastoFijo->getImporte() * - 1 )
-                ->setBanco( $gastoFijo->getBanco() )
-                ->setClonDe( $gastoFijo )
-            ;
+                ->setConcepto($gastoFijo->getConcepto())
+                ->setFecha($curDate)
+                ->setImporte($gastoFijo->getImporte() * -1)
+                ->setBanco($gastoFijo->getBanco())
+                ->setClonDe($gastoFijo);
 
-            $this->em->persist( $movimiento );
+            $this->em->persist($movimiento);
             $curDate = $curDate->add($oneMonth);
         }
 
 
         $this->em->flush();
     }
+
     /**
      * @param GastoFijo $gastoFijo
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    protected function updateGastoFijoEntity( GastoFijo $gastoFijo )
+    protected function updateGastoFijoEntity(GastoFijo $gastoFijo)
     {
         $hoy = new \DateTimeImmutable();
 
-        foreach ( $gastoFijo->getMovimientos() as $movimiento ) {
+        foreach ($gastoFijo->getMovimientos() as $movimiento) {
             if ($movimiento->getFecha()->diff($hoy)->d >= 0) {
                 $movimiento->setConcepto($gastoFijo->getConcepto());
                 $movimiento->setImporte($gastoFijo->getImporte() * -1);
@@ -202,12 +203,12 @@ class AdminController extends BaseAdminController
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    protected function removeGastoFijoEntity( GastoFijo $gastoFijo )
+    protected function removeGastoFijoEntity(GastoFijo $gastoFijo)
     {
         $hoy = new \DateTimeImmutable();
 
-        foreach ( $gastoFijo->getMovimientos() as $movimiento ) {
-            if ( $movimiento->getFecha()->diff( $hoy )->d >= 0 ) {
+        foreach ($gastoFijo->getMovimientos() as $movimiento) {
+            if ($movimiento->getFecha()->diff($hoy)->d >= 0) {
                 $this->em->remove($movimiento);
             }
         }
@@ -220,7 +221,7 @@ class AdminController extends BaseAdminController
      * @param Request $request
      * @Route(path="/import/bankSummaries", name="import_bank_summaries")
      */
-    public function importBankSummaries( Request $request )
+    public function importBankSummaries(Request $request)
     {
         $formBuilder = $this->createFormBuilder()
             ->setAttribute('class', 'form-vertical new-form');
@@ -230,12 +231,12 @@ class AdminController extends BaseAdminController
             ->getRepository('App:Banco')
             ->findAll();
 
-        foreach ( $banks as $bank ) {
+        foreach ($banks as $bank) {
             $formBuilder->add(
-                'BankSummary_'.$bank->getId(),
+                'BankSummary_' . $bank->getId(),
                 FileType::class,
                 [
-                    'label' => 'Extracto del banco '.$bank->getNombre(),
+                    'label' => 'Extracto del banco ' . $bank->getNombre(),
                     'required' => false,
                 ]
             );
@@ -254,46 +255,44 @@ class AdminController extends BaseAdminController
             )
             ->getForm();
 
-        $form->handleRequest( $request );
+        $form->handleRequest($request);
 
-        if ( $form->isSubmitted() && $form->isValid() ) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $em = $this->getDoctrine()->getManager();
 
-            foreach ( $form->getData() as $name => $item ) {
-                if ( !is_null($item) && $item->getType() == 'file' && in_array( $item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel' ] ) ) {
-                    $parts = preg_split('/_/', $name );
+            foreach ($form->getData() as $name => $item) {
+                if (!is_null($item) && $item->getType() == 'file' && in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
+                    $parts = preg_split('/_/', $name);
                     $fileName = $parts[0];
 
-                    if ( $parts[0] == 'BankSummary' ) {
+                    if ($parts[0] == 'BankSummary') {
                         $bank = $em->getRepository('App:Banco')->find($parts[1]);
-                        $fileName .= '_'.$bank->getNombre();
+                        $fileName .= '_' . $bank->getNombre();
                     }
 
-                    $fileName .= '_'.(new \DateTimeImmutable())->format('d-m-y').'.'.$item->guessExtension();
-                    $item->move( $this->getParameter('reports_path'), $fileName );
+                    $fileName .= '_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
+                    $item->move($this->getParameter('reports_path'), $fileName);
 
                     $lines = $this->getExcelReportProcessor()->getBankSummaryTransactions(
-                        IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR. $fileName ),
+                        IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName),
                         $bank->getXLSStructure()
                     );
 
                     $extracto = new ExtractoBancario();
                     $extracto
-                        ->setArchivo( $fileName )
-                        ->setBanco( $bank )
-                        ->setFecha( new \DateTimeImmutable() )
-                    ;
-                    $em->persist( $extracto );
-                    foreach ( $lines as $k => $line ) {
+                        ->setArchivo($fileName)
+                        ->setBanco($bank)
+                        ->setFecha(new \DateTimeImmutable());
+                    $em->persist($extracto);
+                    foreach ($lines as $k => $line) {
                         $summaryLine = new RenglonExtracto();
                         $summaryLine
-                            ->setImporte( $line['amount'] )
-                            ->setFecha( $line['date'] )
-                            ->setConcepto( $line['concept'] )
-                            ->setLinea( $k )
-                            ;
-                        $em->persist( $summaryLine );
-                        $extracto->addRenglon( $summaryLine );
+                            ->setImporte($line['amount'])
+                            ->setFecha($line['date'])
+                            ->setConcepto($line['concept'])
+                            ->setLinea($k);
+                        $em->persist($summaryLine);
+                        $extracto->addRenglon($summaryLine);
                     }
 
                     $em->flush();
@@ -310,6 +309,7 @@ class AdminController extends BaseAdminController
             'admin/import_excel_reports.html.twig',
             [
                 'form' => $form->createView(),
+                'reportName' => 'Extractos Bancarios',
             ]
         );
     }
@@ -318,16 +318,79 @@ class AdminController extends BaseAdminController
      * @param Request $request
      * @Route(name="import_issued_checks", path="/import/issuedChecks")
      */
-    public function importIssuedChecks( Request $request )
+    public function importIssuedChecks(Request $request)
     {
+        $formBuilder = $this->createFormBuilder()
+            ->setAttribute('class', 'form-vertical new-form');
 
+        $formBuilder->add(
+            'reportFile',
+            FileType::class,
+            [
+                'label' => 'Informe de cheques emitidos ',
+                'required' => true,
+            ]
+        )->add(
+            'Import',
+            SubmitType::class,
+            [
+                'attr' => [
+                    'class' => 'btn btn-primary action-save',
+                ],
+                'label' => 'Importar',
+            ]
+        )->getForm();
+
+        $form = $formBuilder->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em = $this->getDoctrine()->getManager();
+
+            foreach ($form->getData() as $name => $item) {
+                if (!is_null($item) && $item->getType() == 'file' && in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
+                    $fileName = 'IssuedChecks_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
+                    $item->move($this->getParameter('reports_path'), $fileName);
+
+                    $lines = $this->getExcelReportProcessor()->getIssuedChecks(
+                        IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName)
+                    );
+
+                    foreach ($lines as $k => $line) {
+                        $chequeEmitido = new ChequeEmitido();
+                        $chequeEmitido
+                            ->setImporte($line['amount'])
+                            ->setFecha($line['date'])
+                            ->setBanco($em->getRepository('App:Banco')->findOneBy(['codigo' => $line['bankCode']]))
+                            ->setNumero($line['checkNumber']);
+                        $em->persist($chequeEmitido);
+                    }
+
+                    $em->flush();
+                }
+            }
+
+            $this->addFlash(
+                'notice',
+                'Cheques emitidos importados'
+            );
+        }
+
+        return $this->render(
+            'admin/import_excel_reports.html.twig',
+            [
+                'form' => $form->createView(),
+                'reportName' => 'Cheques emitidos',
+            ]
+        );
     }
 
     /**
      * @param Request $request
      * @Route(name="import_applied_checks", path="/import/appliedChecks")
      */
-    public function importAppliedChecks( Request $request )
+    public function importAppliedChecks(Request $request)
     {
 
     }
@@ -336,7 +399,7 @@ class AdminController extends BaseAdminController
     /**
      * @param ExcelReportsProcessor $excelReportProcessor
      */
-    public function setExcelReportProcessor(ExcelReportsProcessor $excelReportProcessor ): AdminController
+    public function setExcelReportProcessor(ExcelReportsProcessor $excelReportProcessor): AdminController
     {
         $this->excelReportsProcessor = $excelReportProcessor;
 
@@ -346,7 +409,7 @@ class AdminController extends BaseAdminController
     /**
      * @return ExcelReportsProcessor
      */
-    public function getExcelReportProcessor() : ExcelReportsProcessor
+    public function getExcelReportProcessor(): ExcelReportsProcessor
     {
         return $this->excelReportsProcessor;
     }
@@ -355,7 +418,7 @@ class AdminController extends BaseAdminController
      * @param Request $request
      * @Route(path="/bank/matchSummaries", name="match_bank_summaries")
      */
-    public function matchBankSummaries( Request $request )
+    public function matchBankSummaries(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
         $banks = $em->getRepository('App:Banco')->findAll();
@@ -372,11 +435,11 @@ class AdminController extends BaseAdminController
                 ChoiceType::class,
                 [
                     'choices' => $banks,
-                    'choice_label' => function( Banco $b ) {
+                    'choice_label' => function (Banco $b) {
 
                         return $b->__toString();
                     },
-                    'choice_value' => function( Banco $b = null ) {
+                    'choice_value' => function (Banco $b = null) {
 
                         return !empty($b) ? $b->getId() : null;
                     },
@@ -392,26 +455,25 @@ class AdminController extends BaseAdminController
                     'attr' => [
                         'class' => 'btn btn-primary',
                         'style' => 'display: none;'
-                        ],
+                    ],
                 ]
             )
-            ->getForm()
-        ;
+            ->getForm();
 
-        $form->handleRequest( $request );
+        $form->handleRequest($request);
 
-        if ( $form->isSubmitted() && $form->isValid() ) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $keyword = 'match_';
             $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
             $movimientoRepository = $em->getRepository('App:Movimiento');
-            foreach ( $form->getData() as $name => $datum ) {
-                if ( substr( $name, 0, strlen( $keyword ) == $keyword ) ) {
-                    $summaryLineId = preg_split('/_/', $name )[1];
+            foreach ($form->getData() as $name => $datum) {
+                if (substr($name, 0, strlen($keyword) == $keyword)) {
+                    $summaryLineId = preg_split('/_/', $name)[1];
 
-                    if ( $summaryLine = $renglonExtractoRepository->find( $summaryLineId ) ) {
-                        $em->remove( $summaryLine );
+                    if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
+                        $em->remove($summaryLine);
                     }
-                    if ( $tx = $movimientoRepository->find( $datum ) ) {
+                    if ($tx = $movimientoRepository->find($datum)) {
                         $tx->setConcretado(true);
                         $em->persist($tx);
                     }
@@ -433,17 +495,17 @@ class AdminController extends BaseAdminController
      * @param Banco $banco
      * @Route(name="get_unmatched_summary_lines", path="/bank/{id}/unmatchedSummaryLines")
      */
-    public function getUnmatchedSummaryLines( Request $request, Banco $banco )
+    public function getUnmatchedSummaryLines(Request $request, Banco $banco)
     {
-        if ( !$request->isXmlHttpRequest() ) {
+        if (!$request->isXmlHttpRequest()) {
 
             throw new BadRequestHttpException('This method should be called via ajax', null, 400);
         }
 
         $ret = [];
-        foreach ( $banco->getExtractos() as $extracto ) {
-            foreach( $extracto->getRenglones() as $renglon ) {
-                $ret[ $renglon->getId() ] =
+        foreach ($banco->getExtractos() as $extracto) {
+            foreach ($extracto->getRenglones() as $renglon) {
+                $ret[$renglon->getId()] =
                     [
                         'date' => $renglon->getFecha()->format('d-m-y'),
                         'concept' => $renglon->getConcepto(),
@@ -452,23 +514,23 @@ class AdminController extends BaseAdminController
             }
         }
 
-        return new JsonResponse( $ret );
+        return new JsonResponse($ret);
     }
 
     /**
      * @param Banco $banco
      * @Route(name="get_projected_debits", path="/bank/{id}/projectedDebits")
      */
-    public function getProjectedDebits( Request $request, Banco $banco )
+    public function getProjectedDebits(Request $request, Banco $banco)
     {
-        if ( !$request->isXmlHttpRequest() ) {
+        if (!$request->isXmlHttpRequest()) {
 
             throw new BadRequestHttpException('This method should be called via ajax', null, 400);
         }
 
         $ret = [];
-        foreach ( $banco->getDebitosProyectados() as $debitoProyectado ) {
-            $ret[ $debitoProyectado->getId() ] =
+        foreach ($banco->getDebitosProyectados() as $debitoProyectado) {
+            $ret[$debitoProyectado->getId()] =
                 [
                     'date' => $debitoProyectado->getFecha()->format('d-m-y'),
                     'concept' => $debitoProyectado->getConcepto(),
@@ -476,23 +538,23 @@ class AdminController extends BaseAdminController
                 ];
         }
 
-        return new JsonResponse( $ret );
+        return new JsonResponse($ret);
     }
 
     /**
      * @param Banco $banco
      * @Route(name="get_projected_credits", path="/bank/{id}/projectedCredits")
      */
-    public function getProjectedCrebits( Request $request, Banco $banco )
+    public function getProjectedCrebits(Request $request, Banco $banco)
     {
-        if ( !$request->isXmlHttpRequest() ) {
+        if (!$request->isXmlHttpRequest()) {
 
             throw new BadRequestHttpException('This method should be called via ajax', null, 400);
         }
 
         $ret = [];
-        foreach ( $banco->getCreditosProyectados() as $creditoProyectado ) {
-            $ret[ $creditoProyectado->getId() ] =
+        foreach ($banco->getCreditosProyectados() as $creditoProyectado) {
+            $ret[$creditoProyectado->getId()] =
                 [
                     'date' => $creditoProyectado->getFecha()->format('d-m-y'),
                     'concept' => $creditoProyectado->getConcepto(),
@@ -500,73 +562,85 @@ class AdminController extends BaseAdminController
                 ];
         }
 
-        return new JsonResponse( $ret );
+        return new JsonResponse($ret);
     }
 
     /**
      * @param Request $request
-     * @Route(path="/confirmIssuedChecks", name="confirm_issued_checks")
+     * @Route(path="/checks/issued/confirm", name="confirm_issued_checks")
      */
-    public function confirmIssuedChecks( Request $request )
+    public function confirmIssuedChecks(Request $request)
     {
         $formBuilder = $this->createFormBuilder();
 
-        $checks = $this->getExcelReportProcessor()->getIssuedChecks(
-            IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName)
-        );
+        $managerRegistry = $this->getDoctrine();
 
-        $banks = $this->getDoctrine()->getRepository('App:Banco')->findAll();
+        $debits = $managerRegistry->getRepository('App:Movimiento')
+            ->findPendingDebits();
 
-        foreach ( $checks as $k => &$check ) {
-            $check['bank'] = current( array_filter( $banks, function( $b ) use ( $check ) {
-
-                return $b->getCodigo() == intval( $check['bankCode'] );
-            }) );
+        $issuedChecks = $managerRegistry->getRepository('App:ChequeEmitido')->findAll();
+        foreach ($issuedChecks as $k => $check) {
             $formBuilder->add(
-                'check_'.$k,
-                CheckboxType::class,
+                'match_' . $k,
+                ChoiceType::class,
                 [
-                    'value' => 1,
+                    'choices' => array_merge([-1 => 'N/A'], $debits->toArray()),
+                    'choice_label' => function ($d) {
+
+                        return $d . '';
+                    },
+                    'required' => false,
                 ]
             );
         }
 
-        $formBuilder->add(
-            'submit',
-            SubmitType::class,
-            [
-                'label' => 'Confirmar',
-            ]
-        );
+        $formBuilder
+            ->add(
+                'submit',
+                SubmitType::class,
+                [
+                    'label' => 'Confirmar',
+                ]
+            );
 
         $form = $formBuilder->getForm();
-        $form->handleRequest( $request );
+        $form->handleRequest($request);
 
-        if ( $form->isSubmitted() && $form->isValid() ) {
-            $objectManager = $this->getDoctrine()->getManager();
-            foreach ( $form->getData() as $k => $datum ) {
-                $movimiento = new Movimiento();
-                $checkInfo = $checks[preg_split('/_/', $k)[1]];
-                $movimiento->setConcepto( 'Cheque '. $checkInfo['checkNumber'] );
-                $movimiento->setFecha( $checkInfo['date'] );
-                $movimiento->setImporte( $checkInfo['amount'] * -1 );
-                $movimiento->setBanco( $checkInfo['bank'] );
-                $objectManager->persist( $movimiento );
+        if ($form->isSubmitted() && $form->isValid()) {
+            $objectManager = $managerRegistry->getManager();
+            foreach ($form->getData() as $k => $datum) {
+                $parts = preg_split('/_/', $k);
+                $k = $parts[1];
+                $check = $issuedChecks[$k];
+                if ($datum) {
+                    $objectManager->remove($check);
+                    unset($issuedChecks[$k]);
+
+                    if ($datum instanceof Movimiento) {
+                        $datum
+                            ->setBanco($check->getBanco())
+                            ->setImporte($check->getImporte() * -1)
+                            ->setConcepto('Cheque ' . $check->getNumero())
+                            ->setFecha($check->getFecha())/** @Todo probably will need to be some time in the future */
+                        ;
+
+                        $objectManager->persist($datum);
+                    }
+                }
+
+                $objectManager->flush();
             }
-            $objectManager->flush();
-            $this->markReportAsProcessed( $request, $reportFileName );
 
-            return $this->proccessExcelReports( $request );
-        } else {
-
-            return $this->render(
-                'admin/confirm_issued_checks.html.twig',
-                [
-                    'form' => $form->createView(),
-                    'checks' => $checks,
-                ]
-            );
+            return $this->redirectToRoute('confirm_issued_checks');
         }
+
+        return $this->render(
+            'admin/confirm_issued_checks.html.twig',
+            [
+                'form' => $form->createView(),
+                'checks' => $issuedChecks,
+            ]
+        );
     }
 
     /**
@@ -574,43 +648,43 @@ class AdminController extends BaseAdminController
      * @Route(path="/processedAppliedChecks", name="process_applied_checks")
      */
 
-    public function processAppliedChecks( Request $request )
+    public
+    function processAppliedChecks(Request $request)
     {
         $formBuilder = $this->createFormBuilder();
 
         $checks = $this->getExcelReportProcessor()->getAppliedChecks(
-            IOFactory::load($this->getParameter('reports_path').DIRECTORY_SEPARATOR.$reportFileName)
+            IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $reportFileName)
         );
 
         $bancos = $this->getDoctrine()->getRepository('App:Banco')->findAll();
         $criteria = Criteria::create()
-            ->where( Criteria::expr()->lt('importe', 0) )
-            ->andWhere( Criteria::expr()->eq('concretado', false ))
-        ;
-        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->matching( $criteria );
+            ->where(Criteria::expr()->lt('importe', 0))
+            ->andWhere(Criteria::expr()->eq('concretado', false));
+        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
 
         foreach ($checks as $k => $check) {
             $formBuilder->add(
-                'bank_'.$k,
+                'bank_' . $k,
                 ChoiceType::class,
                 [
                     'choices' => $bancos,
-                    'choice_label' => function( $choiceValue, $key, $value ) {
+                    'choice_label' => function ($choiceValue, $key, $value) {
 
-                        return $choiceValue.'';
+                        return $choiceValue . '';
                     },
                     'choice_value' => 'id',
                     'required' => false,
                 ]
             );
             $formBuilder->add(
-                'debit_'.$k,
+                'debit_' . $k,
                 ChoiceType::class,
                 [
                     'choices' => $debits,
-                    'choice_label' => function( $choiceValue, $key, $value ) {
+                    'choice_label' => function ($choiceValue, $key, $value) {
 
-                        return $choiceValue.'';
+                        return $choiceValue . '';
                     },
                     'choice_value' => 'id',
                     'required' => false,
@@ -627,25 +701,24 @@ class AdminController extends BaseAdminController
 
         $form = $formBuilder->getForm();
 
-        $form->handleRequest( $request );
-        if ( $form->isSubmitted() && $form->isValid() ) {
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
             $em = $this->getDoctrine()->getManager();
-            foreach ( $checks as $k => $check ) {
-                $movimiento = $form['debit_'.$k]->getData();
-                $recipientBank = $form['bank_'.$k]->getData();
-                if ( !empty( $recipientBank ) || !empty( $movimiento ) ) {
-                    if ( !empty( $recipientBank ) ) {
+            foreach ($checks as $k => $check) {
+                $movimiento = $form['debit_' . $k]->getData();
+                $recipientBank = $form['bank_' . $k]->getData();
+                if (!empty($recipientBank) || !empty($movimiento)) {
+                    if (!empty($recipientBank)) {
                         $movimiento = new Movimiento();
                         $movimiento
-                            ->setBanco( $recipientBank )
-                            ->setImporte( $check['amount'] )
-                            ->setFecha( $check['creditDate'] )
-                            ->setConcepto( 'Acreditacion de cheque '.$check['checkNumber'] )
-                        ;
-                    } elseif ( !empty( $movimiento ) ) {
-                        $movimiento->setConcretado( true );
+                            ->setBanco($recipientBank)
+                            ->setImporte($check['amount'])
+                            ->setFecha($check['creditDate'])
+                            ->setConcepto('Acreditacion de cheque ' . $check['checkNumber']);
+                    } elseif (!empty($movimiento)) {
+                        $movimiento->setConcretado(true);
                     }
-                    $em->persist( $movimiento );
+                    $em->persist($movimiento);
                 }
             }
 
@@ -653,7 +726,7 @@ class AdminController extends BaseAdminController
 
             $this->markReportAsProcessed($request, $reportFileName);
 
-            return $this->proccessExcelReports( $request );
+            return $this->proccessExcelReports($request);
         }
 
         return $this->render(
