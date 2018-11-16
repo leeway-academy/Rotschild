@@ -10,6 +10,7 @@ namespace App\Command;
 
 use App\Entity\Movimiento;
 use App\Entity\GastoFijo;
+use Doctrine\Common\Collections\Criteria;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
@@ -41,18 +42,41 @@ class CopyFixedExpensesCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $em = $this->em;
-        $firstDay = new \DateTimeImmutable('First day of next month');
+        $criteria = new Criteria();
+        $criteria
+            ->andWhere( Criteria::expr()->neq('fechaFin', null ) )
+            ;
 
-        foreach ($em->getRepository('App:GastoFijo')->findAll() as $gastoFijo) {
-            $fecha = $firstDay->add(new \DateInterval('P' . $gastoFijo->getDia() . 'D'));
-            $output->writeln('Creando gasto de "' . $gastoFijo->getConcepto() . '", dia ' . $fecha->format('d/m/Y'));
-            $debito = new Movimiento();
-            $debito->setClonDe($gastoFijo);
-            $debito->setFecha($fecha);
-            $debito->setConcepto($gastoFijo->getConcepto());
-            $debito->setImporte($gastoFijo->getImporte() * -1);
-            $debito->setBanco($gastoFijo->getBanco());
-            $em->persist($debito);
+        $twelveMonths = new \DateInterval('P12M');
+        $dayNumberToday = date('d');
+        foreach ($em->getRepository('App:GastoFijo')->matching( $criteria ) as $gastoFijo) {
+            $newDate = (new \DateTimeImmutable())->add($twelveMonths);
+
+            if ( ($d = $gastoFijo->getDia()) > $dayNumberToday) {
+                $newDate = $newDate->sub( new \DateInterval('P'.($d - $dayNumberToday).'D' ) );
+            } elseif ( $d < $dayNumberToday ) {
+                $newDate = $newDate->add( new \DateInterval('P'.($dayNumberToday - $d).'D' ) );
+            }
+
+            if ( ($debit = $em->getRepository('App:Movimiento')->findBy(
+                [
+                    'clonDe' => $gastoFijo,
+                    'fecha' => $newDate,
+                ]
+            ) ) === null ) {
+                $output->writeln('Creando gasto de "' . $gastoFijo->getConcepto() . '", dia ' . $newDate->format('d/m/Y'));
+                $debito = new Movimiento();
+                $debito
+                    ->setClonDe($gastoFijo)
+                    ->setFecha($newDate)
+                    ->setConcepto($gastoFijo->getConcepto())
+                    ->setImporte($gastoFijo->getImporte() * -1)
+                    ->setBanco($gastoFijo->getBanco())
+                ;
+                $em->persist($debito);
+            } else {
+                $output->writeln('Gasto de "' . $gastoFijo->getConcepto() . '", dia ' . $newDate->format('d/m/Y').' pre-existente');
+            }
         }
 
         $em->flush();
