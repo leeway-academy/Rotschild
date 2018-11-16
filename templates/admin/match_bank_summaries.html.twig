@@ -7,11 +7,15 @@
     {{ form_start(form) }}
     {{ form_row(form.bank) }}
     <div id="matching" style="display: none;">
-        <table width="100%" border="1" class="table">
+        <table width="100%" class="table">
             <thead>
             <tr>
-                <th>Texto del extracto</th>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Importe</th>
                 <th>Movimiento presupuestado</th>
+                <th>&nbsp;</th>
+                <th>&nbsp;</th>
             </tr>
             </thead>
             <tbody>
@@ -50,7 +54,7 @@
                     function( data ) {
                         if ( Object.keys(data).length > 0 ) {
                             $.each( data, function ( i, d ) {
-                                var selectMarkUp = '<select name="form_match_' + i +'">' +
+                                var selectMarkUp = '<select name="form_match_' + i +'" id="form_match_' + i +'">' +
                                     '<option value=""></option>';
 
                                 var projectedTransactions = parseFloat( d['amount'] ) > 0 ? projectedCredits : projectedDebits;
@@ -60,12 +64,27 @@
 
                                 selectMarkUp += '</select>';
 
+                                var entity = d['amount'] > 0 ? 'Credito' : 'Debito';
+                                var newLink = "/?entity=" + entity + "&action=new";
+
                                 var markup = '' +
                                     '<tr>' +
-                                    '<td>' + d['date'] + '\t' + d['concept'] + '\t' + d['amount'] + '</td>' +
-                                    '<td>' + selectMarkUp + '</td>'
+                                    '<td>' + d['date'] + '</td><td>' + d['concept'] + '</td><td>' + d['amount'] + '</td>' +
+                                    '<td>' + selectMarkUp + '</td>' +
+                                    '<td><a target="_blank" href="" id="update_tx_' + i + '" style="display:none;">Modificar</a></td>' +
+                                    '<td><a target="_blank" href="' + newLink + '">Agregar</a></td>' +
                                 '</tr>';
                                 $('#matching tbody').append( markup );
+
+                                $('#form_match_' + i).change( function () {
+                                    if ( $('#form_match_' + i ).val() ) {
+                                        var updateLink = "/?entity=Credito&action=edit&id=" + $('#form_match_' + i ).val();
+                                        $('#update_tx_' + i).attr('href', updateLink);
+                                        $('#update_tx_' + i).show();
+                                    } else {
+                                        $('#update_tx_' + i).hide();
+                                    }
+                                });
                             } );
                             $('#noUnmatched').hide();
                             $('#matching').show();
