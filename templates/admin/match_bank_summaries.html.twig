@@ -1,12 +1,13 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
+{% form_theme form with easyadmin_config('design.form_theme') %}
 
 {% block content_title %}Conciliación de extractos bancarios{% endblock %}
 
 {% block main %}
     {{ form_start(form) }}
     {{ form_row(form.bank) }}
-    <div id="matching" style="display: none; position: relative">
-        <table id="transactions" width="100%" border="1">
+    <div id="matching" style="display: none;">
+        <table width="100%" border="1" class="table">
             <thead>
             <tr>
                 <th>Texto del extracto</th>
@@ -16,12 +17,10 @@
             <tbody>
             </tbody>
         </table>
-        <div id="result"></div>
     </div>
-    <div id="noUnmatched" style="display: none;; position: relative">
+    <div id="noUnmatched" style="display: none;">
         <p>No se encuentran extractos para conciliar</p>
     </div>
-    <div style="position: relative">&nbsp;</div>
     {{ form_end(form) }}
 {% endblock %}
 
@@ -66,7 +65,7 @@
                                     '<td>' + d['date'] + '\t' + d['concept'] + '\t' + d['amount'] + '</td>' +
                                     '<td>' + selectMarkUp + '</td>'
                                 '</tr>';
-                                $('#transactions tbody').append( markup );
+                                $('#matching tbody').append( markup );
                             } );
                             $('#noUnmatched').hide();
                             $('#matching').show();
