@@ -36,8 +36,8 @@
     <script type="text/javascript">
         $('#form_bank').change(function(){
             if ( bankId = $('#form_bank').val() ) {
-                var urlDebits = '/bank/' + bankId + '/projectedDebits';
-                var urlCredits = '/bank/' + bankId + '/projectedCredits';
+                var urlDebits = '{{ absolute_url('/bank/') }}' + bankId + '/projectedDebits';
+                var urlCredits = '{{ absolute_url('/bank/') }}' + bankId + '/projectedCredits';
 
                 var projectedDebits = [];
                 var projectedCredits = [];
