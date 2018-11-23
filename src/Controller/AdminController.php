@@ -393,7 +393,73 @@ class AdminController extends BaseAdminController
      */
     public function importAppliedChecks(Request $request)
     {
+        $formBuilder = $this->createFormBuilder()
+            ->setAttribute('class', 'form-vertical new-form');
 
+        $formBuilder->add(
+            'reportFile',
+            FileType::class,
+            [
+                'label' => 'Informe de cheques aplicados ',
+                'required' => true,
+            ]
+        )->add(
+            'Import',
+            SubmitType::class,
+            [
+                'attr' => [
+                    'class' => 'btn btn-primary action-save',
+                ],
+                'label' => 'Importar',
+            ]
+        )->getForm();
+
+        $form = $formBuilder->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em = $this->getDoctrine()->getManager();
+
+            foreach ($form->getData() as $name => $item) {
+                if (!is_null($item) && $item->getType() == 'file' && in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
+                    $fileName = 'AppliedChecks_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
+                    $item->move($this->getParameter('reports_path'), $fileName);
+
+                    $lines = $this->getExcelReportProcessor()->getIssuedChecks(
+                        IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName)
+                    );
+
+                    foreach ($lines as $k => $line) {
+                        /**
+                         * @todo Implement applied checks
+                         */
+//                        $chequeEmitido = new ChequeEmitido();
+//                        $chequeEmitido
+//                            ->setImporte($line['amount'])
+//                            ->setFecha($line['date'])
+//                            ->setBanco($em->getRepository('App:Banco')->findOneBy(['codigo' => $line['bankCode']]))
+//                            ->setNumero($line['checkNumber']);
+//                        $em->persist($chequeEmitido);
+                    }
+
+                    $em->flush();
+                }
+            }
+
+            $this->addFlash(
+                'notice',
+                'Cheques aplicados importados'
+            );
+        }
+
+        return $this->render(
+            'admin/import_excel_reports.html.twig',
+            [
+                'form' => $form->createView(),
+                'reportName' => 'Cheques aplicados',
+            ]
+        );
     }
 
 
