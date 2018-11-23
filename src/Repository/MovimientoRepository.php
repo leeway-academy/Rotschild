@@ -5,6 +5,8 @@ namespace App\Repository;
 use App\Entity\Movimiento;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
+use Symfony\Component\Validator\Constraints\Collection;
+use Doctrine\Common\Collections\Criteria;
 
 /**
  * @method Movimiento|null find($id, $lockMode = null, $lockVersion = null)
@@ -19,6 +21,17 @@ class MovimientoRepository extends ServiceEntityRepository
         parent::__construct($registry, Movimiento::class);
     }
 
+    /**
+     * @return Collection
+     */
+    public function findPendingDebits()
+    {
+        return $this->matching(
+            Criteria::create()
+                ->where( Criteria::expr()->eq('concretado', false) )
+                ->andWhere( Criteria::expr()->lt('importe', 0) )
+        );
+    }
 //    /**
 //     * @return Movimiento[] Returns an array of Movimiento objects
 //     */

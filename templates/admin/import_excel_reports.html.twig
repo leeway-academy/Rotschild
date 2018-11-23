@@ -1,9 +1,19 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 
-{% block content_title %}Importacion de reportes de Excel{% endblock %}
+{% block content_title %}Importacion de {{ reportName }}{% endblock %}
 
 {% block main %}
-    {{ form(form) }}
+    {{ form_start(form) }}
+        {% for row in form.children %}
+            {% if row.vars.type is defined %}
+                {% if row.vars.type in ['file'] %}
+                    <div>{{ form_label(row) }} &nbsp; {{ form_widget(row) }}</div>
+                    <hr/>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </table>
+    {{ form_end(form) }}
 {% endblock %}
 
 {% block body_javascript %}

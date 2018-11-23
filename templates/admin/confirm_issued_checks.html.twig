@@ -3,38 +3,35 @@
 {% block content_title %}Cheques emitidos{% endblock %}
 
 {% block main %}
-    {{ form_start(form) }}
-        {{ form_errors(form) }}
-    <table width="30%">
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>&nbsp;</th>
-                <th>N&uacute;mero</th>
-                <th>&nbsp;</th>
-                <th>Monto</th>
-                <th>&nbsp;</th>
-                <th>Banco</th>
-                <th>&nbsp;</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for c in checks %}
-            <tr>
-                <td>{{ c.date | date('d/m/Y') }}</td>
-                <td>&nbsp;</td>
-                <td>{{ c.checkNumber }}</td>
-                <td>&nbsp;</td>
-                <td>{{ c.amount }}</td>
-                <td>&nbsp;</td>
-                <td>{{ c.bank }}</td>
-                <td>&nbsp;</td>
-                <td>{{ form_widget(attribute(form, 'check_' ~ loop.index0 )) }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {{ form_end(form) }}
+    {% if checks %}
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+        <table width="30%" class="table-responsive table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>N&uacute;mero</th>
+                    <th>Monto</th>
+                    <th>Banco</th>
+                    <th>D&eacute;bito presupuestado</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in checks %}
+                <tr>
+                    <td>{{ c.fecha | date('d/m/Y') }}</td>
+                    <td>{{ c.numero }}</td>
+                    <td>{{ c.importe }}</td>
+                    <td>{{ c.banco }}</td>
+                    <td>{{ form_widget(attribute(form, 'match_' ~ loop.index0 )) }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {{ form_end(form) }}
+    {% else %}
+        <p>No quedan cheques para conciliar</p>
+    {% endif %}
 {% endblock %}
 
 {% block body_javascript %}

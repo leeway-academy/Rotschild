@@ -52,6 +52,11 @@ class Banco
     private $xlsStructure = null;
 
     /**
+     * @ORM\OneToMany(targetEntity="App\Entity\ExtractoBancario", mappedBy="banco", orphanRemoval=true)
+     */
+    private $extractos;
+
+    /**
      * @return mixed
      */
     public function getCodigo()
@@ -74,6 +79,7 @@ class Banco
         $this->movimientos = new ArrayCollection();
         $this->gastosFijos = new ArrayCollection();
         $this->saldos = new ArrayCollection();
+        $this->extractos = new ArrayCollection();
     }
 
     public function getId()
@@ -230,18 +236,46 @@ class Banco
             $saldoActual = clone $saldos->get( $fechaInicial->format('Y-m-d') );
         }
 
-        $movimientos = $this->getMovimientos()->filter( function (Movimiento $m) use ($fecha, $fechaInicial) {
-
-            return $m->getFecha()->getTimestamp() >= $fechaInicial->getTimestamp() && $m->getFecha()->getTimestamp() < $fecha->getTimestamp() && !$m->getConcretado();
-        } );
-
-        foreach ($movimientos as $movimiento) {
+        foreach ($this->getMovimientoEntre( $fechaInicial, $fecha, false ) as $movimiento) {
             $saldoActual->setValor( $saldoActual->getValor() + $movimiento->getImporte() );
         }
 
         $saldoActual->setFecha( $fecha );
 
         return $saldoActual;
+    }
+
+    /**
+     * @param \DateTimeInterface $fechaInicio
+     * @param \DateTimeInterface $fechaFin
+     * @return Collection
+     */
+    public function getMovimientoEntre(\DateTimeInterface $fechaInicio, \DateTimeInterface $fechaFin, bool $concretados = null ) : Collection
+    {
+        $criteria = Criteria::create()
+            ->andWhere(
+                Criteria::expr()
+                    ->gte('fecha', $fechaInicio)
+            )
+            ->andWhere(
+                Criteria::expr()
+                    ->lt('fecha', $fechaFin)
+            );
+
+        if ( $concretados === true || $concretados === false ) {
+            $criteria->andWhere( Criteria::expr()->eq('concretado', $concretados ) );
+        }
+
+        $count = 0;
+        foreach( $this->getMovimientos() as $mov ) {
+            if ( $mov->getImporte() < 0 ) {
+                $count++;
+            }
+        }
+
+        $movimientos = $this->getMovimientos()->matching( $criteria );
+
+        return $movimientos;
     }
 
     /**
@@ -300,5 +334,36 @@ class Banco
         }
 
         return $this->movimientos->matching( $criteria );
+    }
+
+    /**
+     * @return Collection|ExtractoBancario[]
+     */
+    public function getExtractos(): Collection
+    {
+        return $this->extractos;
+    }
+
+    public function addExtracto(ExtractoBancario $extracto): self
+    {
+        if (!$this->extractos->contains($extracto)) {
+            $this->extractos[] = $extracto;
+            $extracto->setBanco($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExtracto(ExtractoBancario $extracto): self
+    {
+        if ($this->extractos->contains($extracto)) {
+            $this->extractos->removeElement($extracto);
+            // set the owning side to null (unless already changed)
+            if ($extracto->getBanco() === $this) {
+                $extracto->setBanco(null);
+            }
+        }
+
+        return $this;
     }
 }
