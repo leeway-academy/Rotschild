@@ -4,6 +4,9 @@
 {% block content_title %}Conciliación de extractos bancarios{% endblock %}
 
 {% block main %}
+    <div id="wait" style="display: none;">
+        <h3>Cargando...</h3>
+    </div>
     {{ form_start(form) }}
     {{ form_row(form.bank) }}
     <div id="matching" style="display: none;">
@@ -100,6 +103,14 @@
                 $('#matching').hide();
                 $('#form_submit').hide();
             }
+        });
+
+        $(document).ajaxStart(function(){
+            $("#wait").css("display", "block");
+        });
+
+        $(document).ajaxComplete(function(){
+            $("#wait").css("display", "none");
         });
     </script>
 {% endblock %}
