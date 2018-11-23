@@ -106,13 +106,6 @@ class AdminController extends BaseAdminController
 
         $hoy = new \DateTimeImmutable();
 
-        foreach ($banco->getSaldos() as $saldo) {
-            if ($hoy->diff($saldo->getFecha())->d > 15) { // @todo Extract to config
-                $banco->removeSaldo($saldo);
-            } else {
-                break;
-            }
-        }
         $period = new \DatePeriod(new \DateTimeImmutable(), new \DateInterval('P1D'), 180); // @todo Extract to config
 
         foreach ($period as $dia) {
@@ -133,6 +126,14 @@ class AdminController extends BaseAdminController
             'fields' => $fields,
             'delete_form' => $deleteForm->createView(),
         );
+
+        foreach ($banco->getSaldos() as $saldo) {
+            if ($hoy->diff($saldo->getFecha())->days > 15) { // @todo Extract to config
+                $banco->removeSaldo($saldo);
+            } else {
+                break;
+            }
+        }
 
         return $this->executeDynamicMethod('render<EntityName>Template', array('show', $this->entity['templates']['show'], $parameters));
     }
@@ -648,8 +649,7 @@ class AdminController extends BaseAdminController
      * @Route(path="/processedAppliedChecks", name="process_applied_checks")
      */
 
-    public
-    function processAppliedChecks(Request $request)
+    public function processAppliedChecks(Request $request)
     {
         $formBuilder = $this->createFormBuilder();
 
