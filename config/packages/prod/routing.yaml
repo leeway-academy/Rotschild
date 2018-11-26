@@ -1,0 +1,4 @@
+framework:
+    router:
+        request_context:
+            base_url: rotschild/
