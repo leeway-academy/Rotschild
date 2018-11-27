@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\AppliedCheck;
 use App\Entity\Banco;
 use App\Entity\ChequeEmitido;
 use App\Entity\ExtractoBancario;
@@ -25,7 +26,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminContr
 use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Service\ExcelReportsProcessor;
-use Symfony\Component\Validator\Constraints\DateTime;
 
 class AdminController extends BaseAdminController
 {
@@ -426,21 +426,23 @@ class AdminController extends BaseAdminController
                     $fileName = 'AppliedChecks_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
                     $item->move($this->getParameter('reports_path'), $fileName);
 
-                    $lines = $this->getExcelReportProcessor()->getIssuedChecks(
+                    $lines = $this->getExcelReportProcessor()->getAppliedChecks(
                         IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName)
                     );
 
                     foreach ($lines as $k => $line) {
-                        /**
-                         * @todo Implement applied checks
-                         */
-//                        $chequeEmitido = new ChequeEmitido();
-//                        $chequeEmitido
-//                            ->setImporte($line['amount'])
-//                            ->setFecha($line['date'])
-//                            ->setBanco($em->getRepository('App:Banco')->findOneBy(['codigo' => $line['bankCode']]))
-//                            ->setNumero($line['checkNumber']);
-//                        $em->persist($chequeEmitido);
+                        $appliedCheck = new AppliedCheck();
+                        $appliedCheck
+                            ->setAmount($line['amount'])
+                            ->setDate($line['date'])
+                            ->setType($line['type'])
+                            ->setDestination($line['destination'])
+                            ->setIssuer($line['issuer'])
+                            ->setSourceBank($line['sourceBank'])
+                            ->setNumber($line['number'])
+                            ;
+
+                        $em->persist($appliedCheck);
                     }
 
                     $em->flush();
@@ -718,17 +720,18 @@ class AdminController extends BaseAdminController
 
     public function processAppliedChecks(Request $request)
     {
+        /*
+         * @todo This could be much more intelligent since the destination of the check is part of the
+         * Excel file...
+         */
         $formBuilder = $this->createFormBuilder();
-
-        $checks = $this->getExcelReportProcessor()->getAppliedChecks(
-            IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $reportFileName)
-        );
 
         $bancos = $this->getDoctrine()->getRepository('App:Banco')->findAll();
         $criteria = Criteria::create()
             ->where(Criteria::expr()->lt('importe', 0))
             ->andWhere(Criteria::expr()->eq('concretado', false));
         $debits = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
+        $checks = $this->getDoctrine()->getRepository('App:AppliedCheck')->findAll();
 
         foreach ($checks as $k => $check) {
             $formBuilder->add(
@@ -779,21 +782,20 @@ class AdminController extends BaseAdminController
                         $movimiento = new Movimiento();
                         $movimiento
                             ->setBanco($recipientBank)
-                            ->setImporte($check['amount'])
-                            ->setFecha($check['creditDate'])
-                            ->setConcepto('Acreditacion de cheque ' . $check['checkNumber']);
+                            ->setImporte($check->getAmount())
+                            ->setFecha($check->getCreditDate())
+                            ->setConcepto('Acreditacion de cheque ' . $check->getNumber());
                     } elseif (!empty($movimiento)) {
                         $movimiento->setConcretado(true);
                     }
                     $em->persist($movimiento);
+                    $em->remove($check);
                 }
             }
 
             $em->flush();
 
-            $this->markReportAsProcessed($request, $reportFileName);
-
-            return $this->proccessExcelReports($request);
+            return $this->redirectToRoute('process_applied_checks');
         }
 
         return $this->render(

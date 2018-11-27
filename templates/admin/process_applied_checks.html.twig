@@ -1,46 +1,66 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 
-{% block content_title %}Cheques aplicados{% endblock %}
+{% block content_title %}Cheques aplicados{% if checks|length > 0 %} ({{ checks | length }}){% endif %}{% endblock %}
 
 {% block main %}
-    {{ form_start(form) }}
+    {% if checks|length > 0 %}
+        {{ form_start(form) }}
         {{ form_errors(form) }}
-    <table width="50%">
-        <thead>
-            <tr>
-                <th>N&uacute;mero</th>
-                <th>&nbsp;</th>
-                <th>Fecha</th>
-                <th>&nbsp;</th>
-                <th>Monto</th>
-                <th>&nbsp;</th>
-                <th><span style="alignment: center">Destino</span></th>
-                <th>&nbsp;</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for c in checks %}
-            <tr>
-                <td>{{ c.checkNumber }}</td>
-                <td>&nbsp;</td>
-                <td>{{ c.creditDate | date('d/m/Y')}}</td>
-                <td>&nbsp;</td>
-                <td> ${{ c.amount | number_format(2, ',', '.') }}</td>
-                <td>&nbsp;</td>
-                <td>
-                    <table>
-                        <tr>
-                            <td>{{ form_widget(attribute(form, 'bank_' ~ loop.index0 )) }}</td>
-                            <td>&nbsp;</td>
-                            <td>{{ form_widget(attribute(form, 'debit_' ~ loop.index0 )) }}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {{ form_end(form) }}
+        <table width="100%" class="table-bordered table-responsive table-striped">
+            <thead>
+                <tr>
+                    <th>N&uacute;mero</th>
+                    <th>&nbsp;</th>
+                    <th>Banco</th>
+                    <th>&nbsp;</th>
+                    <th>Cliente</th>
+                    <th>&nbsp;</th>
+                    <th>Tipo</th>
+                    <th>&nbsp;</th>
+                    <th>Fecha</th>
+                    <th>&nbsp;</th>
+                    <th>Acreditaci&oacute;n</th>
+                    <th>&nbsp;</th>
+                    <th>Monto</th>
+                    <th>&nbsp;</th>
+                    <th><span style="alignment: center">Destino</span></th>
+                    <th>&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in checks %}
+                <tr>
+                    <td>{{ c.number }}</td>
+                    <td>&nbsp;</td>
+                    <td>{{ c.sourceBank }}</td>
+                    <td>&nbsp;</td>
+                    <td>{{ c.issuer }}</td>
+                    <td>&nbsp;</td>
+                    <td>{{ c.type }}</td>
+                    <td>&nbsp;</td>
+                    <td>{{ c.date | date('d/m/Y')}}</td>
+                    <td>&nbsp;</td>
+                    <td>{{ c.creditDate | date('d/m/Y')}}</td>
+                    <td>&nbsp;</td>
+                    <td> ${{ c.amount | number_format(2, ',', '.') }}</td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <table>
+                            <tr>
+                                <td>{{ form_widget(attribute(form, 'bank_' ~ loop.index0 )) }}</td>
+                                <td>&nbsp;</td>
+                                <td>{{ form_widget(attribute(form, 'debit_' ~ loop.index0 )) }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {{ form_end(form) }}
+    {% else %}
+        <h2>No hay cheques aplicados por conciliar</h2>
+    {% endif %}
 {% endblock %}
 
 {% block body_javascript %}

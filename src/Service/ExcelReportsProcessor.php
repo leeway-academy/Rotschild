@@ -123,16 +123,14 @@ class ExcelReportsProcessor
         $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
 
         while ( !empty($firstValue) ) {
-            $checkDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject( $worksheet->getCellByColumnAndRow( 3, $row )->getValue() );
-            $checkType = $worksheet->getCellByColumnAndRow( 8, $row );
-            $creditDate = clone $checkDate;
-            if ( strtoupper($checkType ) == strtoupper( $this->getConfig()['deferred_checks_type'] ) ) {
-                 $creditDate->add( new \DateInterval('P2D') );
-            }
             $ret[] = [
-                'creditDate' => $creditDate,
-                'amount' => $worksheet->getCellByColumnAndRow( 11, $row )->getValue(),
-                'checkNumber' => $worksheet->getCellByColumnAndRow( 2, $row )->getValue(),
+                'date' => \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject( $worksheet->getCellByColumnAndRow( 3, $row )->getValue() ),
+                'amount' => $worksheet->getCellByColumnAndRow( 12, $row )->getValue(),
+                'number' => $worksheet->getCellByColumnAndRow( 2, $row )->getValue(),
+                'type' => $worksheet->getCellByColumnAndRow( 8, $row ),
+                'sourceBank' => $worksheet->getCellByColumnAndRow( 4, $row )->getValue(),
+                'issuer' => $worksheet->getCellByColumnAndRow( 9, $row )->getValue(),
+                'destination' => $worksheet->getCellByColumnAndRow( 11, $row )->getValue(),
             ];
             $row++;
             $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
