@@ -36,15 +36,14 @@
     <script type="text/javascript">
         $('#form_bank').change(function(){
             if ( bankId = $('#form_bank').val() ) {
-                var urlDebits = bankId + '/projectedDebits';
                 var urlCredits = bankId + '/projectedCredits';
 
                 var projectedDebits = [];
                 var projectedCredits = [];
 
                 $.when(
-                    $.ajax(urlDebits),
-                    $.ajax(urlCredits)
+                    $.ajax(Routing.generate('get_projected_debits', { id: bankId } )),
+                    $.ajax(Routing.generate('get_projected_credits', { id: bankId } ))
                 ).done( function( a1, a2 ) {
                     projectedDebits = a1[0];
                     projectedCredits = a2[0];
@@ -76,7 +75,7 @@
                                     '<td>' + selectMarkUp + '</td>' +
                                     '<td><a target="_blank" href="" id="update_tx_' + i + '" style="display:none;">Modificar</a></td>' +
                                     '<td><a target="_blank" href="' + newLink + '">Agregar</a></td>' +
-                                '</tr>';
+                                    '</tr>';
                                 $('#matching tbody').append( markup );
 
                                 $('#form_match_' + i).change( function () {
@@ -113,4 +112,6 @@
             $("#wait").css("display", "none");
         });
     </script>
+    <script src="{{ asset('bundles/fosjsrouting/js/router.min.js') }}"></script>
+    <script src="{{ path('fos_js_routing_js', { callback: 'fos.Router.setData' }) }}"></script>
 {% endblock %}

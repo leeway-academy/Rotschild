@@ -586,7 +586,8 @@ class AdminController extends BaseAdminController
 
     /**
      * @param Banco $banco
-     * @Route(name="get_projected_debits", path="/bank/{id}/projectedDebits")
+     * @Route(name="get_projected_debits", path="/bank/{id}/projectedDebits", options={"expose"=true})
+     * @return JsonResponse
      */
     public function getProjectedDebits(Request $request, Banco $banco)
     {
@@ -610,9 +611,9 @@ class AdminController extends BaseAdminController
 
     /**
      * @param Banco $banco
-     * @Route(name="get_projected_credits", path="/bank/{id}/projectedCredits")
+     * @Route(name="get_projected_credits", path="/bank/{id}/projectedCredits", options={"expose"=true})
      */
-    public function getProjectedCrebits(Request $request, Banco $banco)
+    public function getProjectedCredits(Request $request, Banco $banco)
     {
         if (!$request->isXmlHttpRequest()) {
 
