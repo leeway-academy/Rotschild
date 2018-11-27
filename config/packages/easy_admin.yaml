@@ -72,10 +72,10 @@ easy_admin:
             - { label: 'Cheques emitidos', route: 'confirm_issued_checks' }
             - { label: 'Cheques aplicados', route: 'process_applied_checks'}
             - { label: 'Movimientos'}
-            - GastoFijo
             - Debito
             - Credito
             - { label: 'Configuración' }
+            - GastoFijo
             - Banco
     formats:
         date: 'd/m/Y'
