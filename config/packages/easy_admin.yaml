@@ -56,7 +56,7 @@ easy_admin:
                 fields: [ 'concepto', 'dia',  { property: 'fechaFin', type: 'date' }, 'importe', 'banco' ]
 
 #        - App\Entity\User
-    site_name: '<img src="/img/logo.png" /> Rotschild'
+    site_name: '<img src="%router.request_context.base_url%/img/logo.png" /> Rotschild'
     design:
         brand_color: '#17509D'
         assets:
