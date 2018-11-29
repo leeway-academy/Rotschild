@@ -231,7 +231,7 @@ class AdminController extends BaseAdminController
 
         $banks = $this
             ->getDoctrine()
-            ->getRepository('Bank')
+            ->getRepository('App:Bank')
             ->findAll();
 
         foreach ($banks as $bank) {
@@ -269,7 +269,7 @@ class AdminController extends BaseAdminController
                     $fileName = $parts[0];
 
                     if ($parts[0] == 'BankSummary') {
-                        $bank = $em->getRepository('Bank')->find($parts[1]);
+                        $bank = $em->getRepository('App:Bank')->find($parts[1]);
                         $fileName .= '_' . $bank->getNombre();
                     }
 
@@ -365,7 +365,7 @@ class AdminController extends BaseAdminController
                         $chequeEmitido
                             ->setImporte($line['amount'])
                             ->setFecha($line['date'])
-                            ->setBanco($em->getRepository('Bank')->findOneBy(['codigo' => $line['bankCode']]))
+                            ->setBanco($em->getRepository('App:Bank')->findOneBy(['codigo' => $line['bankCode']]))
                             ->setNumero($line['checkNumber']);
                         $em->persist($chequeEmitido);
                     }
@@ -492,7 +492,7 @@ class AdminController extends BaseAdminController
     public function matchBankSummaries(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
-        $banks = $em->getRepository('Bank')->findAll();
+        $banks = $em->getRepository('App:Bank')->findAll();
 
         $form = $this
             ->createFormBuilder(
@@ -728,7 +728,7 @@ class AdminController extends BaseAdminController
          */
         $formBuilder = $this->createFormBuilder();
 
-        $bancos = $this->getDoctrine()->getRepository('Bank')->findAll();
+        $bancos = $this->getDoctrine()->getRepository('App:Bank')->findAll();
         $criteria = Criteria::create()
             ->where(Criteria::expr()->lt('importe', 0))
             ->andWhere(Criteria::expr()->eq('concretado', false));
