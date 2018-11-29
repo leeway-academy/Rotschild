@@ -10,23 +10,20 @@ use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
 use App\Entity\RenglonExtracto;
 use App\Entity\SaldoBancario;
+use App\Service\ExcelReportsProcessor;
 use Doctrine\Common\Collections\Criteria;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
+use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
 use http\Exception\InvalidArgumentException;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
-use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use App\Service\ExcelReportsProcessor;
 
 class AdminController extends BaseAdminController
 {
@@ -516,7 +513,8 @@ class AdminController extends BaseAdminController
                     },
                     'data' => $bank,
                 ]
-            );
+            )
+        ;
 
         $summaryLines = [];
         if ( $bank ) {
@@ -525,19 +523,20 @@ class AdminController extends BaseAdminController
 
             foreach ( $bank->getExtractos() as $extracto ) {
                 foreach ( $extracto->getRenglones() as $renglon ) {
-                    $formBuilder->add(
-                        'match-'.$renglon->getId(),
-                        ChoiceType::class,
-                        [
-                            'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
-                            'choice_label' => function( Movimiento $movimiento ) {
+                    $formBuilder
+                        ->add(
+                            'match-'.$renglon->getId(),
+                            ChoiceType::class,
+                            [
+                                'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
+                                'choice_label' => function( Movimiento $movimiento ) {
 
-                                return $movimiento->__toString();
-                            },
-                            'label' => $renglon->getFecha()->format('d/m/Y').': '.$renglon->getConcepto().' '.$renglon->getImporte(),
-                        ]
-                    );
-                    $summaryLines[] = $renglon;
+                                    return $movimiento->__toString();
+                                },
+                                'label' => $renglon->getFecha()->format('d/m/Y').': '.$renglon->getConcepto().' '.$renglon->getImporte(),
+                            ]
+                        );
+                    $summaryLines[$renglon->getId()] = $renglon;
                 }
             }
         }

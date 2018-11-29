@@ -7,34 +7,37 @@
     <div id="wait" style="display: none;">
         <h3>Cargando...</h3>
     </div>
-    {{ form(form) }}
-    {#{{ form_start(form) }}#}
-    {#{{ form_row(form.bank) }}#}
-    {#{{ form_rest(form) }}#}
-    {#<br/>#}
-    {#<br/>#}
-    {#<br/>#}
-    {#<div>#}
-        {#<table width="100%">#}
-            {#<thead>#}
-            {#<tr>#}
-                {#<th>Extracto</th>#}
-                {#<th>Movimiento presupuestado</th>#}
-                {#<th>&nbsp;</th>#}
-                {#<th>&nbsp;</th>#}
-            {#</tr>#}
-            {#</thead>#}
-            {#<tbody>#}
-            {#{% for l in summaryLines %}#}
-                {#<tr>#}
-                    {#<td>Sarasa</td>#}
-                    {#<td>{{ form_widget(form) }}</td>#}
-                {#</tr>#}
-            {#{% endfor %}#}
-            {#</tbody>#}
-        {#</table>#}
-    {#</div>#}
-    {#{{ form_end(form) }}#}
+    {{ form_start(form) }}
+        {{ form_row(form.bank) }}
+    <br/>
+    <br/>
+    <br/>
+    <div>
+        <table width="100%">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Importe</th>
+                    <th>Movimiento presupuestado</th>
+                    <th>&nbsp;</th>
+                    <th>&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for k, l in summaryLines %}
+                <tr>
+                    <td>{{ l.fecha | date('d/m/Y') }}</td>
+                    <td>{{ l.concepto }}</td>
+                    <td>$ {{ l.importe | number_format(2, ',', '.')}}</td>
+                    <td>{{ form_widget(form['match-' ~ k]) }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ form_row(form.submit) }}
+    {{ form_end(form) }}
 {% endblock %}
 
 {% block body_javascript %}
