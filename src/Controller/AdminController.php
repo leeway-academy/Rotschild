@@ -285,15 +285,17 @@ class AdminController extends BaseAdminController
                     $extracto
                         ->setArchivo($fileName)
                         ->setBank($bank)
-                        ->setFecha(new \DateTimeImmutable());
+                        ->setFecha(new \DateTimeImmutable())
+                    ;
                     $em->persist($extracto);
                     foreach ($lines as $k => $line) {
                         $summaryLine = new RenglonExtracto();
                         $summaryLine
                             ->setImporte($line['amount'])
                             ->setFecha($line['date'])
-                            ->setConcepto($line['concept'])
-                            ->setLinea($k);
+                            ->setConcepto($line['concept'] .' - '. $line['extraData'] )
+                            ->setLinea($k)
+                        ;
                         $em->persist($summaryLine);
                         $extracto->addRenglon($summaryLine);
                     }
