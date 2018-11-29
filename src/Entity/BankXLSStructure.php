@@ -57,6 +57,11 @@ class BankXLSStructure
      */
     private $firstHeader;
 
+    /**
+     * @ORM\Column(type="integer", nullable=true)
+     */
+    private $extraDataCol;
+
     public function getId()
     {
         return $this->id;
@@ -154,6 +159,18 @@ class BankXLSStructure
     public function setFirstHeader(?string $firstHeader): self
     {
         $this->firstHeader = $firstHeader;
+
+        return $this;
+    }
+
+    public function getExtraDataCol(): ?int
+    {
+        return $this->extraDataCol;
+    }
+
+    public function setExtraDataCol(?int $extraDataCol): self
+    {
+        $this->extraDataCol = $extraDataCol;
 
         return $this;
     }

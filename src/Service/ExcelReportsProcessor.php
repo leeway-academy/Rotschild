@@ -72,6 +72,7 @@ class ExcelReportsProcessor
                 'date' => is_numeric( $dateValue ) ? Date::excelToDateTimeObject( $dateValue ) : \DateTimeImmutable::createFromFormat( $xlsStructure->getDateFormat(), $dateValue ),
                 'concept' => $worksheet->getCellByColumnAndRow( $xlsStructure->getConceptCol(), $row )->getValue(),
                 'amount' => $worksheet->getCellByColumnAndRow( $xlsStructure->getAmountCol(), $row )->getValue(),
+                'extraData' => $worksheet->getCellByColumnAndRow( $xlsStructure->getExtraDataCol(), $row )->getValue(),
             ];
             $row++;
             $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
