@@ -205,13 +205,28 @@ class Bank
     public function getSaldo( \DateTimeInterface $fecha = null ): ?SaldoBancario
     {
         $saldos = $this->getSaldos();
+
+        if ( $saldos->isEmpty() ) {
+
+            return null;
+        }
+
         if ( empty($fecha) ) {
 
-            return !$saldos->isEmpty() ? $saldos->last() : null;
-        } else {
-
-            return $saldos->containsKey( $fecha->format('Y-m-d') ) ? $saldos->get( $fecha->format('Y-m-d') ) : null;
+            return $saldos->last();
         }
+
+        if ( $saldos->containsKey( $fecha->format('Y-m-d') ) ) {
+
+            return $saldos->get( $fecha->format('Y-m-d') );
+        }
+
+        $previous = $saldos->filter( function ( SaldoBancario $saldoBancario ) use ( $fecha ) {
+
+            return $saldoBancario->getFecha()->diff( $fecha )->days > 0;
+        });
+
+        return !$previous->isEmpty() ? $previous->last() : null;
     }
 
     /**
