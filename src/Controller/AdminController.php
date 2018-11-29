@@ -11,6 +11,7 @@ use App\Entity\Movimiento;
 use App\Entity\RenglonExtracto;
 use App\Entity\SaldoBancario;
 use Doctrine\Common\Collections\Criteria;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use http\Exception\InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
@@ -804,6 +805,119 @@ class AdminController extends BaseAdminController
             [
                 'form' => $form->createView(),
                 'checks' => $checks,
+            ]
+        );
+    }
+
+    /**
+     * @param Request $request
+     * @Route(name="show_bank_balance", path="/bank/showBalance")
+     */
+    public function showBankBalanceAction(Request $request)
+    {
+        $startDate = new \DateTimeImmutable();
+        $endDate = $startDate->add( new \DateInterval('P180D') );
+
+        $banks = $this->getDoctrine()->getRepository('App:Bank')->findAll();
+        $form = $this
+            ->createFormBuilder()
+            ->add(
+                'bank',
+                ChoiceType::class,
+                [
+                    'choices' => $banks,
+                    'required' => false,
+                    'choice_label' => function( Bank $b ) {
+
+                        return $b->__toString();
+                    }
+                ]
+            )
+            ->add(
+                'dateFrom',
+                DateType::class,
+                [
+                    'data' => $startDate,
+                ]
+            )
+            ->add(
+                'dateTo',
+                DateType::class,
+                [
+                    'data' => $endDate,
+                ]
+            )
+            ->add(
+                'Submit',
+                SubmitType::class,
+                [
+                    'label' => 'Send',
+                ]
+            )
+            ->getForm()
+            ;
+
+        $form->handleRequest( $request );
+
+        $balances = [];
+
+        if ( $form->isSubmitted() && $form->isValid() ) {
+            $criteria = new Criteria();
+
+            $dateFrom = $form['dateFrom']->getData();
+            $dateTo = $form['dateTo']->getData();
+
+            $criteria
+                ->where( Criteria::expr()->gte('fecha', $dateFrom) )
+                ->andWhere( Criteria::expr()->lte( 'fecha', $dateTo) )
+                ->andWhere( Criteria::expr()->neq('concretado', true ))
+                ->orderBy(
+                    [
+                        'fecha' => 'ASC'
+                    ]
+                )
+                ;
+
+            if ( $bank = $form['bank']->getData() ) {
+                $criteria->andWhere(Criteria::expr()->eq('bank', $bank ) );
+
+                $balance = $bank->getSaldo($dateFrom);
+                $totalBalance = $balance ? $balance->getValor() : 0;
+            } else {
+                $totalBalance = 0;
+
+                foreach ( $banks as $bank ) {
+                    $balance = $bank->getSaldo( $dateFrom );
+
+                    $totalBalance += $balance ? $balance->getValor() : 0;
+                }
+            }
+
+            $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
+
+            $period = new \DatePeriod( $dateFrom, new \DateInterval('P1D'), $dateTo );
+
+            foreach ( $period as $date ) {
+                $dailyTransactions = $transactions->filter( function( Movimiento $transaction ) use ( $date ) {
+
+                    return $transaction->getFecha()->diff( $date )->days == 0;
+                });
+
+                $dailyBalance = 0;
+                foreach ( $dailyTransactions as $transaction ) {
+                    $dailyBalance += $transaction->getImporte();
+                }
+
+                $totalBalance += $dailyBalance;
+                $balances[ $date->format('d/m/Y') ] = $totalBalance;
+            }
+        }
+
+        return $this->render(
+            'admin/show_bank_balance.html.twig',
+            [
+                'form' => $form->createView(),
+                'balances' => $balances,
             ]
         );
     }

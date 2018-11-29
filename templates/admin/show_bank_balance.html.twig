@@ -1,0 +1,30 @@
+{% extends '@EasyAdmin/default/layout.html.twig' %}
+
+{% block content_title %}{{ 'Bank balance' | trans }}{% endblock %}
+
+{% block main %}
+    {{ form(form) }}
+    {% if balances|length > 0 %}
+        <hr/>
+        <table width="100%" class="table-bordered table-responsive table-striped">
+            <thead>
+                <tr>
+                    <th>{{ 'Date' | trans }}</th>
+                    <th>{{ 'Balance' | trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for d, b in balances %}
+                <tr>
+                    <td>{{ d }}</td>
+                    <td>{% if b < 0 %}<span class="alert-danger">{% endif %}{{ b }}{% if b < 0 %}</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+{% endblock %}

@@ -5,12 +5,11 @@ easy_admin:
             class: 'App\Entity\Bank'
             label: 'Bancos'
             list:
-                title: 'Listado de bancos'
+                title: 'Banks'
                 fields: [ 'nombre', 'saldo' ]
                 actions:
                     - { name: 'new' }
                     - { name: 'edit' }
-                    - { name: 'show' }
                     - { name: 'cargar_saldo', type: 'route' }
             form:
                 fields: [ 'nombre' ]
@@ -20,40 +19,38 @@ easy_admin:
                 fields: [ 'nombre', { property: 'saldos', label: 'Saldos', template: 'saldos.html.twig' }, { property: 'saldosProyectados', label: 'Saldos proyectados', template: 'saldos.html.twig' }, 'movimientos' ]
         Debito:
             class: App\Entity\Movimiento
-            label: 'Debitos'
+            label: 'Debits'
             list:
-                title: 'Listado de debitos'
-                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Pagado', type: 'boolean' } ]
-                actions:
-                    - { name: 'new', label: 'Nuevo Debito' }
+                title: 'Debits'
+                fields: [ 'concepto', 'fecha', 'importe', 'bank', { property: 'concretado', label: 'Pagado', type: 'boolean' } ]
                 dql_filter: 'entity.importe < 0'
             form:
-                fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
-            new:
-                title: 'Nuevo Debito'
+                fields: [ 'concepto', 'fecha', 'importe', 'bank' ]
+            #new:
+            #    title: 'Nuevo Debito'
         Credito:
             class: App\Entity\Movimiento
-            label: 'Creditos'
+            label: 'Credits'
             list:
-                title: 'Listado de creditos'
-                fields: [ 'concepto', 'fecha', 'importe', 'banco', { property: 'concretado', label: 'Cobrado', type: 'boolean' } ]
+                title: 'Credits'
+                fields: [ 'concepto', 'fecha', 'importe', 'bank', { property: 'concretado', label: 'Cobrado', type: 'boolean' } ]
                 actions:
                     - { name: 'new', label: 'Nuevo Credito' }
                 dql_filter: 'entity.importe > 0'
             form:
-                fields: [ 'concepto', 'fecha', 'importe', 'banco' ]
+                fields: [ 'concepto', 'fecha', 'importe', 'bank' ]
             new:
                 title: 'Nuevo Credito'
         GastoFijo:
             class: App\Entity\GastoFijo
             label: 'Gastos fijos'
             list:
-                title: 'Listado de Gastos Fijos'
-                fields: [ 'concepto', 'dia', 'fechaFin', 'importe', 'banco' ]
+                title: 'Gastos Fijos'
+                fields: [ 'concepto', 'dia', 'fechaFin', 'importe', 'bank' ]
                 actions:
                     - { name: 'new', label: 'Crear Gasto Fijo' }
             form:
-                fields: [ 'concepto', 'dia',  { property: 'fechaFin', type: 'date' }, 'importe', 'banco' ]
+                fields: [ 'concepto', 'dia',  { property: 'fechaFin', type: 'date' }, 'importe', 'bank' ]
 
 #        - App\Entity\User
     site_name: '<img src="%router.request_context.base_url%/img/logo.png" /> Rotschild'
@@ -72,6 +69,7 @@ easy_admin:
             - { label: 'Cheques emitidos', route: 'confirm_issued_checks' }
             - { label: 'Cheques aplicados', route: 'process_applied_checks'}
             - { label: 'Movimientos'}
+            - { label: 'Balances', route: 'show_bank_balance'}
             - Debito
             - Credito
             - { label: 'Configuración' }
