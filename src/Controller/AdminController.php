@@ -489,20 +489,18 @@ class AdminController extends BaseAdminController
 
     /**
      * @param Request $request
-     * @Route(path="/bank/matchSummaries", name="match_bank_summaries")
+     * @Route(path="/bank/matchSummaries", name="match_bank_summaries", options={"expose"=true})
      */
     public function matchBankSummaries(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
-        $banks = $em->getRepository('App:Bank')->findAll();
+        $bankRepository = $em->getRepository('App:Bank');
+        $banks = $bankRepository->findAll();
 
-        $form = $this
-            ->createFormBuilder(
-                null,
-                [
-                    'allow_extra_fields' => true,
-                ]
-            )
+        $bank = $request->get('bankId') ? $bankRepository->find( $request->get('bankId') ) : current( $banks );
+
+        $formBuilder = $this
+            ->createFormBuilder()
             ->add(
                 'bank',
                 ChoiceType::class,
@@ -516,23 +514,47 @@ class AdminController extends BaseAdminController
 
                         return !empty($b) ? $b->getId() : null;
                     },
-                    'label' => 'Banco',
-                    'required' => false,
+                    'data' => $bank,
                 ]
-            )
-            ->add(
-                'submit',
-                SubmitType::class,
-                [
-                    'label' => 'Confirmar',
-                    'attr' => [
-                        'class' => 'btn btn-primary',
-                        'style' => 'display: none;'
-                    ],
-                ]
-            )
-            ->getForm();
+            );
 
+        $summaryLines = [];
+        if ( $bank ) {
+            $projectedCredits = $bank->getCreditosProyectados();
+            $projectedDebits = $bank->getDebitosProyectados();
+
+            foreach ( $bank->getExtractos() as $extracto ) {
+                foreach ( $extracto->getRenglones() as $renglon ) {
+                    $formBuilder->add(
+                        'match-'.$renglon->getId(),
+                        ChoiceType::class,
+                        [
+                            'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
+                            'choice_label' => function( Movimiento $movimiento ) {
+
+                                return $movimiento->__toString();
+                            },
+                            'label' => $renglon->getFecha()->format('d/m/Y').': '.$renglon->getConcepto().' '.$renglon->getImporte(),
+                        ]
+                    );
+                    $summaryLines[] = $renglon;
+                }
+            }
+        }
+
+        $formBuilder->add(
+            'submit',
+            SubmitType::class,
+            [
+                'label' => 'Confirm',
+                'attr' => [
+                    'class' => 'btn btn-primary',
+                    'style' => 'display: none;'
+                ],
+            ]
+        );
+
+        $form = $formBuilder->getForm();
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -560,6 +582,7 @@ class AdminController extends BaseAdminController
             'admin/match_bank_summaries.html.twig',
             [
                 'form' => $form->createView(),
+                'summaryLines' => $summaryLines
             ]
         );
     }
