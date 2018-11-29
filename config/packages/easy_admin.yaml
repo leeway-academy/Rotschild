@@ -46,11 +46,11 @@ easy_admin:
             label: 'Gastos fijos'
             list:
                 title: 'Gastos Fijos'
-                fields: [ 'concepto', 'dia', 'fechaFin', 'importe', 'bank' ]
+                fields: [ 'concepto', 'dia', { property: 'fechaFin', type: 'date' }, 'importe', 'bank' ]
                 actions:
                     - { name: 'new', label: 'Crear Gasto Fijo' }
             form:
-                fields: [ 'concepto', 'dia',  { property: 'fechaFin', type: 'date' }, 'importe', 'bank' ]
+                fields: [ 'concepto', 'dia', { property: 'fechaFin', type: 'date' }, 'importe', 'bank' ]
 
 #        - App\Entity\User
     site_name: '<img src="%router.request_context.base_url%/img/logo.png" /> Rotschild'
