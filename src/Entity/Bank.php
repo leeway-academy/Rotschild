@@ -9,8 +9,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\BancoRepository")
+ * @ORM\Table(name="bank")
  */
-class Banco
+class Bank
 {
     /**
      * @ORM\Id()
@@ -25,18 +26,18 @@ class Banco
     private $nombre;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Movimiento", mappedBy="banco")
+     * @ORM\OneToMany(targetEntity="App\Entity\Movimiento", mappedBy="bank")
      * @ORM\OrderBy({"fecha"="ASC"})
      */
     private $movimientos;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\GastoFijo", mappedBy="banco")
+     * @ORM\OneToMany(targetEntity="App\Entity\GastoFijo", mappedBy="bank")
      */
     private $gastosFijos;
 
     /**
-     * @ORM\OneToMany(targetEntity="SaldoBancario", mappedBy="banco", orphanRemoval=true, indexBy="fecha")
+     * @ORM\OneToMany(targetEntity="SaldoBancario", mappedBy="bank", orphanRemoval=true, indexBy="fecha")
      * @ORM\OrderBy({"fecha"="ASC"})
      */
     private $saldos;
@@ -47,12 +48,12 @@ class Banco
     private $codigo;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\BankXLSStructure", mappedBy="banco")
+     * @ORM\OneToOne(targetEntity="App\Entity\BankXLSStructure", mappedBy="bank")
      */
     private $xlsStructure = null;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\ExtractoBancario", mappedBy="banco", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity="App\Entity\ExtractoBancario", mappedBy="bank", orphanRemoval=true)
      */
     private $extractos;
 
@@ -66,7 +67,7 @@ class Banco
 
     /**
      * @param mixed $codigo
-     * @return Banco
+     * @return Bank
      */
     public function setCodigo($codigo)
     {
@@ -111,7 +112,7 @@ class Banco
     {
         if (!$this->movimientos->contains($movimiento)) {
             $this->movimientos[] = $movimiento;
-            $movimiento->setBanco($this);
+            $movimiento->setBank($this);
         }
 
         return $this;
@@ -122,8 +123,8 @@ class Banco
         if ($this->movimientos->contains($movimiento)) {
             $this->movimientos->removeElement($movimiento);
             // set the owning side to null (unless already changed)
-            if ($movimiento->getBanco() === $this) {
-                $movimiento->setBanco(null);
+            if ($movimiento->getBank() === $this) {
+                $movimiento->setBank(null);
             }
         }
 
@@ -147,7 +148,7 @@ class Banco
     {
         if (!$this->gastosFijos->contains($gastosFijo)) {
             $this->gastosFijos[] = $gastosFijo;
-            $gastosFijo->setBanco($this);
+            $gastosFijo->setBank($this);
         }
 
         return $this;
@@ -158,8 +159,8 @@ class Banco
         if ($this->gastosFijos->contains($gastosFijo)) {
             $this->gastosFijos->removeElement($gastosFijo);
             // set the owning side to null (unless already changed)
-            if ($gastosFijo->getBanco() === $this) {
-                $gastosFijo->setBanco(null);
+            if ($gastosFijo->getBank() === $this) {
+                $gastosFijo->setBank(null);
             }
         }
 
@@ -178,7 +179,7 @@ class Banco
     {
         if (!$this->saldos->contains($saldo)) {
             $this->saldos[ $saldo->getFecha()->format('Y-m-d') ] = $saldo;
-            $saldo->setBanco($this);
+            $saldo->setBank($this);
         }
 
         return $this;
@@ -189,8 +190,8 @@ class Banco
         if ($this->saldos->contains($saldo)) {
             $this->saldos->removeElement($saldo);
             // set the owning side to null (unless already changed)
-            if ($saldo->getBanco() === $this) {
-                $saldo->setBanco(null);
+            if ($saldo->getBank() === $this) {
+                $saldo->setBank(null);
             }
         }
 
@@ -225,7 +226,7 @@ class Banco
 
         $saldoActual = new SaldoBancario();
         $saldoActual->setValor(0);
-        $saldoActual->setBanco( $this );
+        $saldoActual->setBank( $this );
 
         $primerSaldo = $saldos->first();
         if ( $primerSaldo ) {
@@ -288,7 +289,7 @@ class Banco
 
     /**
      * @param BankXLSStructure|null $xlsStructure
-     * @return Banco
+     * @return Bank
      */
     public function setXLSStructure(BankXLSStructure $xlsStructure = null )
     {
@@ -348,7 +349,7 @@ class Banco
     {
         if (!$this->extractos->contains($extracto)) {
             $this->extractos[] = $extracto;
-            $extracto->setBanco($this);
+            $extracto->setBank($this);
         }
 
         return $this;
@@ -359,8 +360,8 @@ class Banco
         if ($this->extractos->contains($extracto)) {
             $this->extractos->removeElement($extracto);
             // set the owning side to null (unless already changed)
-            if ($extracto->getBanco() === $this) {
-                $extracto->setBanco(null);
+            if ($extracto->getBank() === $this) {
+                $extracto->setBank(null);
             }
         }
 

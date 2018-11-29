@@ -17,7 +17,7 @@ class ChequeEmitido
     private $id;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Banco", inversedBy="chequesEmitidos")
+     * @ORM\ManyToOne(targetEntity="Bank", inversedBy="chequesEmitidos")
      * @ORM\JoinColumn(nullable=false)
      */
     private $banco;
@@ -42,12 +42,12 @@ class ChequeEmitido
         return $this->id;
     }
 
-    public function getBanco(): ?Banco
+    public function getBanco(): ?Bank
     {
         return $this->banco;
     }
 
-    public function setBanco(?Banco $banco): self
+    public function setBanco(?Bank $banco): self
     {
         $this->banco = $banco;
 

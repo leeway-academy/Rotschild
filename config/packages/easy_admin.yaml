@@ -1,8 +1,8 @@
 easy_admin:
     entities:
         # List the entity class name you want to manage
-        Banco:
-            class: 'App\Entity\Banco'
+        Bank:
+            class: 'App\Entity\Bank'
             label: 'Bancos'
             list:
                 title: 'Listado de bancos'
@@ -76,6 +76,6 @@ easy_admin:
             - Credito
             - { label: 'Configuración' }
             - GastoFijo
-            - Banco
+            - Bank
     formats:
         date: 'd/m/Y'

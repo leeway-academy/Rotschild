@@ -32,10 +32,10 @@ class Movimiento
     private $importe;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Banco", inversedBy="movimientos")
-     * @ORM\JoinColumn(nullable=false)
+     * @ORM\ManyToOne(targetEntity="Bank", inversedBy="movimientos")
+     * @ORM\JoinColumn(nullable=false, name="banco_id")
      */
-    private $banco;
+    private $bank;
 
     /**
      * @ORM\Column(type="boolean")
@@ -88,14 +88,14 @@ class Movimiento
         return $this;
     }
 
-    public function getBanco(): ?Banco
+    public function getBank(): ?Bank
     {
-        return $this->banco;
+        return $this->bank;
     }
 
-    public function setBanco(?Banco $banco): self
+    public function setBank(?Bank $bank): self
     {
-        $this->banco = $banco;
+        $this->bank = $bank;
 
         return $this;
     }

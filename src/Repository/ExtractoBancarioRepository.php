@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\Banco;
+use App\Entity\Bank;
 use App\Entity\ExtractoBancario;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;

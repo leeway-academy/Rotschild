@@ -47,10 +47,10 @@ class BankXLSStructure
     private $dateFormat;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\Banco", cascade={"persist", "remove"}, inversedBy="xlsStructure")
-     * @ORM\JoinColumn(nullable=false)
+     * @ORM\OneToOne(targetEntity="Bank", cascade={"persist", "remove"}, inversedBy="xlsStructure")
+     * @ORM\JoinColumn(nullable=false, name="banco_id")
      */
-    private $banco;
+    private $bank;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
@@ -134,14 +134,14 @@ class BankXLSStructure
         return $this;
     }
 
-    public function getBanco(): ?Banco
+    public function getBank(): ?Bank
     {
-        return $this->banco;
+        return $this->bank;
     }
 
-    public function setBanco(Banco $banco): self
+    public function setBank(Bank $bank): self
     {
-        $this->banco = $banco;
+        $this->bank = $bank;
 
         return $this;
     }

@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\AppliedCheck;
-use App\Entity\Banco;
+use App\Entity\Bank;
 use App\Entity\ChequeEmitido;
 use App\Entity\ExtractoBancario;
 use App\Entity\GastoFijo;
@@ -41,18 +41,13 @@ class AdminController extends BaseAdminController
      */
     public function cargarSaldoAction(Request $request)
     {
-        if ('Banco' !== $request->get('entity')) {
-
-            throw new InvalidArgumentException();
-        }
-
         if (empty($request->get('id'))) {
 
             throw new InvalidArgumentException();
         }
 
         $em = $this->getDoctrine()->getManager();
-        $repository = $this->getDoctrine()->getRepository('App:Banco');
+        $repository = $this->getDoctrine()->getRepository('App:Bank');
 
         $id = $request->query->get('id');
         $banco = $repository->find($id);
@@ -62,7 +57,7 @@ class AdminController extends BaseAdminController
         if (($saldo = $banco->getSaldo($fecha)) == null) {
             $saldo = new SaldoBancario();
             $saldo->setFecha($fecha);
-            $saldo->setBanco($banco);
+            $saldo->setBank($banco);
         }
 
         $form = $this
@@ -80,7 +75,13 @@ class AdminController extends BaseAdminController
             $em->persist($saldo);
             $em->flush();
 
-            return $this->redirectToRoute('easyadmin', array('entity' => 'Banco', 'action' => 'list'));
+            return $this->redirectToRoute(
+                'easyadmin',
+                [
+                    'entity' => 'Bank',
+                    'action' => 'list'
+                ]
+            );
         } else {
 
             return $this->render(
@@ -167,7 +168,7 @@ class AdminController extends BaseAdminController
                 ->setConcepto($gastoFijo->getConcepto())
                 ->setFecha($curDate)
                 ->setImporte($gastoFijo->getImporte() * -1)
-                ->setBanco($gastoFijo->getBanco())
+                ->setBank($gastoFijo->getBank())
                 ->setClonDe($gastoFijo);
 
             $this->em->persist($movimiento);
@@ -191,7 +192,7 @@ class AdminController extends BaseAdminController
             if ($movimiento->getFecha()->diff($hoy)->d >= 0) {
                 $movimiento->setConcepto($gastoFijo->getConcepto());
                 $movimiento->setImporte($gastoFijo->getImporte() * -1);
-                $movimiento->setBanco($gastoFijo->getBanco());
+                $movimiento->setBank($gastoFijo->getBank());
                 $this->em->persist($movimiento);
             }
         }
@@ -229,7 +230,7 @@ class AdminController extends BaseAdminController
 
         $banks = $this
             ->getDoctrine()
-            ->getRepository('App:Banco')
+            ->getRepository('Bank')
             ->findAll();
 
         foreach ($banks as $bank) {
@@ -267,7 +268,7 @@ class AdminController extends BaseAdminController
                     $fileName = $parts[0];
 
                     if ($parts[0] == 'BankSummary') {
-                        $bank = $em->getRepository('App:Banco')->find($parts[1]);
+                        $bank = $em->getRepository('Bank')->find($parts[1]);
                         $fileName .= '_' . $bank->getNombre();
                     }
 
@@ -282,7 +283,7 @@ class AdminController extends BaseAdminController
                     $extracto = new ExtractoBancario();
                     $extracto
                         ->setArchivo($fileName)
-                        ->setBanco($bank)
+                        ->setBank($bank)
                         ->setFecha(new \DateTimeImmutable());
                     $em->persist($extracto);
                     foreach ($lines as $k => $line) {
@@ -363,7 +364,7 @@ class AdminController extends BaseAdminController
                         $chequeEmitido
                             ->setImporte($line['amount'])
                             ->setFecha($line['date'])
-                            ->setBanco($em->getRepository('App:Banco')->findOneBy(['codigo' => $line['bankCode']]))
+                            ->setBanco($em->getRepository('Bank')->findOneBy(['codigo' => $line['bankCode']]))
                             ->setNumero($line['checkNumber']);
                         $em->persist($chequeEmitido);
                     }
@@ -490,7 +491,7 @@ class AdminController extends BaseAdminController
     public function matchBankSummaries(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
-        $banks = $em->getRepository('App:Banco')->findAll();
+        $banks = $em->getRepository('Bank')->findAll();
 
         $form = $this
             ->createFormBuilder(
@@ -504,11 +505,11 @@ class AdminController extends BaseAdminController
                 ChoiceType::class,
                 [
                     'choices' => $banks,
-                    'choice_label' => function (Banco $b) {
+                    'choice_label' => function (Bank $b) {
 
                         return $b->__toString();
                     },
-                    'choice_value' => function (Banco $b = null) {
+                    'choice_value' => function (Bank $b = null) {
 
                         return !empty($b) ? $b->getId() : null;
                     },
@@ -561,10 +562,10 @@ class AdminController extends BaseAdminController
     }
 
     /**
-     * @param Banco $banco
+     * @param Bank $banco
      * @Route(name="get_unmatched_summary_lines", path="/bank/{id}/unmatchedSummaryLines")
      */
-    public function getUnmatchedSummaryLines(Request $request, Banco $banco)
+    public function getUnmatchedSummaryLines(Request $request, Bank $banco)
     {
         if (!$request->isXmlHttpRequest()) {
 
@@ -587,11 +588,11 @@ class AdminController extends BaseAdminController
     }
 
     /**
-     * @param Banco $banco
+     * @param Bank $banco
      * @Route(name="get_projected_debits", path="/bank/{id}/projectedDebits", options={"expose"=true})
      * @return JsonResponse
      */
-    public function getProjectedDebits(Request $request, Banco $banco)
+    public function getProjectedDebits(Request $request, Bank $banco)
     {
         if (!$request->isXmlHttpRequest()) {
 
@@ -612,10 +613,10 @@ class AdminController extends BaseAdminController
     }
 
     /**
-     * @param Banco $banco
+     * @param Bank $banco
      * @Route(name="get_projected_credits", path="/bank/{id}/projectedCredits", options={"expose"=true})
      */
-    public function getProjectedCredits(Request $request, Banco $banco)
+    public function getProjectedCredits(Request $request, Bank $banco)
     {
         if (!$request->isXmlHttpRequest()) {
 
@@ -688,7 +689,7 @@ class AdminController extends BaseAdminController
 
                     if ($datum instanceof Movimiento) {
                         $datum
-                            ->setBanco($check->getBanco())
+                            ->setBank($check->getBanco())
                             ->setImporte($check->getImporte() * -1)
                             ->setConcepto('Cheque ' . $check->getNumero())
                             ->setFecha($check->getFecha())/** @Todo probably will need to be some time in the future */
@@ -726,7 +727,7 @@ class AdminController extends BaseAdminController
          */
         $formBuilder = $this->createFormBuilder();
 
-        $bancos = $this->getDoctrine()->getRepository('App:Banco')->findAll();
+        $bancos = $this->getDoctrine()->getRepository('Bank')->findAll();
         $criteria = Criteria::create()
             ->where(Criteria::expr()->lt('importe', 0))
             ->andWhere(Criteria::expr()->eq('concretado', false));
@@ -781,7 +782,7 @@ class AdminController extends BaseAdminController
                     if (!empty($recipientBank)) {
                         $movimiento = new Movimiento();
                         $movimiento
-                            ->setBanco($recipientBank)
+                            ->setBank($recipientBank)
                             ->setImporte($check->getAmount())
                             ->setFecha($check->getCreditDate())
                             ->setConcepto('Acreditacion de cheque ' . $check->getNumber());

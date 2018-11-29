@@ -2,21 +2,21 @@
 
 namespace App\Repository;
 
-use App\Entity\Banco;
+use App\Entity\Bank;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
- * @method Banco|null find($id, $lockMode = null, $lockVersion = null)
- * @method Banco|null findOneBy(array $criteria, array $orderBy = null)
- * @method Banco[]    findAll()
- * @method Banco[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Bank|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Bank|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Bank[]    findAll()
+ * @method Bank[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class BancoRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, Banco::class);
+        parent::__construct($registry, Bank::class);
     }
 
 //    /**

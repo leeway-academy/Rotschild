@@ -71,7 +71,7 @@ class CopyFixedExpensesCommand extends ContainerAwareCommand
                     ->setFecha($newDate)
                     ->setConcepto($gastoFijo->getConcepto())
                     ->setImporte($gastoFijo->getImporte() * -1)
-                    ->setBanco($gastoFijo->getBanco())
+                    ->setBank($gastoFijo->getBanco())
                 ;
                 $em->persist($debito);
             } else {

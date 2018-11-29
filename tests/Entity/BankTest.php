@@ -11,23 +11,23 @@ namespace App\Tests\Entity;
 use App\Entity\Movimiento;
 use App\Entity\SaldoBancario;
 use PHPUnit\Framework\TestCase;
-use App\Entity\Banco;
+use App\Entity\Bank;
 
-class BancoTest extends TestCase
+class BankTest extends TestCase
 {
     public function testGetSaldoNoFuncionaParaSaldosNoCargados()
     {
-        $banco = new Banco();
+        $banco = new Bank();
 
         $this->assertNull( $banco->getSaldo( new \DateTimeImmutable() ), 'El saldo no es null' );
     }
 
     public function testGetSaldoDevuelveUltimoSaldoSiNoSeAclaraFecha()
     {
-        $banco = new Banco();
+        $banco = new Bank();
         $saldo1 = new SaldoBancario();
 
-        $saldo1->setBanco($banco);
+        $saldo1->setBank($banco);
         $saldo1->setValor(10);
         $saldo1->setFecha(new \DateTimeImmutable('Yesterday') );
         $banco->addSaldo( $saldo1 );
@@ -47,7 +47,7 @@ class BancoTest extends TestCase
         $saldo1->setFecha($fecha1);
         $saldo1->setValor( 1000 );
 
-        $banco = new Banco();
+        $banco = new Bank();
         $banco->addSaldo( $saldo1 );
 
         $movimiento1 = new Movimiento();
