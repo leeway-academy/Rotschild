@@ -7,109 +7,42 @@
     <div id="wait" style="display: none;">
         <h3>Cargando...</h3>
     </div>
-    {{ form_start(form) }}
-    {{ form_row(form.bank) }}
-    <div id="matching" style="display: none;">
-        <table width="100%" class="table-responsive table-bordered table-striped">
-            <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Concepto</th>
-                <th>Importe</th>
-                <th>Movimiento presupuestado</th>
-                <th>&nbsp;</th>
-                <th>&nbsp;</th>
-            </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-    <div id="noUnmatched" style="display: none;">
-        <p>No se encuentran extractos para conciliar</p>
-    </div>
-    {{ form_end(form) }}
+    {{ form(form) }}
+    {#{{ form_start(form) }}#}
+    {#{{ form_row(form.bank) }}#}
+    {#{{ form_rest(form) }}#}
+    {#<br/>#}
+    {#<br/>#}
+    {#<br/>#}
+    {#<div>#}
+        {#<table width="100%">#}
+            {#<thead>#}
+            {#<tr>#}
+                {#<th>Extracto</th>#}
+                {#<th>Movimiento presupuestado</th>#}
+                {#<th>&nbsp;</th>#}
+                {#<th>&nbsp;</th>#}
+            {#</tr>#}
+            {#</thead>#}
+            {#<tbody>#}
+            {#{% for l in summaryLines %}#}
+                {#<tr>#}
+                    {#<td>Sarasa</td>#}
+                    {#<td>{{ form_widget(form) }}</td>#}
+                {#</tr>#}
+            {#{% endfor %}#}
+            {#</tbody>#}
+        {#</table>#}
+    {#</div>#}
+    {#{{ form_end(form) }}#}
 {% endblock %}
 
 {% block body_javascript %}
     {{ parent() }}
     <script type="text/javascript">
-        // Create our number formatter.
-        var formatter = new Intl.NumberFormat('es-AR', {
-            style: 'currency',
-            currency: 'ARS',
-            minimumFractionDigits: 2,
-            // the default value for minimumFractionDigits depends on the currency
-            // and is usually already 2
-        });
-
         $('#form_bank').change(function(){
-            if ( bankId = $('#form_bank').val() ) {
-                var urlCredits = bankId + '/projectedCredits';
-
-                var projectedDebits = [];
-                var projectedCredits = [];
-
-                $.when(
-                    $.ajax(Routing.generate('get_projected_debits', { id: bankId } )),
-                    $.ajax(Routing.generate('get_projected_credits', { id: bankId } ))
-                ).done( function( a1, a2 ) {
-                    projectedDebits = a1[0];
-                    projectedCredits = a2[0];
-                } );
-
-                var url = bankId + '/unmatchedSummaryLines';
-
-                $.get(
-                    url,
-                    function( data ) {
-                        if ( Object.keys(data).length > 0 ) {
-                            $.each( data, function ( i, d ) {
-                                var selectMarkUp = '<select name="form_match_' + i +'" id="form_match_' + i +'">' +
-                                    '<option value=""></option>';
-
-                                var projectedTransactions = parseFloat( d['amount'] ) > 0 ? projectedCredits : projectedDebits;
-                                $.each( projectedTransactions, function ( k, t ) {
-                                    selectMarkUp += '<option value="' + k + '">' + t['date'] + ' ' + t['concept'] + ' ' + formatter.format(t['amount']) + '</option>';
-                                } );
-
-                                selectMarkUp += '</select>';
-
-                                var entity = d['amount'] > 0 ? 'Credito' : 'Debito';
-                                var newLink = "/?entity=" + entity + "&action=new";
-
-                                var markup = '' +
-                                    '<tr>' +
-                                    '<td>' + d['date'] + '</td><td>' + d['concept'] + '</td><td>' + formatter.format(d['amount']) + '</td>' +
-                                    '<td>' + selectMarkUp + '</td>' +
-                                    '<td><a target="_blank" href="" id="update_tx_' + i + '" style="display:none;">Modificar</a></td>' +
-                                    '<td><a target="_blank" href="' + newLink + '">Agregar</a></td>' +
-                                    '</tr>';
-                                $('#matching tbody').append( markup );
-
-                                $('#form_match_' + i).change( function () {
-                                    if ( $('#form_match_' + i ).val() ) {
-                                        var updateLink = "/?entity=Credito&action=edit&id=" + $('#form_match_' + i ).val();
-                                        $('#update_tx_' + i).attr('href', updateLink);
-                                        $('#update_tx_' + i).show();
-                                    } else {
-                                        $('#update_tx_' + i).hide();
-                                    }
-                                });
-                            } );
-                            $('#noUnmatched').hide();
-                            $('#matching').show();
-                            $('#form_submit').show();
-                        } else {
-                            $('#matching').hide();
-                            $('#noUnmatched').show();
-                            $('#form_submit').hide();
-                        }
-                    }
-                );
-            } else {
-                $('#matching').hide();
-                $('#form_submit').hide();
+            if ( selectedBankId = $('#form_bank').val() ) {
+                window.location.href = Routing.generate('match_bank_summaries', { bankId: selectedBankId });
             }
         });
 
