@@ -1,4 +1,7 @@
 {
+    "coldcoder/world": {
+        "version": "v0.6"
+    },
     "composer/ca-bundle": {
         "version": "1.1.2"
     },
@@ -68,6 +71,9 @@
     "doctrine/reflection": {
         "version": "v1.0.0"
     },
+    "dragonmantank/cron-expression": {
+        "version": "v2.2.0"
+    },
     "easycorp/easy-log-handler": {
         "version": "1.0",
         "recipe": {
@@ -89,6 +95,9 @@
     "egulias/email-validator": {
         "version": "2.1.4"
     },
+    "erusev/parsedown": {
+        "version": "1.7.1"
+    },
     "facebook/webdriver": {
         "version": "1.6.0"
     },
@@ -107,11 +116,20 @@
     "jdorn/sql-formatter": {
         "version": "v1.2.17"
     },
+    "laravel/framework": {
+        "version": "v5.7.15"
+    },
+    "league/flysystem": {
+        "version": "1.0.49"
+    },
     "markbaker/complex": {
         "version": "1.4.6"
     },
     "monolog/monolog": {
         "version": "1.23.0"
+    },
+    "nesbot/carbon": {
+        "version": "1.36.1"
     },
     "nikic/php-parser": {
         "version": "v4.0.3"
@@ -119,8 +137,14 @@
     "ocramius/proxy-manager": {
         "version": "2.1.1"
     },
+    "opis/closure": {
+        "version": "3.1.1"
+    },
     "pagerfanta/pagerfanta": {
         "version": "v1.1.0"
+    },
+    "paragonie/random_compat": {
+        "version": "v9.99.99"
     },
     "phpdocumentor/reflection-common": {
         "version": "1.0.1"
@@ -148,6 +172,9 @@
     },
     "psr/simple-cache": {
         "version": "1.0.1"
+    },
+    "ramsey/uuid": {
+        "version": "3.8.0"
     },
     "sensio/framework-extra-bundle": {
         "version": "5.2",
@@ -440,6 +467,9 @@
     "symfony/yaml": {
         "version": "v4.1.3"
     },
+    "tijsverkoyen/css-to-inline-styles": {
+        "version": "2.2.1"
+    },
     "twig/extensions": {
         "version": "1.0",
         "recipe": {
@@ -451,6 +481,9 @@
     },
     "twig/twig": {
         "version": "v2.5.0"
+    },
+    "vlucas/phpdotenv": {
+        "version": "v2.5.1"
     },
     "webmozart/assert": {
         "version": "1.3.0"
