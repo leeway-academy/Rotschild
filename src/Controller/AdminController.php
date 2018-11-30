@@ -534,6 +534,7 @@ class AdminController extends BaseAdminController
                                     return $movimiento->__toString();
                                 },
                                 'label' => $renglon->getFecha()->format('d/m/Y').': '.$renglon->getConcepto().' '.$renglon->getImporte(),
+                                'required' => false,
                             ]
                         );
                     $summaryLines[$renglon->getId()] = $renglon;
@@ -556,24 +557,23 @@ class AdminController extends BaseAdminController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $keyword = 'match_';
+            $keyword = 'match-';
             $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
-            $movimientoRepository = $em->getRepository('App:Movimiento');
-            foreach ($form->getData() as $name => $datum) {
-                if (substr($name, 0, strlen($keyword) == $keyword)) {
-                    $summaryLineId = preg_split('/_/', $name)[1];
+            foreach ($form->getData() as $name => $transaction) {
+                if (substr($name, 0, strlen($keyword)) == $keyword && $transaction) {
+                    $summaryLineId = preg_split('/-/', $name)[1];
 
                     if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
                         $em->remove($summaryLine);
                     }
-                    if ($tx = $movimientoRepository->find($datum)) {
-                        $tx->setConcretado(true);
-                        $em->persist($tx);
-                    }
+                    $transaction->setConcretado(true);
+                    $em->persist($transaction);
                 }
             }
 
             $em->flush();
+
+            return $this->redirectToRoute('match_bank_summaries', [ 'bankId' => $bank->getId() ] );
         }
 
         return $this->render(
