@@ -548,7 +548,6 @@ class AdminController extends BaseAdminController
                 'label' => 'Confirm',
                 'attr' => [
                     'class' => 'btn btn-primary',
-                    'style' => 'display: none;'
                 ],
             ]
         );
