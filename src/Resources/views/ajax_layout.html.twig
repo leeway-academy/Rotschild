@@ -1,0 +1,80 @@
+        {% block head_stylesheets %}
+            <link rel="stylesheet" href="{{ asset('bundles/easyadmin/stylesheet/easyadmin-all.min.css') }}">
+            <style>
+                {{ easyadmin_config('_internal.custom_css')|raw }}
+            </style>
+        {% endblock %}
+
+        {% for css_asset in easyadmin_config('design.assets.css') %}
+            <link rel="stylesheet" href="{{ asset(css_asset) }}">
+        {% endfor %}
+
+        {% block head_favicon %}
+            {% set favicon = easyadmin_config('design.assets.favicon') %}
+            <link rel="icon" type="{{ favicon.mime_type }}" href="{{ asset(favicon.path) }}" />
+        {% endblock %}
+
+        {% block head_javascript %}
+            {% block adminlte_options %}
+                <script type="text/javascript">
+                    var AdminLTEOptions = {
+                        animationSpeed: 'normal',
+                        sidebarExpandOnHover: false,
+                        enableBoxRefresh: false,
+                        enableBSToppltip: false,
+                        enableFastclick: false,
+                        enableControlSidebar: false,
+                        enableBoxWidget: false
+                    };
+                </script>
+            {% endblock %}
+
+            <script src="{{ asset('bundles/easyadmin/javascript/easyadmin-all.min.js') }}"></script>
+        {% endblock head_javascript %}
+
+        {% if easyadmin_config('design.rtl') %}
+            <link rel="stylesheet" href="{{ asset('bundles/easyadmin/stylesheet/bootstrap-rtl.min.css') }}">
+            <link rel="stylesheet" href="{{ asset('bundles/easyadmin/stylesheet/adminlte-rtl.min.css') }}">
+        {% endif %}
+
+    {% block body %}
+    <body id="{% block body_id %}{% endblock %}" class="easyadmin sidebar-mini {% block body_class %}{% endblock %} {{ app.request.cookies.has('_easyadmin_navigation_iscollapsed') ? 'sidebar-collapse' }}">
+        <div class="wrapper">
+        {% block wrapper %}
+            <div class="content-wrapper">
+            {% block content %}
+                {% block flash_messages %}
+                    {{ include(_entity_config is defined ? _entity_config.templates.flash_messages : '@EasyAdmin/default/flash_messages.html.twig') }}
+                {% endblock flash_messages %}
+
+                <section class="content-header">
+                {% block content_header %}
+                    <h1 class="title">{% block content_title %}{% endblock %}</h1>
+                {% endblock content_header %}
+                {% block content_help %}
+                    {% if _entity_config is defined and _entity_config[app.request.query.get('action')]['help']|default(false) %}
+                        <div class="box box-widget help-entity">
+                            <div class="box-body">
+                                {{ _entity_config[app.request.query.get('action')]['help']|trans(domain = _entity_config.translation_domain)|raw }}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endblock content_help %}
+                </section>
+
+                <section id="main" class="content">
+                    {% block main %}{% endblock %}
+                </section>
+            {% endblock content %}
+            </div>
+        {% endblock wrapper %}
+        </div>
+
+        {% block body_javascript %}{% endblock body_javascript %}
+
+        {% for js_asset in easyadmin_config('design.assets.js') %}
+            <script src="{{ asset(js_asset) }}"></script>
+        {% endfor %}
+    </body>
+    {% endblock body %}
+</html>
