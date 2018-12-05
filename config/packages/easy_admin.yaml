@@ -25,7 +25,7 @@ easy_admin:
                 fields: [ 'concepto', 'fecha', 'importe', 'bank', { property: 'concretado', label: 'Pagado', type: 'boolean' } ]
                 dql_filter: 'entity.importe < 0'
             form:
-                fields: [ 'concepto', 'fecha', 'importe', 'bank' ]
+                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: 'ARS' } }, 'bank' ]
             #new:
             #    title: 'Nuevo Debito'
         Credito:
@@ -38,7 +38,7 @@ easy_admin:
                     - { name: 'new', label: 'Nuevo Credito' }
                 dql_filter: 'entity.importe > 0'
             form:
-                fields: [ 'concepto', 'fecha', 'importe', 'bank' ]
+                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: 'ARS' } }, 'bank' ]
             new:
                 title: 'Nuevo Credito'
         GastoFijo:
