@@ -973,7 +973,14 @@ class AdminController extends BaseAdminController
                 return $this->redirectToReferrer();
             } else {
 
-                return new JsonResponse();
+                return new JsonResponse(
+                    [
+                        'id' => $entity->getId(),
+                        'importe' => $entity->getImporte(),
+                        'concepto' => $entity->getConcepto(),
+                        'fecha' => $entity->getFecha(),
+                    ]
+                );
             }
         }
 
