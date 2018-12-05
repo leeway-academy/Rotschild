@@ -25,9 +25,10 @@ easy_admin:
                 fields: [ 'concepto', 'fecha', 'importe', 'bank', { property: 'concretado', label: 'Pagado', type: 'boolean' } ]
                 dql_filter: 'entity.importe < 0'
             form:
-                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: 'ARS' } }, 'bank' ]
-            #new:
-            #    title: 'Nuevo Debito'
+                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank' ]
+            templates:
+                new: 'new_tx.html.twig'
+                ajax_layout: 'ajax_layout.html.twig'
         Credito:
             class: App\Entity\Movimiento
             label: 'Credits'
@@ -38,9 +39,7 @@ easy_admin:
                     - { name: 'new', label: 'Nuevo Credito' }
                 dql_filter: 'entity.importe > 0'
             form:
-                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: 'ARS' } }, 'bank' ]
-            new:
-                title: 'Nuevo Credito'
+                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank' ]
         GastoFijo:
             class: App\Entity\GastoFijo
             label: 'Gastos fijos'
@@ -52,7 +51,6 @@ easy_admin:
             form:
                 fields: [ 'concepto', 'dia', { property: 'fechaFin', type: 'date' }, 'importe', 'bank' ]
 
-#        - App\Entity\User
     site_name: '<img src="%router.request_context.base_url%/img/logo.png" /> Rotschild'
     design:
         brand_color: '#17509D'
@@ -75,5 +73,6 @@ easy_admin:
             - { label: 'Configuración' }
             - GastoFijo
             - Bank
+        form_theme: '@EasyAdmin/form/bootstrap_3_layout.html.twig'
     formats:
         date: 'd/m/Y'
