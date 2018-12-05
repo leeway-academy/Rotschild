@@ -8,21 +8,21 @@
         <h3>Cargando...</h3>
     </div>
     {{ form_start(form) }}
-        {{ form_row(form.bank) }}
+    {{ form_row(form.bank) }}
     <br/>
     <br/>
     <br/>
     <div style="width: 100%;height: 100%" class="table-responsive">
         <table width="100%" class="table table-striped table-bordered">
             <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Concepto</th>
-                    <th>Importe</th>
-                    <th>Movimiento presupuestado</th>
-                    <th>&nbsp;</th>
-                    <th>&nbsp;</th>
-                </tr>
+            <tr>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Importe</th>
+                <th>Movimiento presupuestado</th>
+                <th>&nbsp;</th>
+                <th>&nbsp;</th>
+            </tr>
             </thead>
             <tbody>
             {% for k, l in summaryLines %}
@@ -34,10 +34,11 @@
                 <tr>
                     <td>{{ l.fecha | date('d/m/Y') }}</td>
                     <td>{{ l.concepto }}</td>
-                    <td>$ {{ l.importe | number_format(2, ',', '.')}}</td>
+                    <td>$ {{ l.importe | number_format(2, ',', '.') }}</td>
                     <td>{{ form_widget(form['match-' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
                     <td><a href="#" onclick="add_tx('{{ txType }}');">{{ ('Add ' ~ txType) | trans }}</a></td>
-                    <td><a href="#" onclick="update_tx('{{ form['match-' ~ k].vars.id }}', '{{ txType }}');" style="display: none;" id="update_tx-{{ k }}">{{ ('Update ' ~ txType ) | trans }}</a></td>
+                    <td><a href="#" onclick="update_tx('{{ form['match-' ~ k].vars.id }}', '{{ txType }}');"
+                           style="display: none;" id="update_tx-{{ k }}">{{ ('Update ' ~ txType ) | trans }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -47,7 +48,8 @@
     {{ form_end(form) }}
 
     <!-- Modal -->
-    <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle" aria-hidden="true">
+    <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle"
+         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-body" id="modal-body">
@@ -60,58 +62,71 @@
 {% block body_javascript %}
     {{ parent() }}
     <script type="text/javascript">
-        $('#form_bank').change(function(){
-            if ( selectedBankId = $('#form_bank').val() ) {
-                window.location.href = Routing.generate('match_bank_summaries', { bankId: selectedBankId });
+        $('#form_bank').change(function () {
+            if (selectedBankId = $('#form_bank').val()) {
+                window.location.href = Routing.generate('match_bank_summaries', {bankId: selectedBankId});
             }
         });
 
-        $('.selectTx').on('change', function( e ){
+        $('.selectTx').on('change', function (e) {
             var selectId = this.id;
             var selectedValue = this.value;
 
-            if ( selectedValue ) {
-                $( '#update_tx-' + selectId.substr(selectId.indexOf('-') + 1 ) ).show();
+            if (selectedValue) {
+                $('#update_tx-' + selectId.substr(selectId.indexOf('-') + 1)).show();
             } else {
-                $( '#update_tx-' + selectId.substr(selectId.indexOf('-') + 1 ) ).hide();
+                $('#update_tx-' + selectId.substr(selectId.indexOf('-') + 1)).hide();
             }
         });
 
-        $(document).ajaxStart(function(){
+        $(document).ajaxStart(function () {
             $("#wait").css("display", "block");
         });
 
-        $(document).ajaxComplete(function(){
+        $(document).ajaxComplete(function () {
             $("#wait").css("display", "none");
         });
 
-        function add_tx( txType )
-        {
+        function add_tx(txType) {
             $.get(
-                Routing.generate('easyadmin', { 'entity' : txType, 'action' : 'new' }),
-                function( data ) {
+                Routing.generate('easyadmin', {'entity': txType, 'action': 'new'}),
+                function (data) {
                     showModal(data);
                 }
             );
         }
 
-        function update_tx( selectId, txType )
-        {
+        function update_tx(selectId, txType) {
             txId = $('#' + selectId).val();
             $.get(
-                Routing.generate('easyadmin', { 'entity' : txType, 'action' : 'edit', 'id' : txId }),
-                function( data ) {
-                    showModal( data );
+                Routing.generate('easyadmin', {'entity': txType, 'action': 'edit', 'id': txId}),
+                function (data) {
+                    showModal(data);
                 }
             );
         }
 
-        function showModal( data )
-        {
-            $('.modal-body').html( data );
+        function showModal(data) {
+            $('.modal-body').html(data);
+            /**
+             * @todo Find a way of preventing the generation of this link from the backend
+             */
+            $('.modal-body .action-list').hide();
+            $('.modal-body button').click(function () {
+                var form = $('.modal-body form');
+                var url = form.attr('action');
+                $.post(
+                    url,
+                    form.serialize(),
+                    function () {
+                        $('#txFormModal').modal('hide');
+                    }
+                );
+
+                return false;
+            });
             $('#txFormModal').modal({
-                backdrop: false,
-                keyboard: false
+                backdrop: false
             });
         }
     </script>
