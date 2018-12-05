@@ -6,6 +6,8 @@
 parameters:
     locale: 'es_AR'
     reports_path: '%kernel.project_dir%/reports'
+    currency: 'ARS'
+    currency_symbol: '$'
 
 services:
     # default configuration for services in *this* file
