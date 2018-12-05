@@ -976,9 +976,7 @@ class AdminController extends BaseAdminController
                 return new JsonResponse(
                     [
                         'id' => $entity->getId(),
-                        'importe' => $entity->getImporte(),
-                        'concepto' => $entity->getConcepto(),
-                        'fecha' => $entity->getFecha(),
+                        'string' => $entity->__toString(),
                     ]
                 );
             }
