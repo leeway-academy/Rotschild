@@ -36,8 +36,8 @@
                     <td>{{ l.concepto }}</td>
                     <td>$ {{ l.importe | number_format(2, ',', '.')}}</td>
                     <td>{{ form_widget(form['match-' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
-                    <td><a href="#" onclick="add_tx();">{{ 'Add transaction' | trans }}</a></td>
-                    <td><a href="#" onclick="update_tx('{{ form['match-' ~ k].vars.id }}', '{{ txType }}');" style="display: none;" id="update_tx-{{ k }}">{{ 'Update transaction' | trans }}</a></td>
+                    <td><a href="#" onclick="add_tx('{{ txType }}');">{{ ('Add ' ~ txType) | trans }}</a></td>
+                    <td><a href="#" onclick="update_tx('{{ form['match-' ~ k].vars.id }}', '{{ txType }}');" style="display: none;" id="update_tx-{{ k }}">{{ ('Update ' ~ txType ) | trans }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -50,19 +50,8 @@
     <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="txFormModalTitle">Modal title</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
                 <div class="modal-body" id="modal-body">
-                    <p>This is the body!!</p>
                 </div>
-                {#<div class="modal-footer">#}
-                    {#<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>#}
-                    {#<button type="button" class="btn btn-primary">Save changes</button>#}
-                {#</div>#}
             </div>
         </div>
     </div>
@@ -98,13 +87,10 @@
 
         function add_tx( txType )
         {
-            txId = $('#' + selectId).val();
             $.get(
-                Routing.generate('easyadmin', { 'entity' : txType, 'action' : 'edit', 'id' : txId }),
+                Routing.generate('easyadmin', { 'entity' : txType, 'action' : 'new' }),
                 function( data ) {
-                    $('#txFormModalTitle').text('{{ 'Add transaction' | trans }}');
-                    $('.modal-body').html( data );
-                    $('#txFormModal').modal('show');
+                    showModal(data);
                 }
             );
         }
@@ -115,13 +101,19 @@
             $.get(
                 Routing.generate('easyadmin', { 'entity' : txType, 'action' : 'edit', 'id' : txId }),
                 function( data ) {
-                    $('#txFormModalTitle').text('{{ 'Update transaction' | trans }}');
-                    $('.modal-body').html( data );
-                    $('#txFormModal').modal('show');
+                    showModal( data );
                 }
             );
         }
 
+        function showModal( data )
+        {
+            $('.modal-body').html( data );
+            $('#txFormModal').modal({
+                backdrop: false,
+                keyboard: false
+            });
+        }
     </script>
     <script src="{{ asset('bundles/fosjsrouting/js/router.min.js') }}"></script>
     <script src="{{ path('fos_js_routing_js', { callback: 'fos.Router.setData' }) }}"></script>
