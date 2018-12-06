@@ -4,7 +4,8 @@ $('.action-save').click(function(){
 
             return false;
         }
-        $('#debito_importe').val( Math.abs($('#debito_importe').val() ) * - 1 );
+
+        $('#debito_importe').val( Math.abs( parseInt( $('#debito_importe').val() ) ) * - 1 );
     }
 
     if ( $('#credito_importe').length ) {
@@ -12,6 +13,7 @@ $('.action-save').click(function(){
 
             return false;
         }
-        $('#credito_importe').val( Math.abs($('#credito_importe').val() ) );
+
+        $('#credito_importe').val( Math.abs( parseInt( $('#credito_importe').val() ) ) );
     }
 });
