@@ -36,8 +36,8 @@
                     <td>{{ l.concepto }}</td>
                     <td>$ {{ l.importe | number_format(2, ',', '.') }}</td>
                     <td>{{ form_widget(form['match-' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
-                    <td><a href="#" onclick="add_tx('{{ txType }}');">{{ ('Add ' ~ txType) | trans }}</a></td>
-                    <td><a href="#" onclick="update_tx('{{ form['match-' ~ k].vars.id }}', '{{ txType }}');"
+                    <td><a href="#" onclick="add_tx('{{ txType }}', '{{ form['match-' ~ k].vars.id }}');">{{ ('Add ' ~ txType) | trans }}</a></td>
+                    <td><a href="#" onclick="update_tx('{{ txType }}', '{{ form['match-' ~ k].vars.id }}');"
                            style="display: none;" id="update_tx-{{ k }}">{{ ('Update ' ~ txType ) | trans }}</a></td>
                 </tr>
             {% endfor %}
@@ -87,26 +87,26 @@
             $("#wait").css("display", "none");
         });
 
-        function add_tx(txType) {
+        function add_tx(txType, selectId) {
             $.get(
                 Routing.generate('easyadmin', {'entity': txType, 'action': 'new'}),
                 function (data) {
-                    showModal(data);
+                    showModal(data, selectId);
                 }
             );
         }
 
-        function update_tx(selectId, txType) {
+        function update_tx(txType, selectId) {
             txId = $('#' + selectId).val();
             $.get(
                 Routing.generate('easyadmin', {'entity': txType, 'action': 'edit', 'id': txId}),
                 function (data) {
-                    showModal(data);
+                    showModal(data, selectId );
                 }
             );
         }
 
-        function showModal(data) {
+        function showModal( data, selectId ) {
             $('.modal-body').html(data);
             /**
              * @todo Find a way of preventing the generation of this link from the backend
@@ -118,7 +118,12 @@
                 $.post(
                     url,
                     form.serialize(),
-                    function () {
+                    function ( data ) {
+                        /**
+                         * @todo Add to the select
+                         */
+                        $('#' + selectId).append(new Option( data.string, data.id ));
+                        $('#' + selectId).val(data.id);
                         $('#txFormModal').modal('hide');
                     }
                 );
