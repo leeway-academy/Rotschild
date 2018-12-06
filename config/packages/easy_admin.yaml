@@ -28,6 +28,7 @@ easy_admin:
                 fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank' ]
             templates:
                 new: 'new_tx.html.twig'
+                edit: 'edit_tx.html.twig'
                 ajax_layout: 'ajax_layout.html.twig'
         Credito:
             class: App\Entity\Movimiento

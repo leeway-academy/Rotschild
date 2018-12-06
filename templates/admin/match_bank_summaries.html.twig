@@ -115,15 +115,18 @@
             $('.modal-body button').click(function () {
                 var form = $('.modal-body form');
                 var url = form.attr('action');
+                prevId = form.attr('data-entity-id');
+
                 $.post(
                     url,
                     form.serialize(),
                     function ( data ) {
-                        /**
-                         * @todo Add to the select
-                         */
+                        if ( prevId ) {
+                            $('#' + selectId + ' option[value="' + prevId + '"]').remove();
+                        }
                         $('#' + selectId).append(new Option( data.string, data.id ));
                         $('#' + selectId).val(data.id);
+                        $('.modal-body').html('');
                         $('#txFormModal').modal('hide');
                     }
                 );
