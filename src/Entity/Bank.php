@@ -218,7 +218,7 @@ class Bank
      * @param \DateTimeInterface $fecha
      * @return SaldoBancario
      */
-    public function getSaldoProyectado(\DateTimeInterface $fecha): SaldoBancario
+    public function getProjectedBalance(\DateTimeInterface $fecha): SaldoBancario
     {
         $unDia = new \DateInterval('P1D');
         $fechaInicial = $fecha->sub( new \DateInterval('P1D') );

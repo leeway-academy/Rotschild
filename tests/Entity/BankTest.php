@@ -8,10 +8,10 @@
 declare(strict_types=1);
 
 namespace App\Tests\Entity;
+use App\Entity\Bank;
 use App\Entity\Movimiento;
 use App\Entity\SaldoBancario;
 use PHPUnit\Framework\TestCase;
-use App\Entity\Bank;
 
 class BankTest extends TestCase
 {
@@ -64,7 +64,7 @@ class BankTest extends TestCase
 
         $fechaActual = new \DateTimeImmutable('yesterday');
 
-        $this->assertEquals( 800, $banco->getSaldoProyectado( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
+        $this->assertEquals( 800, $banco->getProjectedBalance( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
 
         $movimiento3 = new Movimiento();
         $movimiento3->setFecha( $fecha1->add(new \DateInterval('P3D') ) );
@@ -73,6 +73,6 @@ class BankTest extends TestCase
 
         $banco->addMovimiento( $movimiento3 );
 
-        $this->assertEquals( 600, $banco->getSaldoProyectado( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
+        $this->assertEquals( 600, $banco->getProjectedBalance( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
     }
 }
