@@ -86,7 +86,7 @@ class AdminController extends BaseAdminController
         } else {
 
             return $this->render(
-                'admin/cargar_saldo.html.twig',
+                'admin/load_bank_balance.html.twig',
                 [
                     'form' => $form->createView(),
                     'entity' => $saldo,
