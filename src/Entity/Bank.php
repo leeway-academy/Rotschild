@@ -199,19 +199,25 @@ class Bank
     }
 
     /**
-     * @param \DateTimeInterface|null $fecha
+     * @param \DateTimeInterface|null $date
      * @return SaldoBancario
      */
-    public function getSaldo( \DateTimeInterface $fecha = null ): ?SaldoBancario
+    public function getBalance(\DateTimeImmutable $date = null ): ?SaldoBancario
     {
-        $saldos = $this->getSaldos();
-        $oneDay = new \DateInterval('P1D');
+        $balances = $this->getSaldos();
 
-        while ( !$saldos->isEmpty() && !$saldos->containsKey( $fecha->format('Y-m-d') ) && $saldos->first()->getFecha()->diff( $fecha )->days > 0 ) {
-            $fecha = $fecha->sub( $oneDay );
+        if ( $date ) {
+            $oneDay = new \DateInterval('P1D');
+
+            while ( !$balances->isEmpty() && !$balances->containsKey( $date->format('Y-m-d') ) && $balances->first()->getFecha()->diff( $date )->days > 0 ) {
+                $date = $date->sub( $oneDay );
+            }
+
+            return $balances->containsKey( $date->format('Y-m-d') ) ? $balances->get( $date->format('Y-m-d') ) : null;
+        } else {
+
+            return $balances->last();
         }
-
-        return $saldos->containsKey( $fecha->format('Y-m-d') ) ? $saldos->get( $fecha->format('Y-m-d') ) : null;
     }
 
     /**
