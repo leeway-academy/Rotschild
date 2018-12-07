@@ -1,6 +1,11 @@
-{% extends '@EasyAdmin/default/new.html.twig' %}
+{% extends '@EasyAdmin/default/layout.html.twig' %}
+{% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Saldo del Banco {{ banco }} al día {{ fecha | date('d-m-Y') }} (Proyectado: <b>$ {{ proyectado }}.-</b>){% endblock %}
+{% block content_title %}Saldo del Banco {{ entity.bank }} al día {{ fecha | date('d-m-Y') }} (Proyectado: <b>$ {{ proyectado | number_format( 2, ',', '.') }}.-</b>){% endblock %}
+
+{% block main %}
+    {{ form(form) }}
+{% endblock %}
 
 {% block body_javascript %}
     {{ parent() }}
