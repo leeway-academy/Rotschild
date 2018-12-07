@@ -14,8 +14,8 @@ use App\Service\ExcelReportsProcessor;
 use Doctrine\Common\Collections\Criteria;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
 use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
-use http\Exception\InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -35,27 +35,19 @@ class AdminController extends BaseAdminController
     }
 
     /**
-     * @Route(name="cargar_saldo",path="/banco/cargarSaldo")
+     * @Route(name="load_bank_balance",path="/bank/{id}/loadBalance", options={"expose"=true})
+     * @ParamConverter(class="App\Entity\Bank", name="bank")
      */
-    public function cargarSaldoAction(Request $request)
+    public function loadBankBalance(Bank $bank, Request $request)
     {
-        if (empty($request->get('id'))) {
-
-            throw new InvalidArgumentException();
-        }
-
         $em = $this->getDoctrine()->getManager();
-        $repository = $this->getDoctrine()->getRepository('App:Bank');
-
-        $id = $request->query->get('id');
-        $banco = $repository->find($id);
 
         $fecha = new \DateTime('Yesterday');
 
-        if (($saldo = $banco->getSaldo($fecha)) == null) {
+        if (($saldo = $bank->getSaldo($fecha)) == null) {
             $saldo = new SaldoBancario();
             $saldo->setFecha($fecha);
-            $saldo->setBank($banco);
+            $saldo->setBank($bank);
         }
 
         $form = $this
@@ -65,7 +57,7 @@ class AdminController extends BaseAdminController
             ->add('Guardar cambios', SubmitType::class)
             ->getForm();
 
-        $saldoProyectado = $banco->getSaldoProyectado($fecha)->getValor();
+        $saldoProyectado = $bank->getProjectedBalance($fecha)->getValor();
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -87,7 +79,7 @@ class AdminController extends BaseAdminController
                 [
                     'form' => $form->createView(),
                     'entity' => $saldo,
-                    'banco' => $banco->getNombre(),
+                    'banco' => $bank->getNombre(),
                     'fecha' => $fecha,
                     'proyectado' => $saldoProyectado,
                 ]
@@ -840,7 +832,7 @@ class AdminController extends BaseAdminController
      * @param Request $request
      * @Route(name="show_bank_balance", path="/bank/showBalance")
      */
-    public function showBankBalanceAction(Request $request)
+    public function showBankBalance(Request $request)
     {
         $startDate = new \DateTimeImmutable();
         $endDate = $startDate->add( new \DateInterval('P180D') );
@@ -857,7 +849,11 @@ class AdminController extends BaseAdminController
                     'choice_label' => function( Bank $b ) {
 
                         return $b->__toString();
-                    }
+                    },
+                    'choice_value' => function( Bank $b = null ) {
+
+                        return $b ? $b->getId() : '';
+                    },
                 ]
             )
             ->add(
@@ -879,6 +875,10 @@ class AdminController extends BaseAdminController
                 SubmitType::class,
                 [
                     'label' => 'Send',
+                    'attr' =>
+                        [
+                            'class' => 'btn btn-primary',
+                        ]
                 ]
             )
             ->getForm()
