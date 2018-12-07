@@ -19,7 +19,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
-use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,7 +42,7 @@ class AdminController extends BaseAdminController
     {
         $em = $this->getDoctrine()->getManager();
 
-        $fecha = new \DateTime('Yesterday');
+        $fecha = new \DateTimeImmutable('Yesterday');
 
         if (($saldo = $bank->getSaldo($fecha)) == null) {
             $saldo = new SaldoBancario();
@@ -52,9 +52,20 @@ class AdminController extends BaseAdminController
 
         $form = $this
             ->createFormBuilder($saldo)
-            ->setAttribute('class', 'form-horizontal  new-form')
-            ->add('valor', NumberType::class)
-            ->add('Guardar cambios', SubmitType::class)
+            ->setAttribute('class', 'form-horizontal new-form')
+            ->add('valor', MoneyType::class,
+                [
+                    'label' => 'Amount',
+                    'currency' => $this->getParameter('currency')
+                ])
+            ->add('Save', SubmitType::class,
+                [
+                    'attr' =>
+                        [
+                            'class' => 'btn btn-primary',
+                        ],
+                    'label' => 'action.save',
+                ])
             ->getForm();
 
         $saldoProyectado = $bank->getProjectedBalance($fecha)->getValor();
@@ -79,7 +90,6 @@ class AdminController extends BaseAdminController
                 [
                     'form' => $form->createView(),
                     'entity' => $saldo,
-                    'banco' => $bank->getNombre(),
                     'fecha' => $fecha,
                     'proyectado' => $saldoProyectado,
                 ]
