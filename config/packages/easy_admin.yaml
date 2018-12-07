@@ -10,7 +10,7 @@ easy_admin:
                 actions:
                     - { name: 'new' }
                     - { name: 'edit' }
-                    - { name: 'load_bank_balance', type: 'route' }
+                    - { name: 'load_bank_balance', type: 'route', label: 'Load balance' }
             form:
                 fields: [ 'nombre' ]
                 title: 'Modificar %%entity_name%%'
