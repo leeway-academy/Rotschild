@@ -4,10 +4,16 @@
 {% block content_title %}{{ 'Bank balance' | trans }}{% endblock %}
 
 {% block main %}
-    <div style="display:none;" id="loadBalance">
-        <a href="#">{{ 'Load balance' | trans }}</a>
-    </div>
-    {{ form(form) }}
+    {{ form_start(form) }}
+    {{ form_label(form.bank) }}
+    <table width="100%">
+        <tr>
+            <td width="50%">{{ form_widget(form.bank) }}</td>
+            <td width="10%">&nbsp;</td>
+            <td width="40%"><a href="{% if form.bank %}{{ url('load_bank_balance', { 'id' : form.bank.vars.data.id }) }}{% else %}#{% endif %}" style="display:{% if form.bank %}block;{% else %}none;{% endif %}" id="loadBalance">{{ 'Load balance' | trans }}</a></td>
+        </tr>
+    </table>
+    {{ form_rest(form) }}
     {% if balances|length > 0 %}
         <hr/>
         <table width="100%" class="table-bordered table-responsive table-striped">
@@ -36,10 +42,10 @@
     <script type="text/javascript">
         $('#{{ form.bank.vars.id }}').change( function() {
             if ( this.value ) {
-                $('#loadBalance a').attr('href', Routing.generate('load_bank_balance', { 'id' : this.value }));
+                $('#loadBalance').attr('href', Routing.generate('load_bank_balance', { 'id' : this.value }));
                 $('#loadBalance').show();
             } else {
-                $('#loadBalance a').attr('href', '#');
+                $('#loadBalance').attr('href', '#');
                 $('#loadBalance').hide();
             }
         });
