@@ -1,8 +1,12 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
+{% form_theme form with easyadmin_config('design.form_theme') %}
 
 {% block content_title %}{{ 'Bank balance' | trans }}{% endblock %}
 
 {% block main %}
+    <div style="display:none;" id="loadBalance">
+        <a href="#">{{ 'Load balance' | trans }}</a>
+    </div>
     {{ form(form) }}
     {% if balances|length > 0 %}
         <hr/>
@@ -27,4 +31,17 @@
 
 {% block body_javascript %}
     {{ parent() }}
+    <script src="{{ asset('bundles/fosjsrouting/js/router.min.js') }}"></script>
+    <script src="{{ path('fos_js_routing_js', { callback: 'fos.Router.setData' }) }}"></script>
+    <script type="text/javascript">
+        $('#{{ form.bank.vars.id }}').change( function() {
+            if ( this.value ) {
+                $('#loadBalance a').attr('href', Routing.generate('load_bank_balance', { 'id' : this.value }));
+                $('#loadBalance').show();
+            } else {
+                $('#loadBalance a').attr('href', '#');
+                $('#loadBalance').hide();
+            }
+        });
+    </script>
 {% endblock %}
