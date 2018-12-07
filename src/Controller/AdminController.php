@@ -918,7 +918,7 @@ class AdminController extends BaseAdminController
             if ( $bank = $form['bank']->getData() ) {
                 $criteria->andWhere(Criteria::expr()->eq('bank', $bank ) );
 
-                $balance = $bank->getSaldo($dateFrom);
+                $balance = $bank->getBalance(\DateTimeImmutable::createFromMutable($dateFrom));
                 $totalBalance = $balance ? $balance->getValor() : 0;
             } else {
                 $totalBalance = 0;
