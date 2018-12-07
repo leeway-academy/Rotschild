@@ -44,7 +44,7 @@ class AdminController extends BaseAdminController
 
         $fecha = new \DateTimeImmutable('Yesterday');
 
-        if (($saldo = $bank->getSaldo($fecha)) == null) {
+        if (($saldo = $bank->getBalance($fecha)) == null) {
             $saldo = new SaldoBancario();
             $saldo->setFecha($fecha);
             $saldo->setBank($bank);
@@ -924,7 +924,7 @@ class AdminController extends BaseAdminController
                 $totalBalance = 0;
 
                 foreach ( $banks as $bank ) {
-                    $balance = $bank->getSaldo( $dateFrom );
+                    $balance = $bank->getBalance( $dateFrom );
 
                     $totalBalance += $balance ? $balance->getValor() : 0;
                 }

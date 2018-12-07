@@ -6,11 +6,11 @@ easy_admin:
             label: 'Bancos'
             list:
                 title: 'Banks'
-                fields: [ 'nombre', 'saldo' ]
+                fields: [ 'nombre', 'balance' ]
                 actions:
                     - { name: 'new' }
                     - { name: 'edit' }
-                    - { name: 'cargar_saldo', type: 'route' }
+                    - { name: 'load_bank_balance', type: 'route' }
             form:
                 fields: [ 'nombre' ]
                 title: 'Modificar %%entity_name%%'

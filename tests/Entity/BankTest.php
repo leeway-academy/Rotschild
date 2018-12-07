@@ -19,7 +19,7 @@ class BankTest extends TestCase
     {
         $banco = new Bank();
 
-        $this->assertNull( $banco->getSaldo( new \DateTimeImmutable() ), 'El saldo no es null' );
+        $this->assertNull( $banco->getBalance( new \DateTimeImmutable() ), 'El saldo no es null' );
     }
 
     public function testGetSaldoDevuelveUltimoSaldoSiNoSeAclaraFecha()
@@ -36,7 +36,7 @@ class BankTest extends TestCase
         $saldo2->setFecha( new \DateTimeImmutable() );
         $banco->addSaldo($saldo2);
 
-        $this->assertSame( $saldo2, $banco->getSaldo(), 'El saldo devuelto no es el ultimo' );
+        $this->assertSame( $saldo2, $banco->getBalance(), 'El saldo devuelto no es el ultimo' );
     }
 
     public function testGetSaldoProyectadoUsaSaldoAnteriorYMovimientosHastaLaFecha()
