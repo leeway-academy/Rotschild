@@ -237,7 +237,7 @@ class Bank
             $saldoActual = clone $saldos->get( $fechaInicial->format('Y-m-d') );
         }
 
-        foreach ($this->getMovimientoEntre( $fechaInicial, $fecha, false ) as $movimiento) {
+        foreach ($this->getTransactionsBetween( $fechaInicial, $fecha, false ) as $movimiento) {
             $saldoActual->setValor( $saldoActual->getValor() + $movimiento->getImporte() );
         }
 
@@ -251,7 +251,7 @@ class Bank
      * @param \DateTimeInterface $fechaFin
      * @return Collection
      */
-    public function getMovimientoEntre(\DateTimeInterface $fechaInicio, \DateTimeInterface $fechaFin, bool $concretados = null ) : Collection
+    public function getTransactionsBetween(\DateTimeInterface $fechaInicio, \DateTimeInterface $fechaFin, bool $concretados = null ) : Collection
     {
         $criteria = Criteria::create()
             ->andWhere(
