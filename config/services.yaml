@@ -8,6 +8,8 @@ parameters:
     reports_path: '%kernel.project_dir%/reports'
     currency: 'ARS'
     currency_symbol: '$'
+    router.request_context.base_url: '%env(resolve:BASE_URL)%'
+    asset.request_context.base_path: '%router.request_context.base_url%'
 
 services:
     # default configuration for services in *this* file
