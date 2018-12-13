@@ -10,6 +10,7 @@ parameters:
     currency_symbol: '$'
     router.request_context.base_url: '%env(resolve:BASE_URL)%'
     asset.request_context.base_path: '%router.request_context.base_url%'
+    projected_balances_days: 210
 
 services:
     # default configuration for services in *this* file

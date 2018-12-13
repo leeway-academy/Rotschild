@@ -915,7 +915,8 @@ class AdminController extends BaseAdminController
     public function showBankBalance(Request $request)
     {
         $startDate = new \DateTimeImmutable();
-        $endDate = $startDate->add(new \DateInterval('P180D'));
+        $days = $this->getParameter('projected_balances_days');
+        $endDate = $startDate->add(new \DateInterval("P{$days}D"));
 
         $banks = $this->getDoctrine()->getRepository('App:Bank')->findAll();
         $form = $this
