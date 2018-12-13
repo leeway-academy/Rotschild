@@ -1,13 +1,7 @@
 {% extends 'ajax_layout.html.twig' %}
 {% form_theme matchingForm with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Conciliación de extractos bancarios{% endblock %}
-
 {% block main %}
-    <div id="wait" style="display: none;">
-        <h3>Cargando...</h3>
-    </div>
-    <br/>
     {% if summaryLines %}
         <div style="width: 100%;height: 100%" class="table-responsive">
             {{ form_start(matchingForm) }}

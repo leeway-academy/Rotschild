@@ -577,19 +577,18 @@ class AdminController extends BaseAdminController
         $projectedDebits = $bank->getDebitosProyectados();
 
         $formBuilder = $this->createFormBuilder();
-        $dateFrom = $request->get('dateFrom');
-        $dateTo = $request->get('dateTo');
+        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
 
-        foreach ($bank->getExtractos() as $extracto) {
-            foreach ($extracto->getRenglones() as $renglon) {
-                if (!empty($dateFrom) && $renglon->getFecha() < $dateFrom) {
+        foreach ( $bank->getExtractos() as $extracto ) {
+            $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
 
-                    continue;
-                }
-                if (!empty($dateTo) && $renglon->getFecha() > $dateTo) {
+                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo );
 
-                    continue;
-                }
+                return $ret;
+            });
+
+            foreach ($lines as $renglon) {
                 $formBuilder
                     ->add(
                         'match-' . $renglon->getId(),
@@ -627,7 +626,7 @@ class AdminController extends BaseAdminController
         $matchingForm->handleRequest($request);
 
         if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
-            $em = $this->getDoctrine();
+            $em = $this->getDoctrine()->getManager();
             $keyword = 'match-';
             $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
             foreach ($matchingForm->getData() as $name => $transaction) {
