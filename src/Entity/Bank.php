@@ -216,7 +216,7 @@ class Bank
             return $balances->containsKey( $date->format('Y-m-d') ) ? $balances->get( $date->format('Y-m-d') ) : null;
         } else {
 
-            return $balances->last();
+            return !$balances->isEmpty() ? $balances->last() : null;
         }
     }
 
