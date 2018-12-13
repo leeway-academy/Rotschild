@@ -15,14 +15,21 @@ use PHPUnit\Framework\TestCase;
 
 class BankTest extends TestCase
 {
-    public function testGetSaldoNoFuncionaParaSaldosNoCargados()
+    public function testGetBalanceWillReturnNullOnEmptyBalancesCollection()
+    {
+        $banco = new Bank();
+
+        $this->assertNull( $banco->getBalance(), 'Balance is not null' );
+    }
+
+    public function testGetBalanceNoFuncionaParaSaldosNoCargados()
     {
         $banco = new Bank();
 
         $this->assertNull( $banco->getBalance( new \DateTimeImmutable() ), 'El saldo no es null' );
     }
 
-    public function testGetSaldoDevuelveUltimoSaldoSiNoSeAclaraFecha()
+    public function testGetBalanceDevuelveUltimoSaldoSiNoSeAclaraFecha()
     {
         $banco = new Bank();
         $saldo1 = new SaldoBancario();
@@ -39,7 +46,7 @@ class BankTest extends TestCase
         $this->assertSame( $saldo2, $banco->getBalance(), 'El saldo devuelto no es el ultimo' );
     }
 
-    public function testGetSaldoProyectadoUsaSaldoAnteriorYMovimientosHastaLaFecha()
+    public function testGetBalanceProyectadoUsaSaldoAnteriorYMovimientosHastaLaFecha()
     {
         $fecha1 = new \DateTimeImmutable('today -5 days');
 
