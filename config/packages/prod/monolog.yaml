@@ -3,10 +3,24 @@ monolog:
         main:
             type: fingers_crossed
             action_level: error
-            handler: nested
+            handler: grouped
             excluded_404s:
                 # regex: exclude all 404 errors from the logs
                 - ^/
+        grouped:
+            type: group
+            members: [nested, deduplicated]
+        deduplicated:
+            type: deduplication
+            handler: swift
+        switf:
+            type: swift_mailer
+            from_email: 'rotschild@blasting.com.ar'
+            to_email: '%env(resolve:ADMIN_EMAIL)%'
+            subject: 'Error en Rotschild: %%message%%'
+            level: debug
+            formatter:  monolog.formatter.html
+            content_type: text/html
         nested:
             type: stream
             path: "%kernel.logs_dir%/%kernel.environment%.log"
