@@ -924,7 +924,7 @@ class AdminController extends BaseAdminController
                 $totalBalance = 0;
 
                 foreach ( $banks as $bank ) {
-                    $balance = $bank->getBalance( $dateFrom );
+                    $balance = $bank->getBalance( \DateTimeImmutable::createFromMutable( $dateFrom ) );
 
                     $totalBalance += $balance ? $balance->getValor() : 0;
                 }
