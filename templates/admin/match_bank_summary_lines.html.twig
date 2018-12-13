@@ -1,5 +1,5 @@
-{% extends '@EasyAdmin/default/layout.html.twig' %}
-{% form_theme filterForm with easyadmin_config('design.form_theme') %}
+{% extends 'ajax_layout.html.twig' %}
+{% form_theme matchingForm with easyadmin_config('design.form_theme') %}
 
 {% block content_title %}Conciliación de extractos bancarios{% endblock %}
 
@@ -7,9 +7,43 @@
     <div id="wait" style="display: none;">
         <h3>Cargando...</h3>
     </div>
-    {{ form(filterForm) }}
     <br/>
-    <iframe src="{{ url('match_bank_summary_lines', { id: bank.id, dateFrom: dateFrom, dateTo: dateTo } ) }}" width="100%" height="500px;"></iframe>
+    {% if summaryLines %}
+        <div style="width: 100%;height: 100%" class="table-responsive">
+            {{ form_start(matchingForm) }}
+            <table width="100%" class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Importe</th>
+                    <th>Movimiento presupuestado</th>
+                    <th>&nbsp;</th>
+                    <th>&nbsp;</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for k, l in summaryLines %}
+                    {% if l.importe > 0 %}
+                        {% set txType = 'Credito' %}
+                    {% else %}
+                        {% set txType = 'Debito' %}
+                    {% endif %}
+                    <tr>
+                        <td>{{ l.fecha | date('d/m/Y') }}</td>
+                        <td>{{ l.concepto }}</td>
+                        <td>$ {{ l.importe | number_format(2, ',', '.') }}</td>
+                        <td>{{ form_widget(matchingForm['match-' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
+                        <td><a href="#" onclick="add_tx('{{ txType }}', '{{ matchingForm['match-' ~ k].vars.id }}');">{{ ('Add ' ~ txType) | trans }}</a></td>
+                        <td><a href="#" onclick="update_tx('{{ txType }}', '{{ matchingForm['match-' ~ k].vars.id }}');"
+                               style="display: none;" id="update_tx-{{ k }}">{{ ('Update ' ~ txType ) | trans }}</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {{ form_end(matchingForm) }}
+        </div>
+    {% endif %}
 
     <!-- Modal -->
     <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle"
