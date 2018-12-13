@@ -284,17 +284,15 @@ class AdminController extends BaseAdminController
                     $extracto
                         ->setArchivo($fileName)
                         ->setBank($bank)
-                        ->setFecha(new \DateTimeImmutable())
-                    ;
+                        ->setFecha(new \DateTimeImmutable());
                     $em->persist($extracto);
                     foreach ($lines as $k => $line) {
                         $summaryLine = new RenglonExtracto();
                         $summaryLine
                             ->setImporte($line['amount'])
                             ->setFecha($line['date'])
-                            ->setConcepto($line['concept'] .' - '. $line['extraData'] )
-                            ->setLinea($k)
-                        ;
+                            ->setConcepto($line['concept'] . ' - ' . $line['extraData'])
+                            ->setLinea($k);
                         $em->persist($summaryLine);
                         $extracto->addRenglon($summaryLine);
                     }
@@ -442,8 +440,7 @@ class AdminController extends BaseAdminController
                             ->setDestination($line['destination'])
                             ->setIssuer($line['issuer'])
                             ->setSourceBank($line['sourceBank'])
-                            ->setNumber($line['number'])
-                            ;
+                            ->setNumber($line['number']);
 
                         $em->persist($appliedCheck);
                     }
@@ -492,14 +489,16 @@ class AdminController extends BaseAdminController
      */
     public function matchBankSummaries(Request $request)
     {
-        $em = $this->getDoctrine()->getManager();
-        $bankRepository = $em->getRepository('App:Bank');
-        $banks = $bankRepository->findAll();
-
-        $bank = $request->get('bankId') ? $bankRepository->find( $request->get('bankId') ) : current( $banks );
-
-        $formBuilder = $this
-            ->createFormBuilder()
+        $em = $this->getDoctrine();
+        $banks = $em->getRepository('App:Bank')->findAll();
+        $bank = $request->get('bankId') ? $banks[$request->get('bankId')] : current($banks);
+        $filterForm = $this
+            ->createFormBuilder(
+                null,
+                [
+                    'allow_extra_fields' => true,
+                ]
+            )
             ->add(
                 'bank',
                 ChoiceType::class,
@@ -516,35 +515,99 @@ class AdminController extends BaseAdminController
                     'data' => $bank,
                 ]
             )
-        ;
+            ->add(
+                'dateFrom',
+                DateType::class,
+                [
+                    'required' => false,
+                ]
+            )
+            ->add(
+                'dateTo',
+                DateType::class,
+                [
+                    'required' => false,
+                ]
+            )
+            ->add(
+                'filter',
+                SubmitType::class,
+                [
+                    'label' => 'Filter',
+                    'attr' =>
+                        [
+                            'class' => 'btn btn-primary',
+                        ]
+                ]
+            )
+            ->getForm();
 
+        $filterForm->handleRequest($request);
+
+        $dateFrom = $dateTo = null;
+        if ($filterForm->isSubmitted() && $filterForm->isValid()) {
+            $bank = $filterForm['bank']->getData();
+            $dateFrom = $filterForm['dateFrom']->getData();
+            $dateTo = $filterForm['dateTo']->getData();
+        }
+
+        return $this->render(
+            'admin/match_bank_summaries.html.twig',
+            [
+                'filterForm' => $filterForm->createView(),
+                'bank' => $bank,
+                'dateFrom' => $dateFrom,
+                'dateTo' => $dateTo,
+            ]
+        );
+    }
+
+    /**
+     * @Route(name="match_bank_summary_lines", path="/bank/{id}/match_summary_lines")
+     * @ParamConverter(name="bank", class="App\Entity\Bank")
+     * @param Bank $bank
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
+     */
+    public function matchBankSummaryLines( Bank $bank, Request $request )
+    {
         $summaryLines = [];
-        if ( $bank ) {
-            $projectedCredits = $bank->getCreditosProyectados();
-            $projectedDebits = $bank->getDebitosProyectados();
 
-            foreach ( $bank->getExtractos() as $extracto ) {
-                foreach ( $extracto->getRenglones() as $renglon ) {
-                    $formBuilder
-                        ->add(
-                            'match-'.$renglon->getId(),
-                            ChoiceType::class,
-                            [
-                                'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
-                                'choice_value' => function(Movimiento $movimiento = null ) {
+        $projectedCredits = $bank->getCreditosProyectados();
+        $projectedDebits = $bank->getDebitosProyectados();
 
-                                    return $movimiento ? $movimiento->getId() : '';
-                                },
-                                'choice_label' => function( Movimiento $movimiento ) {
+        $formBuilder = $this->createFormBuilder();
+        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
 
-                                    return $movimiento->__toString();
-                                },
-                                'label' => $renglon->getFecha()->format('d/m/Y').': '.$renglon->getConcepto().' '.$renglon->getImporte(),
-                                'required' => false,
-                            ]
-                        );
-                    $summaryLines[$renglon->getId()] = $renglon;
-                }
+        foreach ( $bank->getExtractos() as $extracto ) {
+            $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
+
+                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo );
+
+                return $ret;
+            });
+
+            foreach ($lines as $renglon) {
+                $formBuilder
+                    ->add(
+                        'match-' . $renglon->getId(),
+                        ChoiceType::class,
+                        [
+                            'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
+                            'choice_value' => function (Movimiento $movimiento = null) {
+
+                                return $movimiento ? $movimiento->getId() : '';
+                            },
+                            'choice_label' => function (Movimiento $movimiento) {
+
+                                return $movimiento->__toString();
+                            },
+                            'label' => $renglon->getFecha()->format('d/m/Y') . ': ' . $renglon->getConcepto() . ' ' . $renglon->getImporte(),
+                            'required' => false,
+                        ]
+                    );
+                $summaryLines[$renglon->getId()] = $renglon;
             }
         }
 
@@ -559,13 +622,14 @@ class AdminController extends BaseAdminController
             ]
         );
 
-        $form = $formBuilder->getForm();
-        $form->handleRequest($request);
+        $matchingForm = $formBuilder->getForm();
+        $matchingForm->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
+            $em = $this->getDoctrine()->getManager();
             $keyword = 'match-';
             $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
-            foreach ($form->getData() as $name => $transaction) {
+            foreach ($matchingForm->getData() as $name => $transaction) {
                 if (substr($name, 0, strlen($keyword)) == $keyword && $transaction) {
                     $summaryLineId = preg_split('/-/', $name)[1];
 
@@ -579,13 +643,19 @@ class AdminController extends BaseAdminController
 
             $em->flush();
 
-            return $this->redirectToRoute('match_bank_summaries', [ 'bankId' => $bank->getId() ] );
+            return $this->redirectToRoute(
+                'match_bank_summary_lines',
+                [
+                    'id' => $bank->getId(),
+                    'dateFrom' => $dateFrom,
+                    'dateTo' => $dateTo,
+                ]);
         }
 
         return $this->render(
-            'admin/match_bank_summaries.html.twig',
+            'admin/match_bank_summary_lines.html.twig',
             [
-                'form' => $form->createView(),
+                'matchingForm' => $matchingForm->createView(),
                 'summaryLines' => $summaryLines
             ]
         );
@@ -845,7 +915,7 @@ class AdminController extends BaseAdminController
     public function showBankBalance(Request $request)
     {
         $startDate = new \DateTimeImmutable();
-        $endDate = $startDate->add( new \DateInterval('P180D') );
+        $endDate = $startDate->add(new \DateInterval('P180D'));
 
         $banks = $this->getDoctrine()->getRepository('App:Bank')->findAll();
         $form = $this
@@ -856,11 +926,11 @@ class AdminController extends BaseAdminController
                 [
                     'choices' => $banks,
                     'required' => false,
-                    'choice_label' => function( Bank $b ) {
+                    'choice_label' => function (Bank $b) {
 
                         return $b->__toString();
                     },
-                    'choice_value' => function( Bank $b = null ) {
+                    'choice_value' => function (Bank $b = null) {
 
                         return $b ? $b->getId() : '';
                     },
@@ -891,32 +961,30 @@ class AdminController extends BaseAdminController
                         ]
                 ]
             )
-            ->getForm()
-            ;
+            ->getForm();
 
-        $form->handleRequest( $request );
+        $form->handleRequest($request);
 
         $balances = [];
 
-        if ( $form->isSubmitted() && $form->isValid() ) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $criteria = new Criteria();
 
             $dateFrom = $form['dateFrom']->getData();
             $dateTo = $form['dateTo']->getData();
 
             $criteria
-                ->where( Criteria::expr()->gte('fecha', $dateFrom) )
-                ->andWhere( Criteria::expr()->lte( 'fecha', $dateTo) )
-                ->andWhere( Criteria::expr()->neq('concretado', true ))
+                ->where(Criteria::expr()->gte('fecha', $dateFrom))
+                ->andWhere(Criteria::expr()->lte('fecha', $dateTo))
+                ->andWhere(Criteria::expr()->neq('concretado', true))
                 ->orderBy(
                     [
                         'fecha' => 'ASC'
                     ]
-                )
-                ;
+                );
 
-            if ( $bank = $form['bank']->getData() ) {
-                $criteria->andWhere(Criteria::expr()->eq('bank', $bank ) );
+            if ($bank = $form['bank']->getData()) {
+                $criteria->andWhere(Criteria::expr()->eq('bank', $bank));
 
                 $balance = $bank->getBalance(\DateTimeImmutable::createFromMutable($dateFrom));
                 $totalBalance = $balance ? $balance->getValor() : 0;
@@ -932,21 +1000,21 @@ class AdminController extends BaseAdminController
 
             $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
 
-            $period = new \DatePeriod( $dateFrom, new \DateInterval('P1D'), $dateTo );
+            $period = new \DatePeriod($dateFrom, new \DateInterval('P1D'), $dateTo);
 
-            foreach ( $period as $date ) {
-                $dailyTransactions = $transactions->filter( function( Movimiento $transaction ) use ( $date ) {
+            foreach ($period as $date) {
+                $dailyTransactions = $transactions->filter(function (Movimiento $transaction) use ($date) {
 
-                    return $transaction->getFecha()->diff( $date )->days == 0;
+                    return $transaction->getFecha()->diff($date)->days == 0;
                 });
 
                 $dailyBalance = 0;
-                foreach ( $dailyTransactions as $transaction ) {
+                foreach ($dailyTransactions as $transaction) {
                     $dailyBalance += $transaction->getImporte();
                 }
 
                 $totalBalance += $dailyBalance;
-                $balances[ $date->format('d/m/Y') ] = $totalBalance;
+                $balances[$date->format('d/m/Y')] = $totalBalance;
             }
         }
 
@@ -982,7 +1050,7 @@ class AdminController extends BaseAdminController
 
             $this->dispatch(EasyAdminEvents::POST_PERSIST, array('entity' => $entity));
 
-            if ( !$this->request->isXmlHttpRequest() ) {
+            if (!$this->request->isXmlHttpRequest()) {
 
                 return $this->redirectToReferrer();
             } else {
@@ -1034,7 +1102,7 @@ class AdminController extends BaseAdminController
 
             $this->dispatch(EasyAdminEvents::POST_PERSIST, array('entity' => $entity));
 
-            if ( !$this->request->isXmlHttpRequest() ) {
+            if (!$this->request->isXmlHttpRequest()) {
 
                 return $this->redirectToReferrer();
             } else {
@@ -1082,7 +1150,7 @@ class AdminController extends BaseAdminController
             $this->updateEntityProperty($entity, $property, $newValue);
 
             // cast to integer instead of string to avoid sending empty responses for 'false'
-            return new Response((int) $newValue);
+            return new Response((int)$newValue);
         }
 
         $fields = $this->entity['edit']['fields'];
@@ -1099,7 +1167,7 @@ class AdminController extends BaseAdminController
 
             $this->dispatch(EasyAdminEvents::POST_UPDATE, array('entity' => $entity));
 
-            if ( !$this->request->isXmlHttpRequest() ) {
+            if (!$this->request->isXmlHttpRequest()) {
 
                 return $this->redirectToReferrer();
             } else {
