@@ -149,30 +149,34 @@ class AdminController extends BaseAdminController
         $this->em->persist($gastoFijo);
         $this->em->flush();
 
-        $curDate = new \DateTimeImmutable();
+        $initDate = \DateTimeImmutable::createFromMutable( $gastoFijo->getFechaInicio() );
 
-        if ($curDate->format('d') > $gastoFijo->getDia()) {
-            $curDate = new \DateTimeImmutable($gastoFijo->getDia() . '-' . $curDate->format('m-Y'));
+        $oneMonth = new \DateInterval('P1M');
+
+        if ( $initDate->format('d') > $gastoFijo->getDia() ) {
+            $initDate = $initDate
+                ->sub( new \DateInterval('P'.($initDate->format('d') - $gastoFijo->getDia() ).'D') )
+                ->add( $oneMonth );
         } else {
-            $curDate = (new \DateTimeImmutable('first day of next month'))->add(new \DateInterval('P' . ($gastoFijo->getDia() - 1) . 'D'));
+            $initDate = $initDate
+                ->add( new \DateInterval('P'.( $gastoFijo->getDia() - $initDate->format('d') ).'D') );
         }
 
         if (($fechaFin = $gastoFijo->getFechaFin()) === null) {
-            $fechaFin = $curDate->add(new \DateInterval('P12M'));
+            $fechaFin = $initDate->add(new \DateInterval('P12M'));
         }
 
-        $oneMonth = new \DateInterval('P1M');
-        while ($curDate->diff($fechaFin)->days > 0) {
+        while ($initDate < $fechaFin) {
             $movimiento = new Movimiento();
             $movimiento
                 ->setConcepto($gastoFijo->getConcepto())
-                ->setFecha($curDate)
+                ->setFecha($initDate)
                 ->setImporte($gastoFijo->getImporte() * -1)
                 ->setBank($gastoFijo->getBank())
                 ->setClonDe($gastoFijo);
 
             $this->em->persist($movimiento);
-            $curDate = $curDate->add($oneMonth);
+            $initDate = $initDate->add($oneMonth);
         }
 
 
@@ -207,10 +211,10 @@ class AdminController extends BaseAdminController
      */
     protected function removeGastoFijoEntity(GastoFijo $gastoFijo)
     {
-        $hoy = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable();
 
         foreach ($gastoFijo->getMovimientos() as $movimiento) {
-            if ($movimiento->getFecha()->diff($hoy)->d >= 0) {
+            if ($movimiento->getFecha() == $today ) {
                 $this->em->remove($movimiento);
             }
         }
