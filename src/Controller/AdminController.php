@@ -190,14 +190,22 @@ class AdminController extends BaseAdminController
      */
     protected function updateGastoFijoEntity(GastoFijo $gastoFijo)
     {
-        $hoy = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable();
 
         foreach ($gastoFijo->getMovimientos() as $movimiento) {
-            if ($movimiento->getFecha()->diff($hoy)->d >= 0) {
-                $movimiento->setConcepto($gastoFijo->getConcepto());
-                $movimiento->setImporte($gastoFijo->getImporte() * -1);
-                $movimiento->setBank($gastoFijo->getBank());
-                $this->em->persist($movimiento);
+            if ( $movimiento->getFecha() > $today ) {
+                if (
+                    !empty($gastoFijo->getFechaFin()) && $movimiento->getFecha() > $gastoFijo->getFechaFin()
+                    ||
+                    $movimiento->getFecha() < $gastoFijo->getFechaInicio()
+                ) {
+                    $this->em->remove( $movimiento );
+                } else {
+                    $movimiento->setConcepto($gastoFijo->getConcepto());
+                    $movimiento->setImporte($gastoFijo->getImporte() * -1);
+                    $movimiento->setBank($gastoFijo->getBank());
+                    $this->em->persist($movimiento);
+                }
             }
         }
 
