@@ -49,9 +49,15 @@ class GastoFijo
      */
     private $fechaFin;
 
+    /**
+     * @ORM\Column(type="date")
+     */
+    private $fechaInicio;
+
     public function __construct()
     {
         $this->movimientos = new ArrayCollection();
+        $this->setFechaInicio( new \DateTimeImmutable() );
     }
 
     public function getId()
@@ -146,6 +152,18 @@ class GastoFijo
     public function setFechaFin(?\DateTimeInterface $fechaFin): self
     {
         $this->fechaFin = $fechaFin;
+
+        return $this;
+    }
+
+    public function getFechaInicio(): ?\DateTimeInterface
+    {
+        return $this->fechaInicio;
+    }
+
+    public function setFechaInicio(\DateTimeInterface $fechaInicio): self
+    {
+        $this->fechaInicio = $fechaInicio;
 
         return $this;
     }
