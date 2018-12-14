@@ -114,6 +114,8 @@
                     function ( data ) {
                         if ( prevId ) {
                             $('#' + selectId + ' option[value="' + prevId + '"]').remove();
+                        } else {
+                            $('#update_tx-' + selectId.split('-')[1] ).show();
                         }
                         $('#' + selectId).append(new Option( data.string, data.id ));
                         $('#' + selectId).val(data.id);
