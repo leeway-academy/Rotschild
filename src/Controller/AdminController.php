@@ -755,12 +755,32 @@ class AdminController extends BaseAdminController
                 'match_' . $k,
                 ChoiceType::class,
                 [
-                    'choices' => array_merge([-1 => 'N/A'], $debits->toArray()),
+                    'choices' => array_merge(
+                        [
+                            "-1" => 'N/A'
+                        ],
+                        $debits->toArray()
+                    ),
+                    'choice_value' => function( $o ) {
+                        if ( $o instanceof Movimiento ) {
+
+                            return $o->getId();
+                        } elseif ( $o == 'N/A' ) {
+
+                            return "-1";
+                        } else {
+
+                            return "";
+                        }
+                    },
                     'choice_label' => function ($d) {
 
                         return $d . '';
                     },
                     'required' => false,
+                    'attr' => [
+                        'class' => 'selectTx',
+                    ],
                 ]
             );
         }
@@ -771,6 +791,9 @@ class AdminController extends BaseAdminController
                 SubmitType::class,
                 [
                     'label' => 'Confirmar',
+                    'attr' => [
+                        'class' => 'btn btn-primary',
+                    ]
                 ]
             );
 

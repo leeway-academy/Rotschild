@@ -7,29 +7,46 @@
     {% if checks %}
         {{ form_start(form) }}
             {{ form_errors(form) }}
-        <table width="30%" class="table-responsive table">
+        <table width="30%" class="table table-striped table-bordered">
             <thead>
                 <tr>
-                    <th>Fecha</th>
-                    <th>N&uacute;mero</th>
-                    <th>Monto</th>
-                    <th>Banco</th>
-                    <th>D&eacute;bito presupuestado</th>
+                    <th width="10%">Fecha</th>
+                    <th width="10%">N&uacute;mero</th>
+                    <th width="10%">Monto</th>
+                    <th width="10%">Banco</th>
+                    <th width="40%">D&eacute;bito presupuestado</th>
+                    <th>&nbsp;</th>
+                    <th>&nbsp;</th>
                 </tr>
             </thead>
             <tbody>
-            {% for c in checks %}
+            {% for k, c in checks %}
                 <tr>
                     <td>{{ c.fecha | date('d/m/Y') }}</td>
                     <td>{{ c.numero }}</td>
-                    <td>{{ c.importe }}</td>
+                    <td>$ {{ c.importe | number_format( 2, ',', '.' ) }}</td>
                     <td>{{ c.banco }}</td>
                     <td>{{ form_widget(attribute(form, 'match_' ~ loop.index0 )) }}</td>
+                    <td><a href="#" onclick="add_tx('Debito', '{{ form['match_' ~ k].vars.id }}');">{{ ('Add Debito') | trans }}</a></td>
+                    <td><a href="#" onclick="update_tx('Debito', '{{ form['match_' ~ k].vars.id }}');" style="display: none;" id="update_tx-{{ k }}">{{ ('Update Debito') | trans }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
         {{ form_end(form) }}
+        <!-- Modal -->
+        <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header" style="cursor: move;">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="txFormModalTitle"></h4>
+                    </div>
+                    <div class="modal-body" id="modal-body">
+                    </div>
+                </div>
+            </div>
+        </div>
     {% else %}
         <p>No quedan cheques para conciliar</p>
     {% endif %}
@@ -37,4 +54,97 @@
 
 {% block body_javascript %}
     {{ parent() }}
+    <script type="text/javascript">
+        $('.selectTx').on('change', function (e) {
+            var selectId = this.id;
+            var selectedValue = this.value;
+
+            if ( selectedValue && selectedValue != '-1' ) {
+                $('#update_tx-' + selectId.substr(selectId.lastIndexOf('_') + 1)).show();
+            } else {
+                $('#update_tx-' + selectId.substr(selectId.lastIndexOf('_') + 1)).hide();
+            }
+        });
+
+        $(document).ajaxStart(function () {
+            $("#wait").css("display", "block");
+        });
+
+        $(document).ajaxComplete(function () {
+            $("#wait").css("display", "none");
+        });
+
+        function add_tx(txType, selectId) {
+            $.get(
+                Routing.generate('easyadmin', {'entity': txType, 'action': 'new'}),
+                function (data) {
+                    showModal(data, selectId, '{{ 'New' | trans }}' );
+                }
+            );
+        }
+
+        function update_tx(txType, selectId) {
+            txId = $('#' + selectId).val();
+            $.get(
+                Routing.generate('easyadmin', {'entity': txType, 'action': 'edit', 'id': txId}),
+                function (data) {
+                    showModal( data, selectId, '{{ 'Update' | trans }}' );
+                }
+            );
+        }
+
+        function showModal( data, selectId, operation ) {
+            $('.modal-body').html(data);
+            var title = operation + ' {{ 'transaction' | trans }}';
+            $('#txFormModalTitle').html(title);
+            /**
+             * @todo Find a way of preventing the generation of this link from the backend
+             */
+            $('.modal-body .action-list').hide();
+            $('.modal-body button').click(function () {
+                var form = $('.modal-body form');
+                var url = form.attr('action');
+                prevId = form.attr('data-entity-id');
+
+                $.post(
+                    url,
+                    form.serialize(),
+                    function ( data ) {
+                        if ( prevId ) {
+                            $('#' + selectId + ' option[value="' + prevId + '"]').remove();
+                        } else {
+                            $('#update_tx-' + selectId.split('-')[1] ).show();
+                        }
+                        $('#' + selectId).append(new Option( data.string, data.id ));
+                        $('#' + selectId).val(data.id);
+                        $('.modal-body').html('');
+                        $('#txFormModal').modal('hide');
+                    }
+                );
+
+                return false;
+            });
+            $('#txFormModal').modal({backdrop: false});
+            $(".modal-header").on("mousedown", function(mousedownEvt) {
+                var $draggable = $(this);
+                var x = mousedownEvt.pageX - $draggable.offset().left,
+                    y = mousedownEvt.pageY - $draggable.offset().top;
+                $("body").on("mousemove.draggable", function(mousemoveEvt) {
+                    $draggable.closest(".modal-dialog").offset({
+                        "left": mousemoveEvt.pageX - x,
+                        "top": mousemoveEvt.pageY - y
+                    });
+                });
+                $("body").one("mouseup", function() {
+                    $("body").off("mousemove.draggable");
+                });
+                $draggable.closest(".modal").one("bs.modal.hide", function() {
+                    $("body").off("mousemove.draggable");
+                });
+            });
+        }
+    </script>
+    <script src="{{ asset('bundles/fosjsrouting/js/router.min.js') }}"></script>
+    <script src="{{ path('fos_js_routing_js', { callback: 'fos.Router.setData' }) }}"></script>
+    <script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
 {% endblock %}
