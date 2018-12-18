@@ -595,7 +595,7 @@ class AdminController extends BaseAdminController
         foreach ( $bank->getExtractos() as $extracto ) {
             $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
 
-                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo );
+                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo ) && $r->getMovimientos()->isEmpty();
 
                 return $ret;
             });
@@ -646,10 +646,9 @@ class AdminController extends BaseAdminController
                     $summaryLineId = preg_split('/-/', $name)[1];
 
                     if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
-                        $em->remove($summaryLine);
+                        $summaryLine->addMovimiento( $transaction );
+                        $em->persist($transaction);
                     }
-                    $transaction->setConcretado(true);
-                    $em->persist($transaction);
                 }
             }
 
@@ -1220,7 +1219,7 @@ class AdminController extends BaseAdminController
         $criteria
             ->where(Criteria::expr()->gte('fecha', $dateFrom))
             ->andWhere(Criteria::expr()->lte('fecha', $dateTo))
-            ->andWhere(Criteria::expr()->neq('concretado', true))
+            ->andWhere(Criteria::expr()->isNull('renglonExtracto' ))
             ->orderBy(
                 [
                     'fecha' => 'ASC'
@@ -1239,7 +1238,7 @@ class AdminController extends BaseAdminController
             $totalBalance = 0;
 
             foreach ($banks as $bank) {
-                $balance = $bank->getBalance(\DateTimeImmutable::createFromMutable($dateFrom));
+                $balance = $bank->getBalance($dateFrom);
 
                 $totalBalance += $balance ? $balance->getValor() : 0;
             }
