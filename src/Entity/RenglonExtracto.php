@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -41,6 +43,16 @@ class RenglonExtracto
      * @ORM\Column(type="decimal", precision=10, scale=2)
      */
     private $importe;
+
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\Movimiento", mappedBy="renglonExtracto")
+     */
+    private $movimientos;
+
+    public function __construct()
+    {
+        $this->movimientos = new ArrayCollection();
+    }
 
     public function getId()
     {
@@ -105,5 +117,41 @@ class RenglonExtracto
         $this->importe = $importe;
 
         return $this;
+    }
+
+    /**
+     * @return Collection|Movimiento[]
+     */
+    public function getMovimientos(): Collection
+    {
+        return $this->movimientos;
+    }
+
+    public function addMovimiento(Movimiento $movimiento): self
+    {
+        if (!$this->movimientos->contains($movimiento)) {
+            $this->movimientos[] = $movimiento;
+            $movimiento->setRenglonExtracto($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMovimiento(Movimiento $movimiento): self
+    {
+        if ($this->movimientos->contains($movimiento)) {
+            $this->movimientos->removeElement($movimiento);
+            // set the owning side to null (unless already changed)
+            if ($movimiento->getRenglonExtracto() === $this) {
+                $movimiento->setRenglonExtracto(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function __toString()
+    {
+        return $this->getExtracto()->getBank().' '.$this->getExtracto()->getFecha()->format('d/m/Y').': "'.$this->getConcepto().'" (linea '.$this->getLinea().')';
     }
 }
