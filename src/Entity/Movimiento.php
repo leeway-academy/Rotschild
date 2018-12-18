@@ -38,14 +38,14 @@ class Movimiento
     private $bank;
 
     /**
-     * @ORM\Column(type="boolean")
-     */
-    private $concretado = false;
-
-    /**
      * @ORM\ManyToOne(targetEntity="App\Entity\GastoFijo", inversedBy="movimientos")
      */
     private $clonDe;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\RenglonExtracto", inversedBy="movimientos")
+     */
+    private $renglonExtracto;
 
     public function getId()
     {
@@ -105,24 +105,6 @@ class Movimiento
         return $this->getFecha()->format('d/m/Y').': '.($this->importe < 0 ? '-' : '').'$'.abs($this->importe).' ('.$this->getConcepto().')';
     }
 
-    /**
-     * @return bool
-     */
-    public function getConcretado()
-    {
-        return $this->concretado;
-    }
-
-    /**
-     * @param bool $concretado
-     * @return Movimiento
-     */
-    public function setConcretado(bool $concretado)
-    {
-        $this->concretado = $concretado;
-        return $this;
-    }
-
     public function __construct()
     {
         $this->setFecha( new \DateTime() );
@@ -138,5 +120,25 @@ class Movimiento
         $this->clonDe = $clonDe;
 
         return $this;
+    }
+
+    public function getRenglonExtracto(): ?RenglonExtracto
+    {
+        return $this->renglonExtracto;
+    }
+
+    public function setRenglonExtracto(?RenglonExtracto $renglonExtracto): self
+    {
+        $this->renglonExtracto = $renglonExtracto;
+
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getConcretado() : bool
+    {
+        return !empty($this->getRenglonExtracto());
     }
 }
