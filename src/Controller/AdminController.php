@@ -674,81 +674,6 @@ class AdminController extends BaseAdminController
     }
 
     /**
-     * @param Bank $banco
-     * @Route(name="get_unmatched_summary_lines", path="/bank/{id}/unmatchedSummaryLines")
-     */
-    public function getUnmatchedSummaryLines(Request $request, Bank $banco)
-    {
-        if (!$request->isXmlHttpRequest()) {
-
-            throw new BadRequestHttpException('This method should be called via ajax', null, 400);
-        }
-
-        $ret = [];
-        foreach ($banco->getExtractos() as $extracto) {
-            foreach ($extracto->getRenglones() as $renglon) {
-                $ret[$renglon->getId()] =
-                    [
-                        'date' => $renglon->getFecha()->format('d-m-y'),
-                        'concept' => $renglon->getConcepto(),
-                        'amount' => $renglon->getImporte(),
-                    ];
-            }
-        }
-
-        return new JsonResponse($ret);
-    }
-
-    /**
-     * @param Bank $banco
-     * @Route(name="get_projected_debits", path="/bank/{id}/projectedDebits", options={"expose"=true})
-     * @return JsonResponse
-     */
-    public function getProjectedDebits(Request $request, Bank $banco)
-    {
-        if (!$request->isXmlHttpRequest()) {
-
-            throw new BadRequestHttpException('This method should be called via ajax', null, 400);
-        }
-
-        $ret = [];
-        foreach ($banco->getDebitosProyectados() as $debitoProyectado) {
-            $ret[$debitoProyectado->getId()] =
-                [
-                    'date' => $debitoProyectado->getFecha()->format('d-m-y'),
-                    'concept' => $debitoProyectado->getConcepto(),
-                    'amount' => $debitoProyectado->getImporte(),
-                ];
-        }
-
-        return new JsonResponse($ret);
-    }
-
-    /**
-     * @param Bank $banco
-     * @Route(name="get_projected_credits", path="/bank/{id}/projectedCredits", options={"expose"=true})
-     */
-    public function getProjectedCredits(Request $request, Bank $banco)
-    {
-        if (!$request->isXmlHttpRequest()) {
-
-            throw new BadRequestHttpException('This method should be called via ajax', null, 400);
-        }
-
-        $ret = [];
-        foreach ($banco->getCreditosProyectados() as $creditoProyectado) {
-            $ret[$creditoProyectado->getId()] =
-                [
-                    'date' => $creditoProyectado->getFecha()->format('d-m-y'),
-                    'concept' => $creditoProyectado->getConcepto(),
-                    'amount' => $creditoProyectado->getImporte(),
-                ];
-        }
-
-        return new JsonResponse($ret);
-    }
-
-    /**
      * @param Request $request
      * @Route(path="/checks/issued/confirm", name="confirm_issued_checks")
      */
@@ -990,7 +915,7 @@ class AdminController extends BaseAdminController
                 'Submit',
                 SubmitType::class,
                 [
-                    'label' => 'Send',
+                    'label' => 'Query',
                     'attr' =>
                         [
                             'class' => 'btn btn-primary',
@@ -1001,57 +926,12 @@ class AdminController extends BaseAdminController
 
         $form->handleRequest($request);
 
-        $balances = [];
-
         if ($form->isSubmitted() && $form->isValid()) {
-            $criteria = new Criteria();
-
             $dateFrom = $form['dateFrom']->getData();
             $dateTo = $form['dateTo']->getData();
+            $bank = $form['bank']->getData();
 
-            $criteria
-                ->where(Criteria::expr()->gte('fecha', $dateFrom))
-                ->andWhere(Criteria::expr()->lte('fecha', $dateTo))
-                ->andWhere(Criteria::expr()->neq('concretado', true))
-                ->orderBy(
-                    [
-                        'fecha' => 'ASC'
-                    ]
-                );
-
-            if ($bank = $form['bank']->getData()) {
-                $criteria->andWhere(Criteria::expr()->eq('bank', $bank));
-
-                $balance = $bank->getBalance(\DateTimeImmutable::createFromMutable($dateFrom));
-                $totalBalance = $balance ? $balance->getValor() : 0;
-            } else {
-                $totalBalance = 0;
-
-                foreach ( $banks as $bank ) {
-                    $balance = $bank->getBalance( \DateTimeImmutable::createFromMutable( $dateFrom ) );
-
-                    $totalBalance += $balance ? $balance->getValor() : 0;
-                }
-            }
-
-            $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
-
-            $period = new \DatePeriod($dateFrom, new \DateInterval('P1D'), $dateTo);
-
-            foreach ($period as $date) {
-                $dailyTransactions = $transactions->filter(function (Movimiento $transaction) use ($date) {
-
-                    return $transaction->getFecha()->diff($date)->days == 0;
-                });
-
-                $dailyBalance = 0;
-                foreach ($dailyTransactions as $transaction) {
-                    $dailyBalance += $transaction->getImporte();
-                }
-
-                $totalBalance += $dailyBalance;
-                $balances[$date->format('d/m/Y')] = $totalBalance;
-            }
+            $balances = $this->calculateBanksBalance( $dateFrom, $dateTo, $bank ? [ $bank ] : $banks );
         }
 
         return $this->render(
@@ -1061,6 +941,41 @@ class AdminController extends BaseAdminController
                 'balances' => $balances,
             ]
         );
+    }
+
+    /**
+     * @param Request $request
+     * @Route(name="send_bank_balance", path="/bank/sendBalance", options={"expose"=true})
+     */
+    public function sendBankBalance( Request $request )
+    {
+        $dateFrom = new \DateTimeImmutable( $request->get('dateFrom') );
+        $days = $this->getParameter('projected_balances_days');
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo') ) : $dateFrom->add( new \DateInterval("P{$days}D") );
+        $bank = $request->get('bank');
+
+        $banks = $bank ? [ $this->getDoctrine()->getRepository('App:Bank')->find( $bank ) ] : $this->getDoctrine()->getRepository('App:Bank')->findAll();
+
+        $balances = $this->calculateBanksBalance( $dateFrom, $dateTo, $banks );
+
+        $message = ( new \Swift_Message($this->get('translator')->trans('Bank balances summary') ) )
+            ->setFrom('rotschild@blasting.com.ar')
+            ->setTo( $this->getParameter('send_balances_to'))
+            ->setBody(
+                $this->renderView(
+                    'emails/balances.html.twig',
+                    [
+                        'banks' => $banks,
+                        'balances' => $balances,
+                    ]
+                ),
+                'text/html'
+            )
+        ;
+
+        $this->get('mailer')->send($message);
+
+        return new JsonResponse($this->get('translator')->trans('Email sent!'));
     }
 
     protected function newDebitoAction()
@@ -1289,5 +1204,66 @@ class AdminController extends BaseAdminController
         );
 
         return $this->executeDynamicMethod('render<EntityName>Template', array('edit', $this->entity['templates']['edit'], $parameters));
+    }
+
+    /**
+     * @param $dateFrom
+     * @param $dateTo
+     * @param array $banks
+     * @return array
+     * @throws \Exception
+     */
+    private function calculateBanksBalance( \DateTimeInterface $dateFrom, \DateTimeInterface $dateTo, array $banks ): array
+    {
+        $criteria = new Criteria();
+        $criteria
+            ->where(Criteria::expr()->gte('fecha', $dateFrom))
+            ->andWhere(Criteria::expr()->lte('fecha', $dateTo))
+            ->andWhere(Criteria::expr()->neq('concretado', true))
+            ->orderBy(
+                [
+                    'fecha' => 'ASC'
+                ]
+            );
+
+        $dateFrom = $dateFrom instanceof \DateTimeImmutable ? $dateFrom : \DateTimeImmutable::createFromMutable($dateFrom);
+
+        if ( count($banks) == 1 ) {
+            $bank = current($banks);
+            $criteria->andWhere( Criteria::expr()->eq('bank', $bank) );
+
+            $balance = $bank->getBalance( $dateFrom );
+            $totalBalance = $balance ? $balance->getValor() : 0;
+        } else {
+            $totalBalance = 0;
+
+            foreach ($banks as $bank) {
+                $balance = $bank->getBalance(\DateTimeImmutable::createFromMutable($dateFrom));
+
+                $totalBalance += $balance ? $balance->getValor() : 0;
+            }
+        }
+
+        $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
+
+        $period = new \DatePeriod($dateFrom, new \DateInterval('P1D'), $dateTo);
+
+        $balances = [];
+        foreach ($period as $date) {
+            $dailyTransactions = $transactions->filter(function (Movimiento $transaction) use ($date) {
+
+                return $transaction->getFecha()->diff($date)->days == 0;
+            });
+
+            $dailyBalance = 0;
+            foreach ($dailyTransactions as $transaction) {
+                $dailyBalance += $transaction->getImporte();
+            }
+
+            $totalBalance += $dailyBalance;
+            $balances[$date->format('d/m/Y')] = $totalBalance;
+        }
+
+        return $balances;
     }
 }

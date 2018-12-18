@@ -32,6 +32,8 @@
             {% endfor %}
             </tbody>
         </table>
+        <br/>
+        <p><button id="sendEmail" class="btn btn-primary">{{ 'Send via email' | trans }}</button></p>
     {% endif %}
 {% endblock %}
 
@@ -48,6 +50,23 @@
                 $('#loadBalance').attr('href', '#');
                 $('#loadBalance').hide();
             }
+        });
+
+        $('#sendEmail').click( function() {
+            $('#sendEmail').attr('disabled', 'disabled');
+            $.ajax(
+                Routing.generate('send_bank_balance', {
+                    'dateFrom': $('#form_dateFrom_year').val() + '-' + $('#form_dateFrom_month').val() + '-' + $('#form_dateFrom_day').val(),
+                    'dateTo': $('#form_dateTo_year').val() + '-' + $('#form_dateTo_month').val() + '-' + $('#form_dateTo_day').val(),
+                    'bank': $('#form_bank').val()
+                })
+            ).success( function () {
+                alert('Success!');
+            }).fail( function() {
+                alert('El envio fallo :(');
+            }).always( function () {
+                $('#sendEmail').removeAttr('disabled');
+            });
         });
     </script>
 {% endblock %}
