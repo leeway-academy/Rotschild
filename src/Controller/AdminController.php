@@ -926,6 +926,7 @@ class AdminController extends BaseAdminController
 
         $form->handleRequest($request);
 
+        $balances = [];
         if ($form->isSubmitted() && $form->isValid()) {
             $dateFrom = $form['dateFrom']->getData();
             $dateTo = $form['dateTo']->getData();
