@@ -741,18 +741,26 @@ class AdminController extends BaseAdminController
                 $k = $parts[1];
                 $check = $issuedChecks[$k];
                 if ($datum) {
-                    if (!$datum instanceof Movimiento) {
-                        $datum = new Movimiento();
+                    if ( $datum instanceof Movimiento ) {
+                        /**
+                         * If it's an existing transaction this check marks it as payed
+                         */
+                        $datum->setIssuedCheck( $check );
+                        $objectManager->persist($datum);
                     }
 
-                    $datum
+                    /**
+                     * In any case a new debit is created for the check itself
+                     */
+                    $transaction = new Movimiento();
+                    $transaction
                         ->setBank($check->getBanco())
                         ->setImporte($check->getImporte() * -1)
                         ->setConcepto('Cheque ' . $check->getNumero())
                         ->setFecha($check->getFecha())/** @Todo probably will need to be some time in the future */
                     ;
 
-                    $objectManager->persist($datum);
+                    $objectManager->persist( $transaction );
                 }
 
                 $objectManager->flush();
