@@ -69,7 +69,7 @@ easy_admin:
             - { label: 'Cheques aplicados', route: 'import_applied_checks', default: true }
             - { label: 'Conciliación' }
             - { label: 'Extractos bancarios', route: 'match_bank_summaries' }
-            - { label: 'Cheques emitidos', route: 'confirm_issued_checks' }
+            - { label: 'Cheques emitidos', route: 'process_issued_checks' }
             - { label: 'Cheques aplicados', route: 'process_applied_checks'}
             - { label: 'Movimientos'}
             - { label: 'Balances', route: 'show_bank_balance'}
