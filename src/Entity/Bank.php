@@ -269,20 +269,21 @@ class Bank
                     ->lt('fecha', $fechaFin)
             );
 
-        if ( $concretados === true || $concretados === false ) {
-            $criteria->andWhere( Criteria::expr()->eq('concretado', $concretados ) );
-        }
+        return $this
+            ->getMovimientos()
+            ->matching( $criteria )
+            ->filter( function( Movimiento $m ) use ( $concretados ) {
+                if ( $concretados === true ) {
 
-        $count = 0;
-        foreach( $this->getMovimientos() as $mov ) {
-            if ( $mov->getImporte() < 0 ) {
-                $count++;
-            }
-        }
+                    return $m->getConcretado();
+                } elseif ( $concretados === false ) {
 
-        $movimientos = $this->getMovimientos()->matching( $criteria );
+                    return !$m->getConcretado();
+                } else {
 
-        return $movimientos;
+                    return true;
+                }
+            });
     }
 
     /**
