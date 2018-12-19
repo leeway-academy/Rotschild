@@ -674,9 +674,9 @@ class AdminController extends BaseAdminController
 
     /**
      * @param Request $request
-     * @Route(path="/checks/issued/confirm", name="confirm_issued_checks")
+     * @Route(path="/checks/issued/process", name="process_issued_checks")
      */
-    public function confirmIssuedChecks(Request $request)
+    public function processIssuedChecks(Request $request)
     {
         $formBuilder = $this->createFormBuilder();
 
@@ -686,22 +686,20 @@ class AdminController extends BaseAdminController
             ->findPendingDebits();
 
         $issuedChecks = $managerRegistry->getRepository('App:ChequeEmitido')->findAll();
+
+        $nullOption = [ '-1' => 'Payment to providers' ];
+
         foreach ($issuedChecks as $k => $check) {
             $formBuilder->add(
                 'match_' . $k,
                 ChoiceType::class,
                 [
-                    'choices' => array_merge(
-                        [
-                            "-1" => 'N/A'
-                        ],
-                        $debits->toArray()
-                    ),
-                    'choice_value' => function( $o ) {
+                    'choices' => array_merge( $nullOption, $debits->toArray() ),
+                    'choice_value' => function( $o ) use ( $nullOption ) {
                         if ( $o instanceof Movimiento ) {
 
                             return $o->getId();
-                        } elseif ( $o == 'N/A' ) {
+                        } elseif ( $o == $nullOption[ '-1' ] ) {
 
                             return "-1";
                         } else {
@@ -743,29 +741,28 @@ class AdminController extends BaseAdminController
                 $k = $parts[1];
                 $check = $issuedChecks[$k];
                 if ($datum) {
-                    $objectManager->remove($check);
-                    unset($issuedChecks[$k]);
-
-                    if ($datum instanceof Movimiento) {
-                        $datum
-                            ->setBank($check->getBanco())
-                            ->setImporte($check->getImporte() * -1)
-                            ->setConcepto('Cheque ' . $check->getNumero())
-                            ->setFecha($check->getFecha())/** @Todo probably will need to be some time in the future */
-                        ;
-
-                        $objectManager->persist($datum);
+                    if (!$datum instanceof Movimiento) {
+                        $datum = new Movimiento();
                     }
+
+                    $datum
+                        ->setBank($check->getBanco())
+                        ->setImporte($check->getImporte() * -1)
+                        ->setConcepto('Cheque ' . $check->getNumero())
+                        ->setFecha($check->getFecha())/** @Todo probably will need to be some time in the future */
+                    ;
+
+                    $objectManager->persist($datum);
                 }
 
                 $objectManager->flush();
             }
 
-            return $this->redirectToRoute('confirm_issued_checks');
+            return $this->redirectToRoute('process_issued_checks');
         }
 
         return $this->render(
-            'admin/confirm_issued_checks.html.twig',
+            'admin/process_issued_checks.html.twig',
             [
                 'form' => $form->createView(),
                 'checks' => $issuedChecks,
@@ -787,10 +784,7 @@ class AdminController extends BaseAdminController
         $formBuilder = $this->createFormBuilder();
 
         $bancos = $this->getDoctrine()->getRepository('App:Bank')->findAll();
-        $criteria = Criteria::create()
-            ->where(Criteria::expr()->lt('importe', 0))
-            ->andWhere(Criteria::expr()->eq('concretado', false));
-        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
+        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->findProjectedCredits();
         $checks = $this->getDoctrine()->getRepository('App:AppliedCheck')->findAll();
 
         foreach ($checks as $k => $check) {
@@ -823,9 +817,12 @@ class AdminController extends BaseAdminController
         }
 
         $formBuilder->add(
-            'aplicar',
+            'apply',
             SubmitType::class,
             [
+                'attr' => [
+                    'class' => 'btn btn-primary',
+                ]
             ]
         );
 
@@ -845,11 +842,17 @@ class AdminController extends BaseAdminController
                             ->setImporte($check->getAmount())
                             ->setFecha($check->getCreditDate())
                             ->setConcepto('Acreditacion de cheque ' . $check->getNumber());
+
+                        $check->setMovimiento($movimiento);
+                        $em->persist($movimiento);
+                        $em->persist($check);
                     } elseif (!empty($movimiento)) {
-                        $movimiento->setConcretado(true);
+                        /**
+                         * WTF ???
+                         * The transaction must not subtract from upcoming balances since the debt has been payed
+                         * Should it be deleted though? How to take it back if the matching was incorrect?
+                         */
                     }
-                    $em->persist($movimiento);
-                    $em->remove($check);
                 }
             }
 
