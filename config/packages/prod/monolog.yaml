@@ -13,7 +13,7 @@ monolog:
         deduplicated:
             type: deduplication
             handler: swift
-        switf:
+        swift:
             type: swift_mailer
             from_email: 'rotschild@blasting.com.ar'
             to_email: '%env(resolve:ADMIN_EMAIL)%'
