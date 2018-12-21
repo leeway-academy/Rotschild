@@ -47,6 +47,7 @@ easy_admin:
                 ajax_layout: 'ajax_layout.html.twig'
         GastoFijo:
             class: App\Entity\GastoFijo
+            controller: App\Controller\GastoFijoController
             label: 'Gastos fijos'
             list:
                 title: 'Gastos Fijos'
