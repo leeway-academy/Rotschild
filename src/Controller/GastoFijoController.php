@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -21,7 +22,7 @@ class GastoFijoController extends BaseAdminController
         $today = new \DateTimeImmutable();
         $month = $today->format('m');
         $year = $today->format('Y');
-        $gastosFijos = [];
+        $gastosFijos = new ArrayCollection();
 
         $form = $this->createFormBuilder()
             ->add(

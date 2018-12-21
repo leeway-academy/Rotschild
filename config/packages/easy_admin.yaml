@@ -76,6 +76,7 @@ easy_admin:
             - { label: 'Balances', route: 'show_bank_balance'}
             - Debito
             - Credito
+            - { label: 'Gasto Fijo total', route: 'fixed_expense_query' }
             - { label: 'Configuración' }
             - GastoFijo
             - Bank
