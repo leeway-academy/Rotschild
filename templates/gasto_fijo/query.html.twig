@@ -15,13 +15,19 @@
                 </tr>
             </thead>
             <tbody>
+            {% set sum = 0 %}
             {% for e in fixedExpenses %}
+                {% set sum = sum + e.importe %}
                 <tr>
                     <td>{{ e.fecha | date('d/m/Y') }}</td>
                     <td>{{ e.concepto }}</td>
                     <td>$ {{ e.importe | number_format( 2, ',', '.' ) }}</td>
                 </tr>
             {% endfor %}
+                <tr>
+                    <td colspan="2"><b>{{ 'Total' | trans }}</b></td>
+                    <td>$ {{ sum | number_format( 2, ',', '.' ) }}</td>
+                </tr>
             </tbody>
         </table>
     {% else %}
