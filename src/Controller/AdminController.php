@@ -682,10 +682,16 @@ class AdminController extends BaseAdminController
 
         $managerRegistry = $this->getDoctrine();
 
-        $debits = $managerRegistry->getRepository('App:Movimiento')
-            ->findPendingDebits();
+        $debits = $managerRegistry
+            ->getRepository('App:Movimiento')
+            ->findProjectedDebits();
 
-        $issuedChecks = $managerRegistry->getRepository('App:ChequeEmitido')->findAll();
+        $issuedChecks = $managerRegistry
+            ->getRepository('App:ChequeEmitido')
+            ->matching(
+                Criteria::create()
+                    ->andWhere( Criteria::expr()->isNull('movimiento') )
+            );
 
         $nullOption = [ '-1' => 'Payment to providers' ];
 
@@ -741,14 +747,6 @@ class AdminController extends BaseAdminController
                 $k = $parts[1];
                 $check = $issuedChecks[$k];
                 if ($datum) {
-                    if ( $datum instanceof Movimiento ) {
-                        /**
-                         * If it's an existing transaction this check marks it as payed
-                         */
-                        $datum->setIssuedCheck( $check );
-                        $objectManager->persist($datum);
-                    }
-
                     /**
                      * In any case a new debit is created for the check itself
                      */
@@ -761,6 +759,15 @@ class AdminController extends BaseAdminController
                     ;
 
                     $objectManager->persist( $transaction );
+                    if ( $datum instanceof Movimiento ) {
+                        /**
+                         * If it's an existing transaction this check marks it as payed
+                         */
+                        $check->setMovimiento($datum);
+                    } else {
+                        $check->setMovimiento($transaction);
+                    }
+                    $objectManager->persist($check);
                 }
 
                 $objectManager->flush();

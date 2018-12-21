@@ -4,9 +4,9 @@ namespace App\Repository;
 
 use App\Entity\Movimiento;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Collections\Criteria;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Validator\Constraints\Collection;
-use Doctrine\Common\Collections\Criteria;
 
 /**
  * @method Movimiento|null find($id, $lockMode = null, $lockVersion = null)
@@ -24,40 +24,42 @@ class MovimientoRepository extends ServiceEntityRepository
     /**
      * @return Collection
      */
-    public function findPendingDebits()
+    public function findProjectedDebits()
     {
         return $this->matching(
             Criteria::create()
-                ->where( Criteria::expr()->eq('concretado', false) )
-                ->andWhere( Criteria::expr()->lt('importe', 0) )
+                ->where( $this->getProjectedCriteria() )
+                ->andWhere( $this->getDebitCriteria() )
         );
     }
-//    /**
-//     * @return Movimiento[] Returns an array of Movimiento objects
-//     */
-    /*
-    public function findByExampleField($value)
-    {
-        return $this->createQueryBuilder('m')
-            ->andWhere('m.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('m.id', 'ASC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult()
-        ;
-    }
-    */
 
-    /*
-    public function findOneBySomeField($value): ?Movimiento
+    /**
+     * @return Collection
+     */
+    public function findProjectedCredits()
     {
-        return $this->createQueryBuilder('m')
-            ->andWhere('m.exampleField = :val')
-            ->setParameter('val', $value)
-            ->getQuery()
-            ->getOneOrNullResult()
-        ;
+        return $this->matching(
+            Criteria::create()
+                ->where( $this->getProjectedCriteria() )
+                ->andWhere( $this->getCreditCriteria() )
+        );
     }
-    */
+
+    public function getProjectedCriteria()
+    {
+        return Criteria::expr()->andX(
+            Criteria::expr()->isNull('renglonExtracto' ),
+            Criteria::expr()->isNull( 'appliedCheck' )
+            );
+    }
+
+    public function getCreditCriteria()
+    {
+        return Criteria::expr()->gt( 'importe', 0 );
+    }
+
+    public function getDebitCriteria()
+    {
+        return Criteria::expr()->lt( 'importe', 0 );
+    }
 }

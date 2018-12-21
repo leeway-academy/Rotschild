@@ -275,10 +275,10 @@ class Bank
             ->filter( function( Movimiento $m ) use ( $concretados ) {
                 if ( $concretados === true ) {
 
-                    return $m->getConcretado();
+                    return $m->isConcretado();
                 } elseif ( $concretados === false ) {
 
-                    return !$m->getConcretado();
+                    return !$m->isConcretado();
                 } else {
 
                     return true;

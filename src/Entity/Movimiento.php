@@ -47,6 +47,21 @@ class Movimiento
      */
     private $renglonExtracto;
 
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\AppliedCheck", inversedBy="movimiento", cascade={"persist", "remove"})
+     */
+    private $appliedCheck;
+
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\ChequeEmitido", mappedBy="movimiento", cascade={"persist", "remove"})
+     */
+    private $issuedCheck;
+
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\ChequeEmitido", mappedBy="movimiento", cascade={"persist", "remove"})
+     */
+    private $chequeEmitido;
+
     public function getId()
     {
         return $this->id;
@@ -137,8 +152,76 @@ class Movimiento
     /**
      * @return bool
      */
-    public function getConcretado() : bool
+    public function isConcretado() : bool
     {
         return !empty($this->getRenglonExtracto());
+    }
+
+    /**
+     * @return bool
+     */
+    public function isProjected() : bool
+    {
+        return !$this->isConcretado();
+    }
+
+    public function getAppliedCheck(): ?AppliedCheck
+    {
+        return $this->appliedCheck;
+    }
+
+    public function setAppliedCheck(?AppliedCheck $appliedCheck): self
+    {
+        $this->appliedCheck = $appliedCheck;
+
+        return $this;
+    }
+
+    public function isCredit() : bool
+    {
+
+        return $this->getImporte() > 0;
+    }
+
+    public function isDebit() : bool
+    {
+
+        return $this->getImporte() < 0;
+    }
+
+    public function getIssuedCheck(): ?IssuedCheck
+    {
+        return $this->issuedCheck;
+    }
+
+    public function setIssuedCheck(?IssuedCheck $issuedCheck): self
+    {
+        $this->issuedCheck = $issuedCheck;
+
+        // set (or unset) the owning side of the relation if necessary
+        $newMovimiento = $issuedCheck === null ? null : $this;
+        if ($newMovimiento !== $issuedCheck->getMovimiento()) {
+            $issuedCheck->setMovimiento($newMovimiento);
+        }
+
+        return $this;
+    }
+
+    public function getChequeEmitido(): ?ChequeEmitido
+    {
+        return $this->chequeEmitido;
+    }
+
+    public function setChequeEmitido(?ChequeEmitido $chequeEmitido): self
+    {
+        $this->chequeEmitido = $chequeEmitido;
+
+        // set (or unset) the owning side of the relation if necessary
+        $newMovimiento = $chequeEmitido === null ? null : $this;
+        if ($newMovimiento !== $chequeEmitido->getMovimiento()) {
+            $chequeEmitido->setMovimiento($newMovimiento);
+        }
+
+        return $this;
     }
 }
