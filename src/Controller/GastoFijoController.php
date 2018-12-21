@@ -6,6 +6,8 @@ use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
 use Doctrine\Common\Collections\Criteria;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -17,22 +19,68 @@ class GastoFijoController extends BaseAdminController
     public function index( Request $request )
     {
         $today = new \DateTimeImmutable();
-        $month = $request->get('month', $today->format('m'));
-        $year = $request->get('year', $today->format('y'));
+        $month = $today->format('m');
+        $year = $today->format('Y');
+        $gastosFijos = [];
 
-        $firstDay = new \DateTime($year.'-'.$month.'-01');
-        $lastDay = new \DateTime( $firstDay->format('Y-m-t') );
+        $form = $this->createFormBuilder()
+            ->add(
+                'month',
+                ChoiceType::class,
+                [
+                    'choices' => range(1, 12),
+                    'choice_label' => function( $v ) {
 
-        $movimientoRepository = $this->getDoctrine()->getRepository('App:Movimiento');
-        $gastosFijos = $movimientoRepository
-            ->matching(
-                Criteria::create()->where( $movimientoRepository->getFixedExpenseCriteria() )
-                ->andWhere( Criteria::expr()->gte('fecha', $firstDay ) )
-                ->andWhere( Criteria::expr()->lte('fecha', $lastDay ) )
-            );
+                        return $v;
+                    },
+                    'required' => true,
+                    'data' => $month,
+                ]
+            )
+            ->add(
+                'year',
+                ChoiceType::class,
+                [
+                    'choices' => range( ($year - 3), ($year + 3) ),
+                    'choice_label' => function( $v ) {
+
+                        return $v;
+                    },
+                    'data' => $year,
+                    'required' => true,
+                ]
+            )
+            ->add(
+                'Query',
+                SubmitType::class,
+                [
+                    'attr' => [
+                        'class' => 'btn btn-primary',
+                    ]
+                ]
+            )
+            ->getForm();
+
+        $form->handleRequest( $request );
+
+        if ( $form->isSubmitted() && $form->isValid() ) {
+            $month = $form['month']->getData();
+            $year = $form['year']->getData();
+            $firstDay = new \DateTime($year.'-'.$month.'-01');
+            $lastDay = new \DateTime( $firstDay->format('Y-m-t') );
+
+            $movimientoRepository = $this->getDoctrine()->getRepository('App:Movimiento');
+            $gastosFijos = $movimientoRepository
+                ->matching(
+                    Criteria::create()->where( $movimientoRepository->getFixedExpenseCriteria() )
+                        ->andWhere( Criteria::expr()->gte('fecha', $firstDay ) )
+                        ->andWhere( Criteria::expr()->lte('fecha', $lastDay ) )
+                );
+        }
 
         return $this->render('gasto_fijo/query.html.twig', [
             'fixedExpenses' => $gastosFijos,
+            'form' => $form->createView(),
         ]);
     }
 
