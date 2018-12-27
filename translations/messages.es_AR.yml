@@ -37,3 +37,12 @@ Query: Consultar
 Send via email: Enviar por correo
 Bank balances summary: Resumen de saldos bancarios
 Balances for: Saldos para
+fixedExpense.query: Consulta de gastos fijos
+fixedExpenses:
+  no:
+    matching:
+      filters: No hay gastos fijos con ese criterio
+Amount: Importe
+Concept: Concepto
+Month: Mes
+Year: Año
