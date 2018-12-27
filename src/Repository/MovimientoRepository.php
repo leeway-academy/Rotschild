@@ -4,9 +4,9 @@ namespace App\Repository;
 
 use App\Entity\Movimiento;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Common\Collections\Criteria;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Validator\Constraints\Collection;
+use Doctrine\Common\Collections\Criteria;
 
 /**
  * @method Movimiento|null find($id, $lockMode = null, $lockVersion = null)
@@ -24,12 +24,12 @@ class MovimientoRepository extends ServiceEntityRepository
     /**
      * @return Collection
      */
-    public function findProjectedDebits()
+    public function findPendingDebits()
     {
         return $this->matching(
             Criteria::create()
-                ->where( $this->getProjectedCriteria() )
-                ->andWhere( $this->getDebitCriteria() )
+                ->where( Criteria::expr()->eq('concretado', false) )
+                ->andWhere( Criteria::expr()->lt('importe', 0) )
         );
     }
 
@@ -61,5 +61,13 @@ class MovimientoRepository extends ServiceEntityRepository
     public function getDebitCriteria()
     {
         return Criteria::expr()->lt( 'importe', 0 );
+    }
+
+    /**
+     * @return \Doctrine\Common\Collections\Expr\Comparison
+     */
+    public function getFixedExpenseCriteria()
+    {
+        return Criteria::expr()->neq( 'clonDe', null );
     }
 }

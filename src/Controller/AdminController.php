@@ -6,7 +6,6 @@ use App\Entity\AppliedCheck;
 use App\Entity\Bank;
 use App\Entity\ChequeEmitido;
 use App\Entity\ExtractoBancario;
-use App\Entity\GastoFijo;
 use App\Entity\Movimiento;
 use App\Entity\RenglonExtracto;
 use App\Entity\SaldoBancario;
@@ -137,98 +136,6 @@ class AdminController extends BaseAdminController
         }
 
         return $this->executeDynamicMethod('render<EntityName>Template', array('show', $this->entity['templates']['show'], $parameters));
-    }
-
-    /**
-     * @param GastoFijo $gastoFijo
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     */
-    protected function persistGastoFijoEntity(GastoFijo $gastoFijo)
-    {
-        $this->em->persist($gastoFijo);
-        $this->em->flush();
-
-        $initDate = \DateTimeImmutable::createFromMutable( $gastoFijo->getFechaInicio() );
-
-        $oneMonth = new \DateInterval('P1M');
-
-        if ( $initDate->format('d') > $gastoFijo->getDia() ) {
-            $initDate = $initDate
-                ->sub( new \DateInterval('P'.($initDate->format('d') - $gastoFijo->getDia() ).'D') )
-                ->add( $oneMonth );
-        } else {
-            $initDate = $initDate
-                ->add( new \DateInterval('P'.( $gastoFijo->getDia() - $initDate->format('d') ).'D') );
-        }
-
-        if (($fechaFin = $gastoFijo->getFechaFin()) === null) {
-            $fechaFin = $initDate->add(new \DateInterval('P12M'));
-        }
-
-        while ($initDate < $fechaFin) {
-            $movimiento = new Movimiento();
-            $movimiento
-                ->setConcepto($gastoFijo->getConcepto())
-                ->setFecha($initDate)
-                ->setImporte($gastoFijo->getImporte() * -1)
-                ->setBank($gastoFijo->getBank())
-                ->setClonDe($gastoFijo);
-
-            $this->em->persist($movimiento);
-            $initDate = $initDate->add($oneMonth);
-        }
-
-
-        $this->em->flush();
-    }
-
-    /**
-     * @param GastoFijo $gastoFijo
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     */
-    protected function updateGastoFijoEntity(GastoFijo $gastoFijo)
-    {
-        $today = new \DateTimeImmutable();
-
-        foreach ($gastoFijo->getMovimientos() as $movimiento) {
-            if ( $movimiento->getFecha() > $today ) {
-                if (
-                    !empty($gastoFijo->getFechaFin()) && $movimiento->getFecha() > $gastoFijo->getFechaFin()
-                    ||
-                    $movimiento->getFecha() < $gastoFijo->getFechaInicio()
-                ) {
-                    $this->em->remove( $movimiento );
-                } else {
-                    $movimiento->setConcepto($gastoFijo->getConcepto());
-                    $movimiento->setImporte($gastoFijo->getImporte() * -1);
-                    $movimiento->setBank($gastoFijo->getBank());
-                    $this->em->persist($movimiento);
-                }
-            }
-        }
-
-        $this->em->flush();
-    }
-
-    /**
-     * @param GastoFijo $gastoFijo
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     */
-    protected function removeGastoFijoEntity(GastoFijo $gastoFijo)
-    {
-        $today = new \DateTimeImmutable();
-
-        foreach ($gastoFijo->getMovimientos() as $movimiento) {
-            if ($movimiento->getFecha() == $today ) {
-                $this->em->remove($movimiento);
-            }
-        }
-
-        $this->em->remove($gastoFijo);
-        $this->em->flush();
     }
 
     /**

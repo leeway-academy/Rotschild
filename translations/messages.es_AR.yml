@@ -40,3 +40,12 @@ Balances for: Saldos para
 Amount: Importe
 Apply: Aplicar
 Payment to providers: Pago a Proveedores
+fixedExpense.query: Consulta de gastos fijos
+fixedExpenses:
+  no:
+    matching:
+      filters: No hay gastos fijos con ese criterio
+Amount: Importe
+Concept: Concepto
+Month: Mes
+Year: Año
