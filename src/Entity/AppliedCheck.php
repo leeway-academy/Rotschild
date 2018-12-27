@@ -51,6 +51,11 @@ class AppliedCheck
      */
     private $amount;
 
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\Movimiento", mappedBy="appliedCheck", cascade={"persist", "remove"})
+     */
+    private $movimiento;
+
     public function getId()
     {
         return $this->id;
@@ -143,5 +148,23 @@ class AppliedCheck
     public function getCreditDate() : \DateTimeInterface
     {
         return $this->getType() == 'Diferido' ? $this->getDate()->add( new \DateInterval('P2D') ) : $this->getDate();
+    }
+
+    public function getMovimiento(): ?Movimiento
+    {
+        return $this->movimiento;
+    }
+
+    public function setMovimiento(?Movimiento $movimiento): self
+    {
+        $this->movimiento = $movimiento;
+
+        // set (or unset) the owning side of the relation if necessary
+        $newAppliedCheck = $movimiento === null ? null : $this;
+        if ($newAppliedCheck !== $movimiento->getAppliedCheck()) {
+            $movimiento->setAppliedCheck($newAppliedCheck);
+        }
+
+        return $this;
     }
 }

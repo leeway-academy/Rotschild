@@ -269,20 +269,21 @@ class Bank
                     ->lt('fecha', $fechaFin)
             );
 
-        if ( $concretados === true || $concretados === false ) {
-            $criteria->andWhere( Criteria::expr()->eq('concretado', $concretados ) );
-        }
+        return $this
+            ->getMovimientos()
+            ->matching( $criteria )
+            ->filter( function( Movimiento $m ) use ( $concretados ) {
+                if ( $concretados === true ) {
 
-        $count = 0;
-        foreach( $this->getMovimientos() as $mov ) {
-            if ( $mov->getImporte() < 0 ) {
-                $count++;
-            }
-        }
+                    return $m->isConcretado();
+                } elseif ( $concretados === false ) {
 
-        $movimientos = $this->getMovimientos()->matching( $criteria );
+                    return !$m->isConcretado();
+                } else {
 
-        return $movimientos;
+                    return true;
+                }
+            });
     }
 
     /**
@@ -312,7 +313,7 @@ class Bank
     public function getDebitosProyectados( int $limit = null ): Collection
     {
         $criteria = Criteria::create()
-            ->andWhere(Criteria::expr()->eq('concretado', false))
+            ->andWhere(Criteria::expr()->isNull('renglonExtracto'))
             ->andWhere(Criteria::expr()->lt('importe', 0))
             ->orderBy(['fecha' => 'ASC'])
         ;
@@ -331,7 +332,7 @@ class Bank
     public function getCreditosProyectados( int $limit = null ) : Collection
     {
         $criteria = Criteria::create()
-            ->andWhere(Criteria::expr()->eq('concretado', false))
+            ->andWhere(Criteria::expr()->isNull('renglonExtracto'))
             ->andWhere(Criteria::expr()->gt('importe', 0))
             ->orderBy(['fecha' => 'ASC'])
         ;

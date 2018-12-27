@@ -37,6 +37,11 @@ class ChequeEmitido
      */
     private $importe;
 
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\Movimiento", inversedBy="chequeEmitido", cascade={"persist", "remove"})
+     */
+    private $movimiento;
+
     public function getId()
     {
         return $this->id;
@@ -86,6 +91,18 @@ class ChequeEmitido
     public function setImporte($importe): self
     {
         $this->importe = $importe;
+
+        return $this;
+    }
+
+    public function getMovimiento(): ?Movimiento
+    {
+        return $this->movimiento;
+    }
+
+    public function setMovimiento(?Movimiento $movimiento): self
+    {
+        $this->movimiento = $movimiento;
 
         return $this;
     }
