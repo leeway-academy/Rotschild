@@ -23,6 +23,9 @@ class BankController extends BaseAdminController
      */
     public function matchSummaryLines( Bank $bank, Request $request )
     {
+        $existingTxPefix = 'transaction';
+        $newTxPrefix = 'new_tx';
+
         $summaryLines = [
             'credits' => [],
             'debits' => []
@@ -73,7 +76,7 @@ class BankController extends BaseAdminController
 
                 $formBuilder
                     ->add(
-                        'transaction_' . $renglon->getId(),
+                        $existingTxPefix.'_' . $renglon->getId(),
                         ChoiceType::class,
                         [
                             'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
@@ -90,7 +93,7 @@ class BankController extends BaseAdminController
                         ]
                     )
                     ->add(
-                        'new_tx_'.$renglon->getId(),
+                        $newTxPrefix.'_'.$renglon->getId(),
                         ChoiceType::class,
                         [
                             'choices' => $renglon->getImporte() > 0 ? $newCreditConcepts : $newDebitConcepts,
@@ -126,15 +129,33 @@ class BankController extends BaseAdminController
 
         if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
             $em = $this->getDoctrine()->getManager();
-            $keyword = 'match-';
             $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
             foreach ($matchingForm->getData() as $name => $transaction) {
-                if (substr($name, 0, strlen($keyword)) == $keyword && $transaction) {
-                    $summaryLineId = preg_split('/-/', $name)[1];
+                if ( !empty($transaction) ) {
+                    $summaryLineId = last(preg_split('/_/', $name));
 
                     if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
-                        $summaryLine->addMovimiento( $transaction );
-                        $em->persist($transaction);
+                        if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix ) {
+                            $transaction->setWitness( $summaryLine );
+                            $em->persist($transaction);
+                        } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
+                            /**
+                             * @todo Create new transaction
+                             */
+                            $newTransaction = new Movimiento();
+                            $newTransaction
+                                ->setConcepto( $this->get('translator')->trans($transaction) )
+                                ->setFecha( $summaryLine->getFecha() )
+                                ->setImporte( $summaryLine->getImporte() )
+                                ->setWitness( $summaryLine )
+                                ->setBank( $summaryLine->getExtracto()->getBank() )
+                            ;
+                            $em->persist( $newTransaction );
+                        }
+                    } else {
+                        /**
+                         * Something really wrong happened... Is somebody messing with the system??
+                         */
                     }
                 }
             }
