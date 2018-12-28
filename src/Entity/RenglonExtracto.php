@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repository\RenglonExtractoRepository")
  */
-class RenglonExtracto
+class RenglonExtracto implements Witness
 {
     /**
      * @ORM\Id()
@@ -44,9 +44,6 @@ class RenglonExtracto
      */
     private $importe;
 
-    /**
-     * @ORM\OneToMany(targetEntity="App\Entity\Movimiento", mappedBy="renglonExtracto")
-     */
     private $movimientos;
 
     public function __construct()
@@ -131,7 +128,7 @@ class RenglonExtracto
     {
         if (!$this->movimientos->contains($movimiento)) {
             $this->movimientos[] = $movimiento;
-            $movimiento->setRenglonExtracto($this);
+            $movimiento->setWitness($this);
         }
 
         return $this;
@@ -142,12 +139,17 @@ class RenglonExtracto
         if ($this->movimientos->contains($movimiento)) {
             $this->movimientos->removeElement($movimiento);
             // set the owning side to null (unless already changed)
-            if ($movimiento->getRenglonExtracto() === $this) {
-                $movimiento->setRenglonExtracto(null);
+            if ($movimiento->getWitness() === $this) {
+                $movimiento->setWitness(null);
             }
         }
 
         return $this;
+    }
+
+    public function setMovimientos( Collection $c )
+    {
+        $this->movimientos = $c;
     }
 
     public function __toString()
