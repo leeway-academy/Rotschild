@@ -34,6 +34,9 @@ class BankController extends BaseAdminController
         $projectedCredits = $bank->getCreditosProyectados();
         $projectedDebits = $bank->getDebitosProyectados();
 
+        /**
+         * @todo Externalize this concepts into a db table
+         */
         $newCreditConcepts = [
             '-1' => 'payment.received',
             '-2' => 'return.tax',
@@ -137,6 +140,9 @@ class BankController extends BaseAdminController
 
                     if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
                         if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix ) {
+                            /**
+                             * @todo: Look into the case for multiple associations!
+                             */
                             $transaction->setWitness( $summaryLine );
                             $em->persist($transaction);
                         } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
