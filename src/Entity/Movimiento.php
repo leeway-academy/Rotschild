@@ -64,9 +64,11 @@ class Movimiento
      */
     public function setWitness( Witness $w = null )
     {
-        $this->setWitness($w);
+        $this->witness = $w;
         $this->witnessClass = get_class( $w );
         $this->witnessId = $w->getId();
+
+        return $this;
     }
 
     /**
