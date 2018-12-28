@@ -313,7 +313,7 @@ class Bank
     public function getDebitosProyectados( int $limit = null ): Collection
     {
         $criteria = Criteria::create()
-            ->andWhere(Criteria::expr()->isNull('renglonExtracto'))
+            ->andWhere(Criteria::expr()->isNull('witnessId'))
             ->andWhere(Criteria::expr()->lt('importe', 0))
             ->orderBy(['fecha' => 'ASC'])
         ;
@@ -332,7 +332,7 @@ class Bank
     public function getCreditosProyectados( int $limit = null ) : Collection
     {
         $criteria = Criteria::create()
-            ->andWhere(Criteria::expr()->isNull('renglonExtracto'))
+            ->andWhere(Criteria::expr()->isNull('witnessId'))
             ->andWhere(Criteria::expr()->gt('importe', 0))
             ->orderBy(['fecha' => 'ASC'])
         ;
