@@ -3,10 +3,11 @@
 namespace App\Repository;
 
 use App\Entity\Movimiento;
+use App\Entity\Witness;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Collections\Criteria;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 use Symfony\Component\Validator\Constraints\Collection;
-use Doctrine\Common\Collections\Criteria;
 
 /**
  * @method Movimiento|null find($id, $lockMode = null, $lockVersion = null)
@@ -24,12 +25,25 @@ class MovimientoRepository extends ServiceEntityRepository
     /**
      * @return Collection
      */
-    public function findPendingDebits()
+    public function findNonCheckProjectedDebits()
     {
         return $this->matching(
             Criteria::create()
-                ->where( Criteria::expr()->eq('concretado', false) )
-                ->andWhere( Criteria::expr()->lt('importe', 0) )
+                ->where( $this->getProjectedCriteria() )
+                ->andWhere( $this->getDebitCriteria() )
+                ->andWhere( $this->getNonCheckCriteria() )
+        );
+    }
+
+    /**
+     * @return Collection
+     */
+    public function findProjectedDebits()
+    {
+        return $this->matching(
+            Criteria::create()
+                ->where( $this->getProjectedCriteria() )
+                ->andWhere( $this->getDebitCriteria() )
         );
     }
 
@@ -47,10 +61,8 @@ class MovimientoRepository extends ServiceEntityRepository
 
     public function getProjectedCriteria()
     {
-        return Criteria::expr()->andX(
-            Criteria::expr()->isNull('renglonExtracto' ),
-            Criteria::expr()->isNull( 'appliedCheck' )
-            );
+        return Criteria::expr()
+            ->andX( Criteria::expr()->isNull('witnessClass' ), Criteria::expr()->isNull('witnessId' ) );
     }
 
     public function getCreditCriteria()
@@ -69,5 +81,26 @@ class MovimientoRepository extends ServiceEntityRepository
     public function getFixedExpenseCriteria()
     {
         return Criteria::expr()->neq( 'clonDe', null );
+    }
+
+    /**
+     * @return \Doctrine\Common\Collections\Expr\Comparison
+     */
+    public function getNonCheckCriteria()
+    {
+        return Criteria::expr()->isNull( 'parentIssuedCheck' );
+    }
+
+    /**
+     * @param Witness $w
+     */
+    public function findByWitness( Witness $w )
+    {
+        return $this->findBy(
+            [
+                'witnessClass' => get_class($w),
+                'witnessId' => $w->getId(),
+            ]
+        );
     }
 }
