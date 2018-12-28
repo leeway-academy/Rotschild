@@ -58,3 +58,5 @@ bank:
   commision:
     charge: Comision bancaria
     return: Devolucion de comision bancaria
+check:
+  number: Numero
