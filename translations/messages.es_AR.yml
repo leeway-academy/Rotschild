@@ -37,7 +37,6 @@ Query: Consultar
 Send via email: Enviar por correo
 Bank balances summary: Resumen de saldos bancarios
 Balances for: Saldos para
-Amount: Importe
 Apply: Aplicar
 Payment to providers: Pago a Proveedores
 fixedExpense.query: Consulta de gastos fijos
@@ -49,3 +48,13 @@ Amount: Importe
 Concept: Concepto
 Month: Mes
 Year: Año
+budgeted:
+  credit: Crédito presupuestado
+  debit: Débito presupuestado
+new:
+  credit: Nuevo crédito
+  debit: Nuevo débito
+bank:
+  commision:
+    charge: Comision bancaria
+    return: Devolucion de comision bancaria
