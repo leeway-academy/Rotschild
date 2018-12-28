@@ -90,6 +90,7 @@ class BankController extends BaseAdminController
                             },
                             'label' => $renglon->getFecha()->format('d/m/Y') . ': ' . $renglon->getConcepto() . ' ' . $renglon->getImporte(),
                             'required' => false,
+                            'multiple' => $renglon->getImporte() > 0,
                         ]
                     )
                     ->add(
