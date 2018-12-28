@@ -20,15 +20,15 @@
                 </tr>
             </thead>
             <tbody>
-            {% for k, c in checks %}
+            {% for c in checks %}
                 <tr>
                     <td>{{ c.fecha | date('d/m/Y') }}</td>
                     <td>{{ c.numero }}</td>
                     <td>$ {{ c.importe | number_format( 2, ',', '.' ) }}</td>
                     <td>{{ c.banco }}</td>
-                    <td>{{ form_widget(attribute(form, 'match_' ~ loop.index0 )) }}</td>
-                    <td><a href="#" onclick="add_tx('Debito', '{{ form['match_' ~ k].vars.id }}');">{{ ('Add Debito') | trans }}</a></td>
-                    <td><a href="#" onclick="update_tx('Debito', '{{ form['match_' ~ k].vars.id }}');" style="display: none;" id="update_tx-{{ k }}">{{ ('Update Debito') | trans }}</a></td>
+                    <td>{{ form_widget(attribute(form, 'match_' ~ c.id )) }}</td>
+                    <td><a href="#" onclick="add_tx('Debito', '{{ form['match_' ~ c.id ].vars.id }}');">{{ ('Add Debito') | trans }}</a></td>
+                    <td><a href="#" onclick="update_tx('Debito', '{{ form['match_' ~ c.id].vars.id }}');" style="display: none;" id="update_tx-{{ c.id }}">{{ ('Update Debito') | trans }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>
