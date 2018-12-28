@@ -60,6 +60,11 @@ class Movimiento
     private $parentIssuedCheck;
 
     /**
+     * @ORM\OneToOne(targetEntity="App\Entity\AppliedCheck", inversedBy="childCredit", cascade={"persist", "remove"})
+     */
+    private $parentAppliedCheck;
+
+    /**
      * @param Witness|null $w
      */
     public function setWitness( Witness $w = null )
@@ -190,6 +195,18 @@ class Movimiento
     public function setParentIssuedCheck(?ChequeEmitido $parentIssuedCheck): self
     {
         $this->parentIssuedCheck = $parentIssuedCheck;
+
+        return $this;
+    }
+
+    public function getParentAppliedCheck(): ?AppliedCheck
+    {
+        return $this->parentAppliedCheck;
+    }
+
+    public function setParentAppliedCheck(?AppliedCheck $parentAppliedCheck): self
+    {
+        $this->parentAppliedCheck = $parentAppliedCheck;
 
         return $this;
     }
