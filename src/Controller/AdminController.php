@@ -482,104 +482,6 @@ class AdminController extends BaseAdminController
     }
 
     /**
-     * @Route(name="match_bank_summary_lines", path="/bank/{id}/match_summary_lines")
-     * @ParamConverter(name="bank", class="App\Entity\Bank")
-     * @param Bank $bank
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
-     */
-    public function matchBankSummaryLines( Bank $bank, Request $request )
-    {
-        $summaryLines = [];
-
-        $projectedCredits = $bank->getCreditosProyectados();
-        $projectedDebits = $bank->getDebitosProyectados();
-
-        $formBuilder = $this->createFormBuilder();
-        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
-        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
-
-        foreach ( $bank->getExtractos() as $extracto ) {
-            $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
-
-                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo ) && $r->getMovimientos()->isEmpty();
-
-                return $ret;
-            });
-
-            foreach ($lines as $renglon) {
-                $formBuilder
-                    ->add(
-                        'match-' . $renglon->getId(),
-                        ChoiceType::class,
-                        [
-                            'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
-                            'choice_value' => function (Movimiento $movimiento = null) {
-
-                                return $movimiento ? $movimiento->getId() : '';
-                            },
-                            'choice_label' => function (Movimiento $movimiento) {
-
-                                return $movimiento->__toString();
-                            },
-                            'label' => $renglon->getFecha()->format('d/m/Y') . ': ' . $renglon->getConcepto() . ' ' . $renglon->getImporte(),
-                            'required' => false,
-                        ]
-                    );
-                $summaryLines[$renglon->getId()] = $renglon;
-            }
-        }
-
-        $formBuilder->add(
-            'submit',
-            SubmitType::class,
-            [
-                'label' => 'Confirm',
-                'attr' => [
-                    'class' => 'btn btn-primary',
-                ],
-            ]
-        );
-
-        $matchingForm = $formBuilder->getForm();
-        $matchingForm->handleRequest($request);
-
-        if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
-            $em = $this->getDoctrine()->getManager();
-            $keyword = 'match-';
-            $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
-            foreach ($matchingForm->getData() as $name => $transaction) {
-                if (substr($name, 0, strlen($keyword)) == $keyword && $transaction) {
-                    $summaryLineId = preg_split('/-/', $name)[1];
-
-                    if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
-                        $summaryLine->addMovimiento( $transaction );
-                        $em->persist($transaction);
-                    }
-                }
-            }
-
-            $em->flush();
-
-            return $this->redirectToRoute(
-                'match_bank_summary_lines',
-                [
-                    'id' => $bank->getId(),
-                    'dateFrom' => $dateFrom,
-                    'dateTo' => $dateTo,
-                ]);
-        }
-
-        return $this->render(
-            'admin/match_bank_summary_lines.html.twig',
-            [
-                'matchingForm' => $matchingForm->createView(),
-                'summaryLines' => $summaryLines
-            ]
-        );
-    }
-
-    /**
      * @param Request $request
      * @Route(path="/checks/issued/process", name="process_issued_checks")
      */
@@ -591,20 +493,22 @@ class AdminController extends BaseAdminController
 
         $debits = $managerRegistry
             ->getRepository('App:Movimiento')
-            ->findProjectedDebits();
+            ->findNonCheckProjectedDebits();
 
         $issuedChecks = $managerRegistry
             ->getRepository('App:ChequeEmitido')
-            ->matching(
-                Criteria::create()
-                    ->andWhere( Criteria::expr()->isNull('movimiento') )
-            );
+            ->findAll();
 
         $nullOption = [ '-1' => 'Payment to providers' ];
 
         foreach ($issuedChecks as $k => $check) {
+            if ( $check->getChildDebit() ) {
+                unset( $issuedChecks[$k] );
+
+                continue;
+            }
             $formBuilder->add(
-                'match_' . $k,
+                'match_' . $check->getId(),
                 ChoiceType::class,
                 [
                     'choices' => array_merge( $nullOption, $debits->toArray() ),
@@ -655,25 +559,19 @@ class AdminController extends BaseAdminController
                 $check = $issuedChecks[$k];
                 if ($datum) {
                     /**
-                     * In any case a new debit is created for the check itself
+                     * A new debit is created for the check itself
                      */
-                    $transaction = new Movimiento();
-                    $transaction
-                        ->setBank($check->getBanco())
-                        ->setImporte($check->getImporte() * -1)
-                        ->setConcepto('Cheque ' . $check->getNumero())
-                        ->setFecha($check->getFecha())/** @Todo probably will need to be some time in the future */
-                    ;
+                    $checkDebit = $check->createChildDebit();
+                    $objectManager->persist( $checkDebit );
 
-                    $objectManager->persist( $transaction );
                     if ( $datum instanceof Movimiento ) {
                         /**
                          * If it's an existing transaction this check marks it as payed
                          */
-                        $check->setMovimiento($datum);
-                    } else {
-                        $check->setMovimiento($transaction);
+                        $datum->setWitness( $check );
+                        $objectManager->persist( $datum );
                     }
+
                     $objectManager->persist($check);
                 }
 
