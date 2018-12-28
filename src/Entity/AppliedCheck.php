@@ -52,9 +52,9 @@ class AppliedCheck implements Witness
     private $amount;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\Movimiento", mappedBy="appliedCheck", cascade={"persist", "remove"})
+     * @ORM\OneToOne(targetEntity="App\Entity\Movimiento", mappedBy="parentAppliedCheck", cascade={"persist", "remove"})
      */
-    private $movimiento;
+    private $childCredit;
 
     public function getId()
     {
@@ -150,21 +150,29 @@ class AppliedCheck implements Witness
         return $this->getType() == 'Diferido' ? $this->getDate()->add( new \DateInterval('P2D') ) : $this->getDate();
     }
 
-    public function getMovimiento(): ?Movimiento
+    public function getChildCredit(): ?Movimiento
     {
-        return $this->movimiento;
+        return $this->childCredit;
     }
 
-    public function setMovimiento(?Movimiento $movimiento): self
+    public function setChildCredit(?Movimiento $childCredit): self
     {
-        $this->movimiento = $movimiento;
+        $this->childCredit = $childCredit;
 
         // set (or unset) the owning side of the relation if necessary
-        $newAppliedCheck = $movimiento === null ? null : $this;
-        if ($newAppliedCheck !== $movimiento->getAppliedCheck()) {
-            $movimiento->setAppliedCheck($newAppliedCheck);
+        $newParentAppliedCheck = $childCredit === null ? null : $this;
+        if ($newParentAppliedCheck !== $childCredit->getParentAppliedCheck()) {
+            $childCredit->setParentAppliedCheck($newParentAppliedCheck);
         }
 
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isMatched() : bool
+    {
+        return !empty( $this->getChildCredit() ); // Or matched to something outside of Rotschild
     }
 }
