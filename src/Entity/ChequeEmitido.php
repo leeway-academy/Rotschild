@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * @ORM\Entity(repositoryClass="App\Repository\ChequeEmitidoRepository")
  */
-class ChequeEmitido
+class ChequeEmitido implements Witness
 {
     /**
      * @ORM\Id()
@@ -38,9 +38,9 @@ class ChequeEmitido
     private $importe;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\Movimiento", inversedBy="chequeEmitido", cascade={"persist", "remove"})
+     * @ORM\OneToOne(targetEntity="App\Entity\Movimiento", mappedBy="parentIssuedCheck", cascade={"persist", "remove"})
      */
-    private $movimiento;
+    private $childDebit;
 
     public function getId()
     {
@@ -105,5 +105,40 @@ class ChequeEmitido
         $this->movimiento = $movimiento;
 
         return $this;
+    }
+
+    public function getChildDebit(): ?Movimiento
+    {
+        return $this->childDebit;
+    }
+
+    public function setChildDebit(?Movimiento $childDebit): self
+    {
+        $this->childDebit = $childDebit;
+
+        // set (or unset) the owning side of the relation if necessary
+        $newParentIssuedCheck = $childDebit === null ? null : $this;
+        if ($newParentIssuedCheck !== $childDebit->getParentIssuedCheck()) {
+            $childDebit->setParentIssuedCheck($newParentIssuedCheck);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Movimiento
+     */
+    public function createChildDebit(): Movimiento
+    {
+        $debit = new Movimiento();
+        $debit
+            ->setBank($this->getBanco())
+            ->setImporte($this->getImporte() * -1)
+            ->setConcepto('Cheque ' . $this->getNumero())
+            ->setFecha($this->getFecha())/** @Todo probably will need to be some time in the future */
+            ->setParentIssuedCheck($this);
+        $this->setChildDebit($debit);
+
+        return $debit;
     }
 }
