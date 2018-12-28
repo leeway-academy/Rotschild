@@ -40,32 +40,45 @@ class AppliedCheckController extends BaseAdminController
 
                 continue;
             }
-            $formBuilder->add(
-                'bank_' . $k,
-                ChoiceType::class,
-                [
-                    'choices' => $bancos,
-                    'choice_label' => function ($choiceValue, $key, $value) {
+            $formBuilder
+                ->add(
+                    'bank_' . $k,
+                    ChoiceType::class,
+                    [
+                        'choices' => $bancos,
+                        'choice_label' => function ($choiceValue, $key, $value) {
 
-                        return $choiceValue . '';
-                    },
-                    'choice_value' => 'id',
-                    'required' => false,
-                ]
-            );
-            $formBuilder->add(
-                'debit_' . $k,
-                ChoiceType::class,
-                [
-                    'choices' => $debits,
-                    'choice_label' => function ($choiceValue, $key, $value) {
+                            return $choiceValue . '';
+                        },
+                        'choice_value' => 'id',
+                        'required' => false,
+                    ]
+                )
+                ->add(
+                    'debit_' . $k,
+                    ChoiceType::class,
+                    [
+                        'choices' => $debits,
+                        'choice_label' => function ($choiceValue, $key, $value) {
 
-                        return $choiceValue . '';
-                    },
-                    'choice_value' => 'id',
-                    'required' => false,
-                ]
-            );
+                            return $choiceValue . '';
+                        },
+                        'choice_value' => 'id',
+                        'required' => false,
+                    ]
+                )
+                ->add(
+                    'outside_'.$k,
+                    CheckboxType::class,
+                    [
+                        'required' => false,
+                        'label' => 'check.applied.outside',
+                        'attr' => [
+                            'class' => 'check_outside',
+                        ]
+                    ]
+                )
+            ;
         }
 
         $formBuilder->add(
@@ -86,6 +99,7 @@ class AppliedCheckController extends BaseAdminController
             foreach ($checks as $k => $check) {
                 $movimiento = $form['debit_' . $k]->getData();
                 $recipientBank = $form['bank_' . $k]->getData();
+                $outside = $form['outside_' . $k]->getData();
                 if (!empty($recipientBank) || !empty($movimiento)) {
                     if (!empty($recipientBank)) {
                         $movimiento = new Movimiento();
@@ -100,12 +114,12 @@ class AppliedCheckController extends BaseAdminController
                         $em->persist($movimiento);
                         $em->persist($check);
                     } elseif (!empty($movimiento)) {
-                        /**
-                         * WTF ???
-                         * The transaction must not subtract from upcoming balances since the debt has been payed
-                         * Should it be deleted though? How to take it back if the matching was incorrect?
-                         */
+                        $movimiento->setWitness( $check );
+                        $em->persist( $movimiento );
                     }
+                } elseif ( $outside ) {
+                    $check->setAppliedOutside( true );
+                    $em->persist($check);
                 }
             }
 
