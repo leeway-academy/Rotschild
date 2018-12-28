@@ -43,24 +43,39 @@ class Movimiento
     private $clonDe;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\RenglonExtracto", inversedBy="movimientos")
+     * @ORM\Column(type="integer", nullable=true)
      */
-    private $renglonExtracto;
+    private $witnessId;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\AppliedCheck", inversedBy="movimiento", cascade={"persist", "remove"})
+     * @ORM\Column(type="string", nullable=true)
      */
-    private $appliedCheck;
+    private $witnessClass;
+
+    private $witness;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\ChequeEmitido", mappedBy="movimiento", cascade={"persist", "remove"})
+     * @ORM\OneToOne(targetEntity="App\Entity\ChequeEmitido", inversedBy="childDebit", cascade={"persist", "remove"})
      */
-    private $issuedCheck;
+    private $parentIssuedCheck;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\ChequeEmitido", mappedBy="movimiento", cascade={"persist", "remove"})
+     * @param Witness|null $w
      */
-    private $chequeEmitido;
+    public function setWitness( Witness $w = null )
+    {
+        $this->setWitness($w);
+        $this->witnessClass = get_class( $w );
+        $this->witnessId = $w->getId();
+    }
+
+    /**
+     * @return Witness|null
+     */
+    public function getWitness() : ?Witness
+    {
+        return $this->witness;
+    }
 
     public function getId()
     {
@@ -137,24 +152,12 @@ class Movimiento
         return $this;
     }
 
-    public function getRenglonExtracto(): ?RenglonExtracto
-    {
-        return $this->renglonExtracto;
-    }
-
-    public function setRenglonExtracto(?RenglonExtracto $renglonExtracto): self
-    {
-        $this->renglonExtracto = $renglonExtracto;
-
-        return $this;
-    }
-
     /**
      * @return bool
      */
     public function isConcretado() : bool
     {
-        return !empty($this->getRenglonExtracto());
+        return !empty( $this->witnessId );
     }
 
     /**
@@ -163,18 +166,6 @@ class Movimiento
     public function isProjected() : bool
     {
         return !$this->isConcretado();
-    }
-
-    public function getAppliedCheck(): ?AppliedCheck
-    {
-        return $this->appliedCheck;
-    }
-
-    public function setAppliedCheck(?AppliedCheck $appliedCheck): self
-    {
-        $this->appliedCheck = $appliedCheck;
-
-        return $this;
     }
 
     public function isCredit() : bool
@@ -189,38 +180,14 @@ class Movimiento
         return $this->getImporte() < 0;
     }
 
-    public function getIssuedCheck(): ?IssuedCheck
+    public function getParentIssuedCheck(): ?ChequeEmitido
     {
-        return $this->issuedCheck;
+        return $this->parentIssuedCheck;
     }
 
-    public function setIssuedCheck(?IssuedCheck $issuedCheck): self
+    public function setParentIssuedCheck(?ChequeEmitido $parentIssuedCheck): self
     {
-        $this->issuedCheck = $issuedCheck;
-
-        // set (or unset) the owning side of the relation if necessary
-        $newMovimiento = $issuedCheck === null ? null : $this;
-        if ($newMovimiento !== $issuedCheck->getMovimiento()) {
-            $issuedCheck->setMovimiento($newMovimiento);
-        }
-
-        return $this;
-    }
-
-    public function getChequeEmitido(): ?ChequeEmitido
-    {
-        return $this->chequeEmitido;
-    }
-
-    public function setChequeEmitido(?ChequeEmitido $chequeEmitido): self
-    {
-        $this->chequeEmitido = $chequeEmitido;
-
-        // set (or unset) the owning side of the relation if necessary
-        $newMovimiento = $chequeEmitido === null ? null : $this;
-        if ($newMovimiento !== $chequeEmitido->getMovimiento()) {
-            $chequeEmitido->setMovimiento($newMovimiento);
-        }
+        $this->parentIssuedCheck = $parentIssuedCheck;
 
         return $this;
     }
