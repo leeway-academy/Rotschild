@@ -5,32 +5,55 @@
     {% if summaryLines %}
         <div style="width: 100%;height: 100%" class="table-responsive">
             {{ form_start(matchingForm) }}
+            <h3>{{ 'Credits' | trans }}</h3>
             <table width="100%" class="table table-striped table-bordered">
                 <thead>
                 <tr>
-                    <th width="5%">Fecha</th>
-                    <th width="30%">Concepto</th>
-                    <th width="10%">Importe</th>
-                    <th>Movimiento presupuestado</th>
-                    <th>&nbsp;</th>
+                    <th width="5%">{{ 'Date' | trans }}</th>
+                    <th width="30%">{{ 'Concept' | trans }}</th>
+                    <th width="10%">{{ 'Amount' | trans }}</th>
+                    <th>{{ 'budgeted.credit' | trans }}</th>
+                    <th>{{ 'new.credit' | trans }}</th>
                     <th>&nbsp;</th>
                 </tr>
                 </thead>
                 <tbody>
-                {% for k, l in summaryLines %}
-                    {% if l.importe > 0 %}
-                        {% set txType = 'Credito' %}
-                    {% else %}
-                        {% set txType = 'Debito' %}
-                    {% endif %}
+                {% for k, l in summaryLines.credits %}
                     <tr>
                         <td>{{ l.fecha | date('d/m/Y') }}</td>
                         <td>{{ l.concepto }}</td>
                         <td>$ {{ l.importe | number_format(2, ',', '.') }}</td>
-                        <td>{{ form_widget(matchingForm['match-' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
-                        <td><a href="#" onclick="add_tx('{{ txType }}', '{{ matchingForm['match-' ~ k].vars.id }}');">{{ ('Add ' ~ txType) | trans }}</a></td>
-                        <td><a href="#" onclick="update_tx('{{ txType }}', '{{ matchingForm['match-' ~ k].vars.id }}');"
-                               style="display: none;" id="update_tx-{{ k }}">{{ ('Update ' ~ txType ) | trans }}</a></td>
+                        <td>{{ form_widget(matchingForm['transaction_' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
+                        <td>{{ form_widget(matchingForm['new_tx_' ~ k], { 'attr' : { 'class' : 'newTx' } }) }}</td>
+                        <td><a href="#" onclick="update_tx('Credito', '{{ matchingForm['transaction_' ~ k].vars.id }}');"
+                               style="display: none;" id="update_tx_{{ k }}">{{ ('Update Credito') | trans }}</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <hr/>
+            <h3>{{ 'Debits' | trans }}</h3>
+            <table width="100%" class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th width="5%">{{ 'Date' | trans }}</th>
+                    <th width="30%">{{ 'Concept' | trans }}</th>
+                    <th width="10%">{{ 'Amount' | trans }}</th>
+                    <th>{{ 'budgeted.debit' | trans }}</th>
+                    <th>{{ 'new.debit' | trans }}</th>
+                    <th>&nbsp;</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for k, l in summaryLines.debits %}
+                    <tr>
+                        <td>{{ l.fecha | date('d/m/Y') }}</td>
+                        <td>{{ l.concepto }}</td>
+                        <td>$ {{ l.importe | number_format(2, ',', '.') }}</td>
+                        <td>{{ form_widget(matchingForm['transaction_' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
+                        <td>{{ form_widget(matchingForm['new_tx_' ~ k], { 'attr' : { 'class' : 'newTx' } }) }}</td>
+                        <td><a href="#" onclick="update_tx('Debito', '{{ matchingForm['transaction_' ~ k].vars.id }}');"
+                               style="display: none;" id="update_tx_{{ k }}">{{ ('Update Debito' ) | trans }}</a></td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -61,11 +84,23 @@
         $('.selectTx').on('change', function (e) {
             var selectId = this.id;
             var selectedValue = this.value;
+            var s = selectId.substr(selectId.lastIndexOf('_') + 1);
 
             if (selectedValue) {
-                $('#update_tx-' + selectId.substr(selectId.indexOf('-') + 1)).show();
+                $('#update_tx_' + s).show();
+                $('#form_new_tx_' + s).val([]);
             } else {
-                $('#update_tx-' + selectId.substr(selectId.indexOf('-') + 1)).hide();
+                $('#update_tx_' + s).hide();
+            }
+        });
+
+        $('.newTx').on('change', function (e) {
+            var selectId = this.id;
+            var selectedValue = this.value;
+            var s = selectId.substr(selectId.lastIndexOf('_') + 1);
+
+            if (selectedValue) {
+                $('#form_transaction_' + s).val([]);
             }
         });
 
@@ -116,7 +151,7 @@
                         if ( prevId ) {
                             $('#' + selectId + ' option[value="' + prevId + '"]').remove();
                         } else {
-                            $('#update_tx-' + selectId.split('-')[1] ).show();
+                            $('#update_tx_' + selectId.split('-')[1] ).show();
                         }
                         $('#' + selectId).append(new Option( data.string, data.id ));
                         $('#' + selectId).val(data.id);
