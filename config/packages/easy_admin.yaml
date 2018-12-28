@@ -25,7 +25,7 @@ easy_admin:
                 fields: [ 'concepto', 'fecha', 'importe', 'bank', { property: 'concretado', label: 'Pagado', type: 'boolean' } ]
                 dql_filter: 'entity.importe < 0'
             form:
-                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank', 'renglonExtracto' ]
+                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank' ]
             templates:
                 new: 'new_tx.html.twig'
                 edit: 'edit_tx.html.twig'
@@ -40,7 +40,7 @@ easy_admin:
                     - { name: 'new', label: 'Nuevo Credito' }
                 dql_filter: 'entity.importe > 0'
             form:
-                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank', 'renglonExtracto' ]
+                fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank' ]
             templates:
                 new: 'new_tx.html.twig'
                 edit: 'edit_tx.html.twig'
