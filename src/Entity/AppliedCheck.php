@@ -56,6 +56,11 @@ class AppliedCheck implements Witness
      */
     private $childCredit;
 
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $appliedOutside = false;
+
     public function getId()
     {
         return $this->id;
@@ -173,6 +178,25 @@ class AppliedCheck implements Witness
      */
     public function isMatched() : bool
     {
-        return !empty( $this->getChildCredit() ); // Or matched to something outside of Rotschild
+        return !empty( $this->getChildCredit() ) || $this->appliedOutside;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getAppliedOutside(): bool
+    {
+        return $this->appliedOutside;
+    }
+
+    /**
+     * @param bool $appliedOutside
+     * @return AppliedCheck
+     */
+    public function setAppliedOutside(bool $appliedOutside): self
+    {
+        $this->appliedOutside = $appliedOutside;
+
+        return $this;
     }
 }
