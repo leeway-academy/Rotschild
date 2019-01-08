@@ -9,8 +9,8 @@
     </div>
     {{ form(filterForm) }}
     <br/>
-    <iframe src="{{ url('match_bank_summary_lines', { id: bank.id, dateFrom: dateFrom, dateTo: dateTo } ) }}" width="100%" height="500px;" frameborder="0"></iframe>
-
+    <iframe src="{{ url('match_bank_summary_debit_lines', { id: bank.id, dateFrom: dateFrom, dateTo: dateTo } ) }}" width="100%" height="500px;" frameborder="1"></iframe>
+    <iframe src="{{ url('match_bank_summary_credit_lines', { id: bank.id, dateFrom: dateFrom, dateTo: dateTo } ) }}" width="100%" height="500px;" frameborder="1"></iframe>
     <!-- Modal -->
     <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle"
          aria-hidden="true">

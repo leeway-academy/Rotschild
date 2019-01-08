@@ -86,3 +86,9 @@ transfer:
   own_account: Transferencia interna
 expenses:
   shareholders: Gasto de accionistas
+credits:
+  matching:
+    title: Créditos
+debits:
+  matching:
+    title: Débitos
