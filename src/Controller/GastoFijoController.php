@@ -139,7 +139,7 @@ class GastoFijoController extends BaseAdminController
         $today = new \DateTimeImmutable();
 
         foreach ($gastoFijo->getMovimientos() as $movimiento) {
-            if ( $movimiento->getFecha() > $today ) {
+            if ( $movimiento->getFecha() >= $today ) {
                 if (
                     !empty($gastoFijo->getFechaFin()) && $movimiento->getFecha() > $gastoFijo->getFechaFin()
                     ||
@@ -147,9 +147,17 @@ class GastoFijoController extends BaseAdminController
                 ) {
                     $this->em->remove( $movimiento );
                 } else {
-                    $movimiento->setConcepto($gastoFijo->getConcepto());
-                    $movimiento->setImporte($gastoFijo->getImporte() * -1);
-                    $movimiento->setBank($gastoFijo->getBank());
+                    $movimiento
+                        ->setConcepto($gastoFijo->getConcepto())
+                        ->setImporte($gastoFijo->getImporte() * -1)
+                        ->setBank($gastoFijo->getBank())
+                        ;
+
+                    /**
+                     * @todo Fix the case of change in payment day
+                     * Propagate appropriately (if new date is in range...)
+                     */
+
                     $this->em->persist($movimiento);
                 }
             }
