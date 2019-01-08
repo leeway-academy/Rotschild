@@ -165,10 +165,13 @@ class IssuedChecksController extends AdminController
         if ($form->isSubmitted() && $form->isValid()) {
             $objectManager = $managerRegistry->getManager();
             foreach ($form->getData() as $k => $datum) {
-                $parts = preg_split('/_/', $k);
-                $k = $parts[1];
-                $check = $issuedChecks[$k];
                 if ($datum) {
+                    $parts = preg_split('/_/', $k);
+                    $k = $parts[1];
+                    $check = current(array_filter( $issuedChecks, function( ChequeEmitido $c ) use ( $k ) {
+
+                        return $c->getId() == $k;
+                    }));
                     /**
                      * A new debit is created for the check itself
                      */
@@ -185,9 +188,9 @@ class IssuedChecksController extends AdminController
 
                     $objectManager->persist($check);
                 }
-
-                $objectManager->flush();
             }
+
+            $objectManager->flush();
 
             return $this->redirectToRoute('process_issued_checks');
         }
