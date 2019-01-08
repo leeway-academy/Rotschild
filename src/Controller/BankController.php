@@ -18,181 +18,6 @@ use Symfony\Component\Routing\Annotation\Route;
 class BankController extends AdminController
 {
     /**
-     * @Route(name="match_bank_summary_lines", path="/bank/{id}/match_summary_lines")
-     * @ParamConverter(name="bank", class="App\Entity\Bank")
-     * @param Bank $bank
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
-     */
-    public function matchSummaryLines( Bank $bank, Request $request )
-    {
-        $existingTxPefix = 'transaction';
-        $newTxPrefix = 'new_tx';
-
-        $summaryLines = [
-            'credits' => [],
-            'debits' => []
-        ];
-
-        $projectedCredits = $bank->getCreditosProyectados();
-        $projectedDebits = $bank->getDebitosProyectados();
-
-        /**
-         * @todo Externalize this concepts into a db table
-         */
-        $newCreditConcepts = [
-            '-1' => 'payment.received',
-            '-2' => 'return.tax',
-            '-3' => 'bank.comission.return',
-        ];
-
-        $newDebitConcepts = [
-            '-4' => 'bank.comission.charge',
-            '-5' => 'tax',
-            '-6' => 'investment.fixed_term',
-            '-7' => 'fines',
-            '-8' => 'fees',
-            '-9' => 'salary.advances',
-            '-10' => 'transfer.own_account',
-            '-11' => 'expenses.shareholders',
-            '-12' => 'check.rejection',
-        ];
-
-        $formBuilder = $this->createFormBuilder();
-        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
-        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
-
-        $movimientosRepo = $this->getDoctrine()->getRepository('App:Movimiento');
-
-        foreach ( $bank->getExtractos() as $extracto ) {
-            $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
-
-                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo );
-
-                return $ret;
-            });
-
-            foreach ($lines as $k => $renglon) {
-                $transactions = $movimientosRepo->findByWitness( $renglon );
-
-                if ( !empty($transactions) ) {
-                    unset( $lines[$k] );
-
-                    continue;
-                }
-
-                $formBuilder
-                    ->add(
-                        $existingTxPefix.'_' . $renglon->getId(),
-                        ChoiceType::class,
-                        [
-                            'choices' => $renglon->getImporte() > 0 ? $projectedCredits : $projectedDebits,
-                            'choice_value' => function (Movimiento $movimiento = null) {
-
-                                return $movimiento ? $movimiento->getId() : '';
-                            },
-                            'choice_label' => function (Movimiento $movimiento) {
-
-                                return $movimiento->__toString();
-                            },
-                            'label' => $renglon->getFecha()->format('d/m/Y') . ': ' . $renglon->getConcepto() . ' ' . $renglon->getImporte(),
-                            'required' => false,
-                            'multiple' => $renglon->getImporte() > 0,
-                        ]
-                    )
-                    ->add(
-                        $newTxPrefix.'_'.$renglon->getId(),
-                        ChoiceType::class,
-                        [
-                            'choices' => $renglon->getImporte() > 0 ? $newCreditConcepts : $newDebitConcepts,
-                            'choice_label' => function ($choiceValue, $key, $value) {
-
-                                return $choiceValue . '';
-                            },
-                            'choice_value' => function ( $v ) use ( $newDebitConcepts, $newCreditConcepts ) {
-
-                                return in_array( $v, $newDebitConcepts ) ? array_search( $v, $newDebitConcepts) : array_search( $v, $newCreditConcepts);
-                            },
-                            'required' => false,
-                        ]
-                    )
-                ;
-                $summaryLines[ $renglon->getImporte() > 0 ? 'credits' : 'debits' ][ $renglon->getId() ] = $renglon;
-            }
-        }
-
-        $formBuilder->add(
-            'submit',
-            SubmitType::class,
-            [
-                'label' => 'Confirm',
-                'attr' => [
-                    'class' => 'btn btn-primary',
-                ],
-            ]
-        );
-
-        $matchingForm = $formBuilder->getForm();
-        $matchingForm->handleRequest($request);
-
-        if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
-            $em = $this->getDoctrine()->getManager();
-            $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
-            foreach ($matchingForm->getData() as $name => $transaction) {
-                if ( !empty($transaction) ) {
-                    $summaryLineId = last(preg_split('/_/', $name));
-
-                    if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
-                        if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix ) {
-                            /**
-                             * @todo: Look into the case for multiple associations!
-                             */
-                            $transaction->setWitness( $summaryLine );
-                            $em->persist($transaction);
-                        } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
-                            /**
-                             * @todo Create new transaction
-                             */
-                            $newTransaction = new Movimiento();
-                            $newTransaction
-                                ->setConcepto( $this->get('translator')->trans($transaction) )
-                                ->setFecha( $summaryLine->getFecha() )
-                                ->setImporte( $summaryLine->getImporte() )
-                                ->setWitness( $summaryLine )
-                                ->setBank( $summaryLine->getExtracto()->getBank() )
-                            ;
-                            $em->persist( $newTransaction );
-                        }
-                    } else {
-                        /**
-                         * Something really wrong happened... Is somebody messing with the system??
-                         */
-                    }
-                }
-            }
-
-            $em->flush();
-
-            return $this->redirectToRoute(
-                'match_bank_summary_lines',
-                [
-                    'id' => $bank->getId(),
-                    'dateFrom' => $dateFrom,
-                    'dateTo' => $dateTo,
-                ]);
-        }
-
-        return $this->render(
-            'admin/match_bank_summary_lines.html.twig',
-            [
-                'matchingForm' => $matchingForm->createView(),
-                'summaryLines' => $summaryLines,
-                'newCreditConcepts' => $newCreditConcepts,
-            ]
-        );
-    }
-
-    /**
      * @param Request $request
      * @Route(path="/import/bankSummaries", name="import_bank_summaries")
      */
@@ -371,6 +196,330 @@ class BankController extends AdminController
                 'bank' => $bank,
                 'dateFrom' => $dateFrom,
                 'dateTo' => $dateTo,
+            ]
+        );
+    }
+
+    /**
+     * @Route(name="match_bank_summary_credit_lines", path="/bank/{id}/match_summary_credit_lines")
+     * @ParamConverter(name="bank", class="App\Entity\Bank")
+     * @param Bank $bank
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
+     */
+    public function matchCreditSummaryLines( Bank $bank, Request $request )
+    {
+        $existingTxPefix = 'transaction';
+        $newTxPrefix = 'new_tx';
+
+        $pendingCredits = [];
+
+        $projectedCredits = $bank->getCreditosProyectados();
+
+        /**
+         * @todo Externalize this concepts into a db table
+         */
+        $newCreditConcepts = [
+            '-1' => 'payment.received',
+            '-2' => 'return.tax',
+            '-3' => 'bank.comission.return',
+        ];
+
+        $formBuilder = $this->createFormBuilder();
+        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
+
+        $movimientosRepo = $this->getDoctrine()->getRepository('App:Movimiento');
+
+        foreach ( $bank->getExtractos() as $extracto ) {
+            $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
+
+                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo ) && $r->getImporte() > 0;
+
+                return $ret;
+            });
+
+            foreach ($lines as $k => $renglon) {
+                $transactions = $movimientosRepo->findByWitness( $renglon );
+
+                if ( !empty($transactions) ) {
+                    unset( $lines[$k] );
+
+                    continue;
+                }
+
+                $formBuilder
+                    ->add(
+                        $existingTxPefix.'_' . $renglon->getId(),
+                        ChoiceType::class,
+                        [
+                            'choices' => $projectedCredits,
+                            'choice_value' => function (Movimiento $movimiento = null) {
+
+                                return $movimiento ? $movimiento->getId() : '';
+                            },
+                            'choice_label' => function (Movimiento $movimiento) {
+
+                                return $movimiento->__toString();
+                            },
+                            'label' => $renglon->getFecha()->format('d/m/Y') . ': ' . $renglon->getConcepto() . ' ' . $renglon->getImporte(),
+                            'required' => false,
+                            'multiple' => true,
+                        ]
+                    )
+                    ->add(
+                        $newTxPrefix.'_'.$renglon->getId(),
+                        ChoiceType::class,
+                        [
+                            'choices' => $newCreditConcepts,
+                            'choice_label' => function ($choiceValue, $key, $value) {
+
+                                return $choiceValue . '';
+                            },
+                            'choice_value' => function ( $v ) use ( $newCreditConcepts ) {
+
+                                return array_search( $v, $newCreditConcepts);
+                            },
+                            'required' => false,
+                        ]
+                    )
+                ;
+                $pendingCredits[ $renglon->getId() ] = $renglon;
+            }
+        }
+
+        $formBuilder->add(
+            'submit',
+            SubmitType::class,
+            [
+                'label' => 'Confirm',
+                'attr' => [
+                    'class' => 'btn btn-primary',
+                ],
+            ]
+        );
+
+        $matchingForm = $formBuilder->getForm();
+        $matchingForm->handleRequest($request);
+
+        if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
+            $em = $this->getDoctrine()->getManager();
+            $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
+            foreach ($matchingForm->getData() as $name => $transaction) {
+                if ( !empty($transaction) ) {
+                    $summaryLineId = last(preg_split('/_/', $name));
+
+                    if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
+                        if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix ) {
+                            /**
+                             * @todo: Look into the case for multiple associations!
+                             */
+                            $transaction->setWitness( $summaryLine );
+                            $em->persist($transaction);
+                        } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
+                            /**
+                             * @todo Create new transaction
+                             */
+                            $newTransaction = new Movimiento();
+                            $newTransaction
+                                ->setConcepto( $this->get('translator')->trans($transaction) )
+                                ->setFecha( $summaryLine->getFecha() )
+                                ->setImporte( $summaryLine->getImporte() )
+                                ->setWitness( $summaryLine )
+                                ->setBank( $summaryLine->getExtracto()->getBank() )
+                            ;
+                            $em->persist( $newTransaction );
+                        }
+                    } else {
+                        /**
+                         * Something really wrong happened... Is somebody messing with the system??
+                         */
+                    }
+                }
+            }
+
+            $em->flush();
+
+            return $this->redirectToRoute(
+                'match_bank_summary_lines',
+                [
+                    'id' => $bank->getId(),
+                    'dateFrom' => $dateFrom,
+                    'dateTo' => $dateTo,
+                ]);
+        }
+
+        return $this->render(
+            'admin/match_bank_summary_credit_lines.html.twig',
+            [
+                'matchingForm' => $matchingForm->createView(),
+                'summaryLines' => $pendingCredits,
+                'newCreditConcepts' => $newCreditConcepts,
+            ]
+        );
+    }
+
+    /**
+     * @Route(name="match_bank_summary_debit_lines", path="/bank/{id}/match_summary_debit_lines")
+     * @ParamConverter(name="bank", class="App\Entity\Bank")
+     * @param Bank $bank
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
+     * @todo Refactor this method and matchSummaryCreditLines (look for commanlities)
+     */
+    public function matchSummaryDebitLines( Bank $bank, Request $request )
+    {
+        $existingTxPefix = 'transaction';
+        $newTxPrefix = 'new_tx';
+
+        $summaryLines = [];
+
+        $projectedDebits = $bank->getDebitosProyectados();
+
+        /**
+         * @todo Externalize this concepts into a db table
+         */
+        $newDebitConcepts = [
+            '-4' => 'bank.comission.charge',
+            '-5' => 'tax',
+            '-6' => 'investment.fixed_term',
+            '-7' => 'fines',
+            '-8' => 'fees',
+            '-9' => 'salary.advances',
+            '-10' => 'transfer.own_account',
+            '-11' => 'expenses.shareholders',
+            '-12' => 'check.rejection',
+        ];
+
+        $formBuilder = $this->createFormBuilder();
+        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
+
+        $movimientosRepo = $this->getDoctrine()->getRepository('App:Movimiento');
+
+        foreach ( $bank->getExtractos() as $extracto ) {
+            $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
+
+                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo ) && $r->getImporte() < 0;
+
+                return $ret;
+            });
+
+            foreach ($lines as $k => $renglon) {
+                $transactions = $movimientosRepo->findByWitness( $renglon );
+
+                if ( !empty($transactions) ) {
+                    unset( $lines[$k] );
+
+                    continue;
+                }
+
+                $formBuilder
+                    ->add(
+                        $existingTxPefix.'_' . $renglon->getId(),
+                        ChoiceType::class,
+                        [
+                            'choices' => $projectedDebits,
+                            'choice_value' => function (Movimiento $movimiento = null) {
+
+                                return $movimiento ? $movimiento->getId() : '';
+                            },
+                            'choice_label' => function (Movimiento $movimiento) {
+
+                                return $movimiento->__toString();
+                            },
+                            'label' => $renglon->getFecha()->format('d/m/Y') . ': ' . $renglon->getConcepto() . ' ' . $renglon->getImporte(),
+                            'required' => false,
+                        ]
+                    )
+                    ->add(
+                        $newTxPrefix.'_'.$renglon->getId(),
+                        ChoiceType::class,
+                        [
+                            'choices' => $newDebitConcepts,
+                            'choice_label' => function ($choiceValue, $key, $value) {
+
+                                return $choiceValue . '';
+                            },
+                            'choice_value' => function ( $v ) use ( $newDebitConcepts ) {
+
+                                return array_search( $v, $newDebitConcepts);
+                            },
+                            'required' => false,
+                        ]
+                    )
+                ;
+                $summaryLines[ $renglon->getId() ] = $renglon;
+            }
+        }
+
+        $formBuilder->add(
+            'submit',
+            SubmitType::class,
+            [
+                'label' => 'Confirm',
+                'attr' => [
+                    'class' => 'btn btn-primary',
+                ],
+            ]
+        );
+
+        $matchingForm = $formBuilder->getForm();
+        $matchingForm->handleRequest($request);
+
+        if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
+            $em = $this->getDoctrine()->getManager();
+            $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
+            foreach ($matchingForm->getData() as $name => $transaction) {
+                if ( !empty($transaction) ) {
+                    $summaryLineId = last(preg_split('/_/', $name));
+
+                    if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
+                        if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix ) {
+                            /**
+                             * @todo: Look into the case for multiple associations!
+                             */
+                            $transaction->setWitness( $summaryLine );
+                            $em->persist($transaction);
+                        } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
+                            /**
+                             * @todo Create new transaction
+                             */
+                            $newTransaction = new Movimiento();
+                            $newTransaction
+                                ->setConcepto( $this->get('translator')->trans($transaction) )
+                                ->setFecha( $summaryLine->getFecha() )
+                                ->setImporte( $summaryLine->getImporte() )
+                                ->setWitness( $summaryLine )
+                                ->setBank( $summaryLine->getExtracto()->getBank() )
+                            ;
+                            $em->persist( $newTransaction );
+                        }
+                    } else {
+                        /**
+                         * Something really wrong happened... Is somebody messing with the system??
+                         */
+                    }
+                }
+            }
+
+            $em->flush();
+
+            return $this->redirectToRoute(
+                'match_bank_summary_lines',
+                [
+                    'id' => $bank->getId(),
+                    'dateFrom' => $dateFrom,
+                    'dateTo' => $dateTo,
+                ]);
+        }
+
+        return $this->render(
+            'admin/match_bank_summary_debit_lines.html.twig',
+            [
+                'matchingForm' => $matchingForm->createView(),
+                'summaryLines' => $summaryLines,
+                'newDebitConcepts' => $newDebitConcepts,
             ]
         );
     }
