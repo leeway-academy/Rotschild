@@ -221,8 +221,10 @@ class BankController extends AdminController
          */
         $newCreditConcepts = [
             '-1' => 'payment.received',
-            '-2' => 'return.tax',
+            '-2' => 'tax.return',
             '-3' => 'bank.comission.return',
+            '-4' => 'investment.recovery',
+            '-5' => 'check.issued.rejection',
         ];
 
         $formBuilder = $this->createFormBuilder();
@@ -314,8 +316,12 @@ class BankController extends AdminController
                             /**
                              * @todo: Look into the case for multiple associations!
                              */
-                            $transaction->setWitness( $summaryLine );
-                            $em->persist($transaction);
+                            if ( is_array( $transaction ) ) {
+                                foreach ( $transaction as $t ) {
+                                    $t->setWitness( $summaryLine );
+                                    $em->persist($t);
+                                }
+                            }
                         } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
                             /**
                              * @todo Create new transaction
@@ -341,7 +347,7 @@ class BankController extends AdminController
             $em->flush();
 
             return $this->redirectToRoute(
-                'match_bank_summary_lines',
+                $request->attributes->get('_route'),
                 [
                     'id' => $bank->getId(),
                     'dateFrom' => $dateFrom,
@@ -381,14 +387,14 @@ class BankController extends AdminController
          */
         $newDebitConcepts = [
             '-4' => 'bank.comission.charge',
-            '-5' => 'tax',
+            '-5' => 'tax.payed',
             '-6' => 'investment.fixed_term',
             '-7' => 'fines',
             '-8' => 'fees',
             '-9' => 'salary.advances',
             '-10' => 'transfer.own_account',
             '-11' => 'expenses.shareholders',
-            '-12' => 'check.rejection',
+            '-12' => 'check.applied.rejection',
         ];
 
         $formBuilder = $this->createFormBuilder();
@@ -506,7 +512,7 @@ class BankController extends AdminController
             $em->flush();
 
             return $this->redirectToRoute(
-                'match_bank_summary_lines',
+                $request->attributes->get('_route'),
                 [
                     'id' => $bank->getId(),
                     'dateFrom' => $dateFrom,
