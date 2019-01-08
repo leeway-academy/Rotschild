@@ -110,7 +110,10 @@ class IssuedChecksController extends AdminController
             ->getRepository('App:ChequeEmitido')
             ->findAll();
 
-        $nullOption = [ '-1' => 'Payment to providers' ];
+        $nullOptions = [
+            '-1' => 'Payment to providers',
+            '-2' => 'N/A',
+        ];
 
         foreach ($issuedChecks as $k => $check) {
             if ( $check->getChildDebit() ) {
@@ -122,14 +125,14 @@ class IssuedChecksController extends AdminController
                 'match_' . $check->getId(),
                 ChoiceType::class,
                 [
-                    'choices' => array_merge( $nullOption, $debits->toArray() ),
-                    'choice_value' => function( $o ) use ( $nullOption ) {
+                    'choices' => array_merge( $nullOptions, $debits->toArray() ),
+                    'choice_value' => function( $o ) use ( $nullOptions ) {
                         if ( $o instanceof Movimiento ) {
 
                             return $o->getId();
-                        } elseif ( $o == $nullOption[ '-1' ] ) {
+                        } elseif ( in_array( $o, $nullOptions ) ) {
 
-                            return "-1";
+                            return array_search( $o, $nullOptions );
                         } else {
 
                             return "";
@@ -186,7 +189,7 @@ class IssuedChecksController extends AdminController
                         $objectManager->persist( $datum );
                         $checkDebit->setConcepto( $checkDebit->getConcepto().' ('.$datum->getConcepto().')' );
                     } else {
-                        $checkDebit->setConcepto( $checkDebit->getConcepto().' ('. $this->trans($nullOption['-1']).')' );
+                        $checkDebit->setConcepto( $checkDebit->getConcepto().' ('. $this->trans($datum).')' );
                     }
 
                     $objectManager->persist($check);
