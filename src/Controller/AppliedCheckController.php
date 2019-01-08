@@ -8,8 +8,9 @@
 
 namespace App\Controller;
 
+use App\Entity\AppliedCheck;
 use App\Entity\Movimiento;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -17,7 +18,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class AppliedCheckController extends BaseAdminController
+class AppliedCheckController extends AdminController
 {
     /**
      * @param Request $request
@@ -54,36 +55,43 @@ class AppliedCheckController extends BaseAdminController
             $em = $this->getDoctrine()->getManager();
 
             foreach ($form->getData() as $name => $item) {
-                if (!is_null($item) && $item->getType() == 'file' && in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
-                    $fileName = 'AppliedChecks_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
-                    $item->move($this->getParameter('reports_path'), $fileName);
+                if (!is_null($item) && $item->getType() == 'file' ) {
+                    if ( in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'application/octet-stream'])) {
+                        $fileName = 'AppliedChecks_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
+                        $item->move($this->getParameter('reports_path'), $fileName);
 
-                    $lines = $this->getExcelReportProcessor()->getAppliedChecks(
-                        IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName)
-                    );
+                        $lines = $this->getExcelReportProcessor()->getAppliedChecks(
+                            IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName)
+                        );
 
-                    foreach ($lines as $k => $line) {
-                        $appliedCheck = new AppliedCheck();
-                        $appliedCheck
-                            ->setAmount($line['amount'])
-                            ->setDate($line['date'])
-                            ->setType($line['type'])
-                            ->setDestination($line['destination'])
-                            ->setIssuer($line['issuer'])
-                            ->setSourceBank($line['sourceBank'])
-                            ->setNumber($line['number']);
+                        foreach ($lines as $k => $line) {
+                            $appliedCheck = new AppliedCheck();
+                            $appliedCheck
+                                ->setAmount($line['amount'])
+                                ->setDate($line['date'])
+                                ->setType($line['type'])
+                                ->setDestination($line['destination'])
+                                ->setIssuer($line['issuer'])
+                                ->setSourceBank($line['sourceBank'])
+                                ->setNumber($line['number']);
 
-                        $em->persist($appliedCheck);
+                            $em->persist($appliedCheck);
+                        }
+
+                        $em->flush();
+
+                        $this->addFlash(
+                            'success',
+                            'Cheques aplicados importados'
+                        );
+                    } else {
+                        $this->addFlash(
+                            'error',
+                            'El informe de Cheques aplicados no tiene el formato correcto'
+                        );
                     }
                 }
             }
-
-            $em->flush();
-
-            $this->addFlash(
-                'success',
-                'Cheques aplicados importados'
-            );
         }
 
         return $this->render(
