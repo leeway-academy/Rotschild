@@ -60,3 +60,9 @@ bank:
     return: Devolucion de comision bancaria
 check:
   number: Numero
+import:
+  checks:
+    applied: Importación de Cheques aplicados
+    issued: Importación de Cheques emitidos
+checks:
+  issued: Cheques emitidos

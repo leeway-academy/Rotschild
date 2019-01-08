@@ -87,7 +87,7 @@ class IssuedChecksController extends AdminController
             'admin/import_excel_reports.html.twig',
             [
                 'form' => $form->createView(),
-                'reportName' => 'issuedChecks',
+                'reportName' => 'checks.issued',
             ]
         );
     }
