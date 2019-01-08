@@ -729,4 +729,13 @@ class AdminController extends BaseAdminController
 
         return $balances;
     }
+
+    /**
+     * @param $msg
+     * @return string
+     */
+    protected function trans( $msg ) : string
+    {
+        return $this->get('translator')->trans( $msg );
+    }
 }
