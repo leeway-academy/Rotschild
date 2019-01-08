@@ -70,5 +70,7 @@ import:
   checks:
     applied: Importación de Cheques aplicados
     issued: Importación de Cheques emitidos
+  bank:
+    summaries: Importar extractos bancarios
 checks:
   issued: Cheques emitidos
