@@ -3,19 +3,15 @@
 namespace App\Controller;
 
 use App\Entity\Bank;
-use App\Entity\ExtractoBancario;
 use App\Entity\Movimiento;
-use App\Entity\RenglonExtracto;
 use App\Entity\SaldoBancario;
 use App\Service\ExcelReportsProcessor;
 use Doctrine\Common\Collections\Criteria;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
 use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -134,103 +130,6 @@ class AdminController extends BaseAdminController
         }
 
         return $this->executeDynamicMethod('render<EntityName>Template', array('show', $this->entity['templates']['show'], $parameters));
-    }
-
-    /**
-     * @param Request $request
-     * @Route(path="/import/bankSummaries", name="import_bank_summaries")
-     */
-    public function importBankSummaries(Request $request)
-    {
-        $formBuilder = $this->createFormBuilder()
-            ->setAttribute('class', 'form-vertical new-form');
-
-        $banks = $this
-            ->getDoctrine()
-            ->getRepository('App:Bank')
-            ->findAll();
-
-        foreach ($banks as $bank) {
-            $formBuilder->add(
-                'BankSummary_' . $bank->getId(),
-                FileType::class,
-                [
-                    'label' => 'Extracto del banco ' . $bank->getNombre(),
-                    'required' => false,
-                ]
-            );
-        }
-
-        $form = $formBuilder
-            ->add(
-                'Import',
-                SubmitType::class,
-                [
-                    'attr' => [
-                        'class' => 'btn btn-primary action-save',
-                    ],
-                    'label' => 'Importar',
-                ]
-            )
-            ->getForm();
-
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $em = $this->getDoctrine()->getManager();
-
-            foreach ($form->getData() as $name => $item) {
-                if (!is_null($item) && $item->getType() == 'file' && in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
-                    $parts = preg_split('/_/', $name);
-                    $fileName = $parts[0];
-
-                    if ($parts[0] == 'BankSummary') {
-                        $bank = $em->getRepository('App:Bank')->find($parts[1]);
-                        $fileName .= '_' . $bank->getNombre();
-                    }
-
-                    $fileName .= '_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
-                    $item->move($this->getParameter('reports_path'), $fileName);
-
-                    $lines = $this->getExcelReportProcessor()->getBankSummaryTransactions(
-                        IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName),
-                        $bank->getXLSStructure()
-                    );
-
-                    $extracto = new ExtractoBancario();
-                    $extracto
-                        ->setArchivo($fileName)
-                        ->setBank($bank)
-                        ->setFecha(new \DateTimeImmutable());
-                    $em->persist($extracto);
-                    foreach ($lines as $k => $line) {
-                        $summaryLine = new RenglonExtracto();
-                        $summaryLine
-                            ->setImporte($line['amount'])
-                            ->setFecha($line['date'])
-                            ->setConcepto($line['concept'] . ' - ' . $line['extraData'])
-                            ->setLinea($k);
-                        $em->persist($summaryLine);
-                        $extracto->addRenglon($summaryLine);
-                    }
-
-                    $em->flush();
-                }
-            }
-
-            $this->addFlash(
-                'notice',
-                'Extractos importados'
-            );
-        }
-
-        return $this->render(
-            'admin/import_excel_reports.html.twig',
-            [
-                'form' => $form->createView(),
-                'reportName' => 'Extractos Bancarios',
-            ]
-        );
     }
 
     /**
