@@ -6,6 +6,7 @@ use App\Entity\Bank;
 use App\Entity\ExtractoBancario;
 use App\Entity\Movimiento;
 use App\Entity\RenglonExtracto;
+use Doctrine\Common\Collections\Criteria;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -528,5 +529,177 @@ class BankController extends AdminController
                 'newDebitConcepts' => $newDebitConcepts,
             ]
         );
+    }
+
+    /**
+     * @param $dateFrom
+     * @param $dateTo
+     * @param array $banks
+     * @return array
+     * @throws \Exception
+     */
+    private function calculateBalance(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo, array $banks ): array
+    {
+        $criteria = new Criteria();
+        $criteria
+            ->where(Criteria::expr()->gte('fecha', $dateFrom))
+            ->andWhere(Criteria::expr()->lte('fecha', $dateTo))
+            ->andWhere( $this->getDoctrine()->getRepository('App:Movimiento')->getProjectedCriteria() )
+            ->orderBy(
+                [
+                    'fecha' => 'ASC'
+                ]
+            );
+
+        $dateFrom = $dateFrom instanceof \DateTimeImmutable ? $dateFrom : \DateTimeImmutable::createFromMutable($dateFrom);
+
+        if ( count($banks) == 1 ) {
+            $bank = current($banks);
+            $criteria->andWhere( Criteria::expr()->eq('bank', $bank) );
+
+            $balance = $bank->getBalance( $dateFrom );
+            $totalBalance = $balance ? $balance->getValor() : 0;
+        } else {
+            $totalBalance = 0;
+
+            foreach ($banks as $bank) {
+                $balance = $bank->getBalance($dateFrom);
+
+                $totalBalance += $balance ? $balance->getValor() : 0;
+            }
+        }
+
+        $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
+
+        $period = new \DatePeriod($dateFrom, new \DateInterval('P1D'), $dateTo);
+
+        $balances = [];
+        foreach ($period as $date) {
+            $dailyTransactions = $transactions->filter(function (Movimiento $transaction) use ($date) {
+
+                return $transaction->getFecha()->diff($date)->days == 0;
+            });
+
+            $dailyBalance = 0;
+            foreach ($dailyTransactions as $transaction) {
+                $dailyBalance += $transaction->getImporte();
+            }
+
+            $totalBalance += $dailyBalance;
+            $balances[$date->format('d/m/Y')] = $totalBalance;
+        }
+
+        return $balances;
+    }
+
+    /**
+     * @param Request $request
+     * @Route(name="show_bank_balance", path="/bank/showBalance")
+     */
+    public function showBankBalance(Request $request)
+    {
+        $startDate = new \DateTimeImmutable();
+        $days = $this->getParameter('projected_balances_days');
+        $endDate = $startDate->add(new \DateInterval("P{$days}D"));
+
+        $banks = $this->getDoctrine()->getRepository('App:Bank')->findAll();
+        $form = $this
+            ->createFormBuilder()
+            ->add(
+                'bank',
+                ChoiceType::class,
+                [
+                    'choices' => $banks,
+                    'required' => false,
+                    'choice_label' => function (Bank $b) {
+
+                        return $b->__toString();
+                    },
+                    'choice_value' => function (Bank $b = null) {
+
+                        return $b ? $b->getId() : '';
+                    },
+                ]
+            )
+            ->add(
+                'dateFrom',
+                DateType::class,
+                [
+                    'data' => $startDate,
+                ]
+            )
+            ->add(
+                'dateTo',
+                DateType::class,
+                [
+                    'data' => $endDate,
+                ]
+            )
+            ->add(
+                'Submit',
+                SubmitType::class,
+                [
+                    'label' => 'Query',
+                    'attr' =>
+                        [
+                            'class' => 'btn btn-primary',
+                        ]
+                ]
+            )
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        $balances = [];
+        if ($form->isSubmitted() && $form->isValid()) {
+            $dateFrom = $form['dateFrom']->getData();
+            $dateTo = $form['dateTo']->getData();
+            $bank = $form['bank']->getData();
+
+            $balances = $this->calculateBalance( $dateFrom, $dateTo, $bank ? [ $bank ] : $banks );
+        }
+
+        return $this->render(
+            'admin/show_bank_balance.html.twig',
+            [
+                'form' => $form->createView(),
+                'balances' => $balances,
+            ]
+        );
+    }
+
+    /**
+     * @param Request $request
+     * @Route(name="send_bank_balance", path="/bank/sendBalance", options={"expose"=true})
+     */
+    public function sendBankBalance( Request $request )
+    {
+        $dateFrom = new \DateTimeImmutable( $request->get('dateFrom') );
+        $days = $this->getParameter('projected_balances_days');
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo') ) : $dateFrom->add( new \DateInterval("P{$days}D") );
+        $bank = $request->get('bank');
+
+        $banks = $bank ? [ $this->getDoctrine()->getRepository('App:Bank')->find( $bank ) ] : $this->getDoctrine()->getRepository('App:Bank')->findAll();
+
+        $balances = $this->calculateBalance( $dateFrom, $dateTo, $banks );
+
+        $message = ( new \Swift_Message($this->get('translator')->trans('Bank balances summary') ) )
+            ->setFrom('rotschild@blasting.com.ar')
+            ->setTo( $this->getParameter('send_balances_to'))
+            ->setBody(
+                $this->renderView(
+                    'emails/balances.html.twig',
+                    [
+                        'banks' => $banks,
+                        'balances' => $balances,
+                    ]
+                ),
+                'text/html'
+            )
+        ;
+
+        $this->get('mailer')->send($message);
+
+        return new JsonResponse($this->get('translator')->trans('Email sent!'));
     }
 }
