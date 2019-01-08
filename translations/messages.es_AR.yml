@@ -60,6 +60,12 @@ bank:
     return: Devolucion de comision bancaria
 check:
   number: Numero
+  applied:
+    outside: Aplicado por fuera
+  bank: Banco
+  client: Cliente
+  type: Tipo
+  acreditation: Acreditación de cheque
 import:
   checks:
     applied: Importación de Cheques aplicados
