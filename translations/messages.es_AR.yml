@@ -55,18 +55,20 @@ new:
   credit: Nuevo crédito
   debit: Nuevo débito
 bank:
-  commission:
+  comission:
     charge: Comision bancaria
     return: Devolucion de comision bancaria
 check:
   number: Numero
   applied:
     outside: Aplicado por fuera
+    rejection: Rechazo de cheque de terceros depositado
   bank: Banco
   client: Cliente
   type: Tipo
+  issued:
+    rejection: Rechazo de cheque emitido
   acreditation: Acreditación de cheque
-  rejection: Rechazo de cheque
 import:
   checks:
     applied: Importación de Cheques aplicados
@@ -75,9 +77,12 @@ import:
     summaries: Importar extractos bancarios
 checks:
   issued: Cheques emitidos
-tax: Impuesto
+tax:
+  payed: Impuesto
+  return: Devolucion de impuesto
 investment:
   fixed_term: Depósito a plazo fijo
+  recovery: Recupero de inversión
 fines: Multa
 fees: Honorarios
 salary:
@@ -92,3 +97,5 @@ credits:
 debits:
   matching:
     title: Débitos
+payment:
+  received: Cobranza
