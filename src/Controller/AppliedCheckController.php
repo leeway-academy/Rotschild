@@ -10,13 +10,91 @@ namespace App\Controller;
 
 use App\Entity\Movimiento;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
 class AppliedCheckController extends BaseAdminController
 {
+    /**
+     * @param Request $request
+     * @Route(name="import_applied_checks", path="/import/appliedChecks")
+     */
+    public function import(Request $request)
+    {
+        $formBuilder = $this->createFormBuilder()
+            ->setAttribute('class', 'form-vertical new-form');
+
+        $formBuilder->add(
+            'reportFile',
+            FileType::class,
+            [
+                'label' => 'Informe de cheques aplicados ',
+                'required' => true,
+            ]
+        )->add(
+            'Import',
+            SubmitType::class,
+            [
+                'attr' => [
+                    'class' => 'btn btn-primary action-save',
+                ],
+                'label' => 'Importar',
+            ]
+        )->getForm();
+
+        $form = $formBuilder->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em = $this->getDoctrine()->getManager();
+
+            foreach ($form->getData() as $name => $item) {
+                if (!is_null($item) && $item->getType() == 'file' && in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])) {
+                    $fileName = 'AppliedChecks_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
+                    $item->move($this->getParameter('reports_path'), $fileName);
+
+                    $lines = $this->getExcelReportProcessor()->getAppliedChecks(
+                        IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName)
+                    );
+
+                    foreach ($lines as $k => $line) {
+                        $appliedCheck = new AppliedCheck();
+                        $appliedCheck
+                            ->setAmount($line['amount'])
+                            ->setDate($line['date'])
+                            ->setType($line['type'])
+                            ->setDestination($line['destination'])
+                            ->setIssuer($line['issuer'])
+                            ->setSourceBank($line['sourceBank'])
+                            ->setNumber($line['number']);
+
+                        $em->persist($appliedCheck);
+                    }
+                }
+            }
+
+            $em->flush();
+
+            $this->addFlash(
+                'success',
+                'Cheques aplicados importados'
+            );
+        }
+
+        return $this->render(
+            'admin/import_excel_reports.html.twig',
+            [
+                'form' => $form->createView(),
+                'reportName' => 'checks.applied',
+            ]
+        );
+    }
+
     /**
      * @param Request $request
      * @Route(path="/processedAppliedChecks", name="process_applied_checks")
