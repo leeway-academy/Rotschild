@@ -1,5 +1,4 @@
-delete
-from applied_check;
+delete from applied_check;
 
 delete from cheque_emitido;
 
@@ -12,5 +11,3 @@ delete from movimiento;
 delete from renglon_extracto;
 
 delete from saldo_bancario;
-
-
