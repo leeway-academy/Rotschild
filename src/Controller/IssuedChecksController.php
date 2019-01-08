@@ -152,7 +152,7 @@ class IssuedChecksController extends AdminController
                 'submit',
                 SubmitType::class,
                 [
-                    'label' => 'Confirmar',
+                    'label' => $this->trans('Confirm' ),
                     'attr' => [
                         'class' => 'btn btn-primary',
                     ]
@@ -184,6 +184,9 @@ class IssuedChecksController extends AdminController
                          */
                         $datum->setWitness( $check );
                         $objectManager->persist( $datum );
+                        $checkDebit->setConcepto( $checkDebit->getConcepto().' ('.$datum->getConcepto().')' );
+                    } else {
+                        $checkDebit->setConcepto( $checkDebit->getConcepto().' ('. $this->trans($nullOption['-1']).')' );
                     }
 
                     $objectManager->persist($check);
