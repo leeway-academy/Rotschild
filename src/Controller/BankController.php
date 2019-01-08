@@ -9,6 +9,7 @@ use App\Entity\RenglonExtracto;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
@@ -291,6 +292,85 @@ class BankController extends AdminController
             [
                 'form' => $form->createView(),
                 'reportName' => 'bank.summaries',
+            ]
+        );
+    }
+
+    /**
+     * @param Request $request
+     * @Route(path="/bank/matchSummaries", name="match_bank_summaries", options={"expose"=true})
+     */
+    public function matchSummaries(Request $request)
+    {
+        $em = $this->getDoctrine();
+        $banks = $em->getRepository('App:Bank')->findAll();
+        $bank = $request->get('bankId') ? $banks[$request->get('bankId')] : current($banks);
+        $filterForm = $this
+            ->createFormBuilder(
+                null,
+                [
+                    'allow_extra_fields' => true,
+                ]
+            )
+            ->add(
+                'bank',
+                ChoiceType::class,
+                [
+                    'choices' => $banks,
+                    'choice_label' => function (Bank $b) {
+
+                        return $b->__toString();
+                    },
+                    'choice_value' => function (Bank $b = null) {
+
+                        return !empty($b) ? $b->getId() : null;
+                    },
+                    'data' => $bank,
+                ]
+            )
+            ->add(
+                'dateFrom',
+                DateType::class,
+                [
+                    'required' => false,
+                ]
+            )
+            ->add(
+                'dateTo',
+                DateType::class,
+                [
+                    'required' => false,
+                ]
+            )
+            ->add(
+                'filter',
+                SubmitType::class,
+                [
+                    'label' => 'Filter',
+                    'attr' =>
+                        [
+                            'class' => 'btn btn-primary',
+                        ]
+                ]
+            )
+            ->getForm();
+
+        $filterForm->handleRequest($request);
+
+        $dateFrom = $dateTo = null;
+        if ($filterForm->isSubmitted() && $filterForm->isValid()) {
+            $bank = $filterForm['bank']->getData();
+            $dateFrom = $filterForm['dateFrom']->getData();
+            $dateTo = $filterForm['dateTo']->getData();
+        }
+
+        return $this->render(
+            'admin/match_bank_summaries.html.twig',
+            [
+                'filterForm' => $filterForm->createView(),
+                'bank' => $bank,
+                'dateFrom' => $dateFrom,
+                'dateTo' => $dateTo,
             ]
         );
     }
