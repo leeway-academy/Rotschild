@@ -117,7 +117,7 @@ class AppliedCheckController extends AdminController
         $formBuilder = $this->createFormBuilder();
 
         $bancos = $this->getDoctrine()->getRepository('App:Bank')->findAll();
-        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->findProjectedCredits();
+        $debits = $this->getDoctrine()->getRepository('App:Movimiento')->findNonCheckProjectedDebits();
         $checks = $this->getDoctrine()->getRepository('App:AppliedCheck')->findAll();
 
         foreach ($checks as $k => $check) {
@@ -193,7 +193,7 @@ class AppliedCheckController extends AdminController
                             ->setBank($recipientBank)
                             ->setImporte($check->getAmount())
                             ->setFecha($check->getCreditDate())
-                            ->setConcepto('Acreditacion de cheque ' . $check->getNumber())
+                            ->setConcepto($this->trans('check.acreditation') . ' ' . $check->getNumber())
                         ;
 
                         $check->setChildCredit($movimiento);
