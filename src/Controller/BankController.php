@@ -54,6 +54,7 @@ class BankController extends AdminController
             '-9' => 'salary.advances',
             '-10' => 'transfer.own_account',
             '-11' => 'expenses.shareholders',
+            '-12' => 'check.rejection',
         ];
 
         $formBuilder = $this->createFormBuilder();
