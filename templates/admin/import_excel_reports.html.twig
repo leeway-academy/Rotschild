@@ -1,7 +1,7 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 {% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Importacion de {{ reportName }}{% endblock %}
+{% block content_title %}{{ ('import.' ~ reportName) | trans }}{% endblock %}
 
 {% block main %}
     {{ form_start(form) }}
