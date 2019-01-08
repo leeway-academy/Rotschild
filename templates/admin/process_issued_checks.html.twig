@@ -1,7 +1,7 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 {% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Cheques emitidos{% endblock %}
+{% block content_title %}{{ 'checks.issued' | trans }}{% if checks %} ({{ checks | length }}){% endif %}{% endblock %}
 
 {% block main %}
     {% if checks %}
