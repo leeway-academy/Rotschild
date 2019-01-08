@@ -168,7 +168,7 @@ class GastoFijoController extends BaseAdminController
         $today = new \DateTimeImmutable();
 
         foreach ($gastoFijo->getMovimientos() as $movimiento) {
-            if ($movimiento->getFecha() == $today ) {
+            if ($movimiento->getFecha() >= $today ) {
                 $this->em->remove($movimiento);
             }
         }
