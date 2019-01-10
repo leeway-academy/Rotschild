@@ -55,12 +55,12 @@ class Movimiento
     private $witness;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\ChequeEmitido", inversedBy="childDebit", cascade={"persist", "remove"})
+     * @ORM\OneToOne(targetEntity="App\Entity\ChequeEmitido", inversedBy="childDebit")
      */
     private $parentIssuedCheck;
 
     /**
-     * @ORM\OneToOne(targetEntity="App\Entity\AppliedCheck", inversedBy="childCredit", cascade={"persist", "remove"})
+     * @ORM\OneToOne(targetEntity="App\Entity\AppliedCheck", inversedBy="childCredit")
      */
     private $parentAppliedCheck;
 
