@@ -191,8 +191,6 @@ class IssuedChecksController extends AdminController
                     } else {
                         $checkDebit->setConcepto( $checkDebit->getConcepto().' ('. $this->trans($datum).')' );
                     }
-
-                    $objectManager->persist($check);
                 }
             }
 
