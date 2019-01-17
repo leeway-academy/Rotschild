@@ -206,18 +206,26 @@ class Bank
     {
         $balances = $this->getSaldos();
 
-        if ( $date ) {
-            $oneDay = new \DateInterval('P1D');
+        if ( $balances->isEmpty() ) {
 
-            while ( !$balances->isEmpty() && !$balances->containsKey( $date->format('Y-m-d') ) && $balances->first()->getFecha()->diff( $date )->days > 0 ) {
-                $date = $date->sub( $oneDay );
-            }
+            return null;
+        } elseif ( empty($date) ) {
 
-            return $balances->containsKey( $date->format('Y-m-d') ) ? $balances->get( $date->format('Y-m-d') ) : null;
-        } else {
-
-            return !$balances->isEmpty() ? $balances->last() : null;
+            return $balances->last();
         }
+
+        if ( $date < $balances->first()->getFecha() ) {
+
+            return null;
+        }
+
+        $oneDay = new \DateInterval('P1D');
+
+        while ( !$balances->containsKey( $date->format('Y-m-d') ) && $balances->first()->getFecha() < $date ) {
+            $date = $date->sub( $oneDay );
+        }
+
+        return $balances->containsKey( $date->format('Y-m-d') ) ? $balances->get( $date->format('Y-m-d') ) : null;
     }
 
     /**
