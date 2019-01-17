@@ -119,17 +119,19 @@ class AppliedCheckController extends AdminController
         $bancos = $this->getDoctrine()->getRepository('App:Bank')->findAll();
         $movimientoRepository = $this->getDoctrine()->getRepository('App:Movimiento');
         $debits = $movimientoRepository->findNonCheckProjectedDebits();
-        $checks = $this->getDoctrine()->getRepository('App:AppliedCheck')->findAll();
 
-        foreach ($checks as $k => $check) {
+        $checks = array_filter( $this
+            ->getDoctrine()
+            ->getRepository('App:AppliedCheck')
+            ->findAll(), function(AppliedCheck $check ) use ( $movimientoRepository ) {
             /**
              * @todo Third condition = isAppliedInternally... could it be refactored into a check method?
              */
-            if ( $check->isAppliedOutside() || $check->isDeposited() || $movimientoRepository->findByWitness( $check ) ) {
-                unset( $checks[$k] );
 
-                continue;
-            }
+            return !($check->isAppliedOutside() || $check->isDeposited() || $movimientoRepository->findByWitness( $check ));
+        } );
+
+        foreach ($checks as $k => $check) {
             $formBuilder
                 ->add(
                     'bank_' . $k,
