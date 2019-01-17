@@ -176,15 +176,15 @@ class AppliedCheck implements Witness
     /**
      * @return bool
      */
-    public function isMatched() : bool
+    public function isDeposited() : bool
     {
-        return !empty( $this->getChildCredit() ) || $this->appliedOutside;
+        return !empty( $this->getChildCredit() );
     }
 
     /**
      * @return bool
      */
-    public function getAppliedOutside(): bool
+    public function isAppliedOutside(): bool
     {
         return $this->appliedOutside;
     }
