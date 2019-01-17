@@ -60,6 +60,7 @@ bank:
     return: Devolucion de comision bancaria
   balance:
     consolidated: Consolidado
+    not_available: Desconocido
 check:
   number: Numero
   applied:

@@ -27,7 +27,7 @@
             {% for d, b in balances %}
                 <tr>
                     <td>{{ d }}</td>
-                    <td>{% if b < 0 %}<span class="alert-danger">{% endif %}$ {{ b|number_format(2, ',', '.') }}{% if b < 0 %}</span>{% endif %}</td>
+                    <td>{% if b is not null %}{% if b < 0 %}<span class="alert-danger">{% endif %}$ {{ b|number_format(2, ',', '.') }}{% if b < 0 %}</span>{% endif %}{% else %}{{ 'bank.balance.not_available' | trans }}{% endif %}</td>
                 </tr>
             {% endfor %}
             </tbody>
