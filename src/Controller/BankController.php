@@ -598,7 +598,7 @@ class BankController extends AdminController
         foreach ($period as $date) {
             $dailyTransactions = $transactions->filter(function (Movimiento $transaction) use ($date) {
 
-                return $transaction->getFecha() == $date;
+                return $transaction->getFecha()->format('y-m-d') == $date->format('y-m-d');
             });
 
             $dailyBalance = 0;
