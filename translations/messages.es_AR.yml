@@ -58,6 +58,8 @@ bank:
   comission:
     charge: Comision bancaria
     return: Devolucion de comision bancaria
+  balance:
+    consolidated: Consolidado
 check:
   number: Numero
   applied:

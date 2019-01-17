@@ -609,15 +609,15 @@ class BankController extends AdminController
                 'bank',
                 ChoiceType::class,
                 [
-                    'choices' => $banks,
+                    'choices' => array_merge( [ '' => $this->trans('bank.balance.consolidated') ], $banks),
                     'required' => false,
-                    'choice_label' => function (Bank $b) {
+                    'choice_label' => function ($b) {
 
-                        return $b->__toString();
+                        return ( $b instanceof Bank ) ? $b->__toString() : $b;
                     },
-                    'choice_value' => function (Bank $b = null) {
+                    'choice_value' => function ($b) {
 
-                        return $b ? $b->getId() : '';
+                        return ( $b instanceof Bank ) ? $b->getId() : '';
                     },
                 ]
             )
@@ -656,6 +656,8 @@ class BankController extends AdminController
             $dateTo = $form['dateTo']->getData();
             $bank = $form['bank']->getData();
 
+            $bank = $bank instanceof Bank ? $bank : null;
+
             $balances = $this->calculateBalance( $dateFrom, $dateTo, $bank ? [ $bank ] : $banks );
         }
 
@@ -664,6 +666,7 @@ class BankController extends AdminController
             [
                 'form' => $form->createView(),
                 'balances' => $balances,
+                'selectedBank' => $bank,
             ]
         );
     }
