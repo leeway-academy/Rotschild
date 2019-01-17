@@ -553,31 +553,52 @@ class BankController extends AdminController
 
         $dateFrom = $dateFrom instanceof \DateTimeImmutable ? $dateFrom : \DateTimeImmutable::createFromMutable($dateFrom);
 
+        $oneDay = new \DateInterval('P1D');
+        $today = new \DateTimeImmutable();
+
+        $past = new \DatePeriod( $dateFrom, $oneDay, $today <= $dateTo ? $today->sub($oneDay) : $dateTo->add($oneDay) );
+
+        $balances = [];
+
+        foreach ( $past as $pastDate ) {
+            if ( count($banks) == 1 ) {
+                $bank = current($banks);
+                $pastBalance = $bank->getBalance($pastDate);
+                $balances[$pastDate->format('d/m/Y')] = $pastBalance ? $pastBalance->getValor() : null;
+            } else {
+                $totalBalance = 0;
+
+                foreach ($banks as $bank) {
+                    $balance = $bank->getBalance($pastDate);
+                    $totalBalance += $balance ? $balance->getValor() : 0;
+                }
+                $balances[$pastDate->format('d/m/Y')] = $totalBalance;
+            }
+        }
+
         if ( count($banks) == 1 ) {
             $bank = current($banks);
             $criteria->andWhere( Criteria::expr()->eq('bank', $bank) );
 
-            $balance = $bank->getBalance( $dateFrom );
+            $balance = $bank->getBalance( $today );
             $totalBalance = $balance ? $balance->getValor() : 0;
         } else {
             $totalBalance = 0;
 
             foreach ($banks as $bank) {
-                $balance = $bank->getBalance($dateFrom);
-
+                $balance = $bank->getBalance($today);
                 $totalBalance += $balance ? $balance->getValor() : 0;
             }
         }
 
         $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
 
-        $period = new \DatePeriod($dateFrom, new \DateInterval('P1D'), $dateTo);
+        $period = new \DatePeriod($today, $oneDay, $dateTo);
 
-        $balances = [];
         foreach ($period as $date) {
             $dailyTransactions = $transactions->filter(function (Movimiento $transaction) use ($date) {
 
-                return $transaction->getFecha()->diff($date)->days == 0;
+                return $transaction->getFecha() == $date;
             });
 
             $dailyBalance = 0;
@@ -651,6 +672,8 @@ class BankController extends AdminController
         $form->handleRequest($request);
 
         $balances = [];
+        $bank = null;
+
         if ($form->isSubmitted() && $form->isValid()) {
             $dateFrom = $form['dateFrom']->getData();
             $dateTo = $form['dateTo']->getData();
