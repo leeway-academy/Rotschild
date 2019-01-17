@@ -214,11 +214,6 @@ class Bank
             return $balances->last();
         }
 
-        if ( $date < $balances->first()->getFecha() ) {
-
-            return null;
-        }
-
         $oneDay = new \DateInterval('P1D');
 
         while ( !$balances->containsKey( $date->format('Y-m-d') ) && $balances->first()->getFecha() < $date ) {
