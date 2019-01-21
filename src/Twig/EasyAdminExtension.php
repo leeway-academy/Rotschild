@@ -39,7 +39,19 @@ class EasyAdminExtension extends AbstractExtension
                     ];
                 }
             } elseif ( $item->isCredit() ) {
-
+                if ( $item->isConcretado() ) {
+                    unset($itemActions['delete']);
+                    unset($itemActions['edit']);
+                    $itemActions['undo'] = [
+                        'name' => 'undoCredit',
+                        'type' => 'method',
+                        'label' => 'action.undo',
+                        'title' => null,
+                        'css_class' => 'text-danger',
+                        'icon' => null,
+                        'target' => '_self',
+                    ];
+                }
             }
         }
 

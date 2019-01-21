@@ -288,4 +288,21 @@ class AdminController extends BaseAdminController
             'action' => 'list',
         ]);
     }
+
+    public function undoCreditAction()
+    {
+        $id = $this->request->query->get('id');
+        $objectManager = $this->getDoctrine()->getManager();
+
+        $credit = $objectManager->getRepository('App:Movimiento')->find( $id );
+
+        $credit->dissociate();
+        $objectManager->persist($credit);
+        $objectManager->flush();
+
+        return $this->redirectToRoute('easyadmin', [
+            'entity' => 'Credito',
+            'action' => 'list',
+        ]);
+    }
 }
