@@ -17,7 +17,7 @@ easy_admin:
             show:
                 title: '%%entity_name%%'
                 fields: [ 'nombre', { property: 'saldos', label: 'Saldos', template: 'saldos.html.twig' }, { property: 'saldosProyectados', label: 'Saldos proyectados', template: 'saldos.html.twig' }, 'movimientos' ]
-        Debito:
+        Debit:
             class: App\Entity\Movimiento
             label: 'Debits'
             list:
@@ -30,7 +30,7 @@ easy_admin:
                 new: 'new_tx.html.twig'
                 edit: 'edit_tx.html.twig'
                 ajax_layout: 'ajax_layout.html.twig'
-        Credito:
+        Credit:
             class: App\Entity\Movimiento
             label: 'Credits'
             list:
@@ -45,7 +45,7 @@ easy_admin:
                 new: 'new_tx.html.twig'
                 edit: 'edit_tx.html.twig'
                 ajax_layout: 'ajax_layout.html.twig'
-        GastoFijo:
+        FixedExpense:
             class: App\Entity\GastoFijo
             controller: App\Controller\GastoFijoController
             label: 'Gastos fijos'
@@ -64,22 +64,23 @@ easy_admin:
             js:
                 - 'js/blasting.js'
         menu:
-            - { label: 'Importar' }
-            - { label: 'Extractos bancarios', route: 'import_bank_summaries', default: true }
-            - { label: 'Cheques emitidos', route: 'import_issued_checks', default: true }
-            - { label: 'Cheques aplicados', route: 'import_applied_checks', default: true }
-            - { label: 'Conciliación' }
-            - { label: 'Extractos bancarios', route: 'match_bank_summaries' }
-            - { label: 'Cheques emitidos', route: 'process_issued_checks' }
-            - { label: 'Cheques aplicados', route: 'process_applied_checks'}
-            - { label: 'Movimientos'}
-            - { label: 'Balances', route: 'show_bank_balance'}
-            - Debito
-            - Credito
+            - { label: 'Bank summaries' }
+            - { label: 'Importar', route: 'import_bank_summaries', default: true }
+            - { label: 'Procesar', route: 'match_bank_summaries' }
+            - { label: 'Cheques propios' }
+            - { label: 'Importar', route: 'import_applied_checks' }
+            - { label: 'Procesar', route: 'process_issued_checks' }
+            - { label: 'Cheques de terceros' }
+            - { label: 'Importar', route: 'import_applied_checks' }
+            - { label: 'Procesar', route: 'process_applied_checks'}
+            - { label: 'Banks' }
+            - { label: 'Saldos', route: 'show_bank_balance' }
+            - { label: 'Configuracion', entity: 'Bank' }
+            - { label: 'Movimientos' }
+            - FixedExpense
             - { label: 'Gasto Fijo total', route: 'fixed_expense_query' }
-            - { label: 'Configuración' }
-            - GastoFijo
-            - Bank
+            - Debit
+            - Credit
         form_theme: '@EasyAdmin/form/bootstrap_3_layout.html.twig'
     formats:
         date: 'd/m/Y'
