@@ -325,9 +325,6 @@ class BankController extends AdminController
                                 }
                             }
                         } elseif (substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix) {
-                            /**
-                             * @todo Create new transaction
-                             */
                             $newTransaction = new Movimiento();
                             $newTransaction
                                 ->setConcepto($this->get('translator')->trans($transaction))
@@ -337,10 +334,6 @@ class BankController extends AdminController
                                 ->setBank($summaryLine->getExtracto()->getBank());
                             $em->persist($newTransaction);
                         }
-                    } else {
-                        /**
-                         * Something really wrong happened... Is somebody messing with the system??
-                         */
                     }
                 }
             }
@@ -374,7 +367,7 @@ class BankController extends AdminController
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
      * @todo Refactor this method and matchSummaryCreditLines (look for commanlities)
      */
-    public function matchSummaryDebitLines(Bank $bank, Request $request)
+    public function matchDebitSummaryLines(Bank $bank, Request $request)
     {
         $summaryLines = [];
 
