@@ -12,6 +12,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -727,5 +728,68 @@ class BankController extends AdminController
         $this->get('mailer')->send($message);
 
         return new JsonResponse($this->get('translator')->trans('Email sent!'));
+    }
+
+    /**
+     * @Route(name="load_bank_balance",path="/bank/{id}/loadBalance", options={"expose"=true})
+     * @ParamConverter(class="App\Entity\Bank", name="bank")
+     */
+    public function loadBalance(Bank $bank, Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        $fecha = new \DateTimeImmutable('Yesterday');
+
+        if (($saldo = $bank->getBalance($fecha)) == null) {
+            $saldo = new SaldoBancario();
+            $saldo->setFecha($fecha);
+            $saldo->setBank($bank);
+        }
+
+        $form = $this
+            ->createFormBuilder($saldo)
+            ->setAttribute('class', 'form-horizontal new-form')
+            ->add('valor', MoneyType::class,
+                [
+                    'label' => 'Amount',
+                    'currency' => $this->getParameter('currency')
+                ])
+            ->add('Save', SubmitType::class,
+                [
+                    'attr' =>
+                        [
+                            'class' => 'btn btn-primary',
+                        ],
+                    'label' => 'action.save',
+                ])
+            ->getForm();
+
+        $saldoProyectado = $bank->getProjectedBalance($fecha)->getValor();
+
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $saldo->setDiferenciaConProyectado($saldo->getValor() - $saldoProyectado);
+            $em->persist($saldo);
+            $em->flush();
+
+            return $this->redirectToRoute(
+                'easyadmin',
+                [
+                    'entity' => 'Bank',
+                    'action' => 'list'
+                ]
+            );
+        } else {
+
+            return $this->render(
+                'admin/load_bank_balance.html.twig',
+                [
+                    'form' => $form->createView(),
+                    'entity' => $saldo,
+                    'fecha' => $fecha,
+                    'proyectado' => $saldoProyectado,
+                ]
+            );
+        }
     }
 }

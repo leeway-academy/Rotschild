@@ -2,17 +2,11 @@
 
 namespace App\Controller;
 
-use App\Entity\Bank;
-use App\Entity\SaldoBancario;
 use App\Service\ExcelReportsProcessor;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AdminController as BaseAdminController;
 use EasyCorp\Bundle\EasyAdminBundle\Event\EasyAdminEvents;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
-use Symfony\Component\Form\Extension\Core\Type\MoneyType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Flex\Response;
 
 class AdminController extends BaseAdminController
 {
@@ -21,111 +15,6 @@ class AdminController extends BaseAdminController
     public function __construct(ExcelReportsProcessor $excelReportProcessor)
     {
         $this->setExcelReportProcessor($excelReportProcessor);
-    }
-
-    /**
-     * @Route(name="load_bank_balance",path="/bank/{id}/loadBalance", options={"expose"=true})
-     * @ParamConverter(class="App\Entity\Bank", name="bank")
-     */
-    public function loadBankBalance(Bank $bank, Request $request)
-    {
-        $em = $this->getDoctrine()->getManager();
-
-        $fecha = new \DateTimeImmutable('Yesterday');
-
-        if (($saldo = $bank->getBalance($fecha)) == null) {
-            $saldo = new SaldoBancario();
-            $saldo->setFecha($fecha);
-            $saldo->setBank($bank);
-        }
-
-        $form = $this
-            ->createFormBuilder($saldo)
-            ->setAttribute('class', 'form-horizontal new-form')
-            ->add('valor', MoneyType::class,
-                [
-                    'label' => 'Amount',
-                    'currency' => $this->getParameter('currency')
-                ])
-            ->add('Save', SubmitType::class,
-                [
-                    'attr' =>
-                        [
-                            'class' => 'btn btn-primary',
-                        ],
-                    'label' => 'action.save',
-                ])
-            ->getForm();
-
-        $saldoProyectado = $bank->getProjectedBalance($fecha)->getValor();
-
-        $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            $saldo->setDiferenciaConProyectado($saldo->getValor() - $saldoProyectado);
-            $em->persist($saldo);
-            $em->flush();
-
-            return $this->redirectToRoute(
-                'easyadmin',
-                [
-                    'entity' => 'Bank',
-                    'action' => 'list'
-                ]
-            );
-        } else {
-
-            return $this->render(
-                'admin/load_bank_balance.html.twig',
-                [
-                    'form' => $form->createView(),
-                    'entity' => $saldo,
-                    'fecha' => $fecha,
-                    'proyectado' => $saldoProyectado,
-                ]
-            );
-        }
-    }
-
-    protected function showBancoAction()
-    {
-        $this->dispatch(EasyAdminEvents::PRE_SHOW);
-
-        $id = $this->request->query->get('id');
-        $easyadmin = $this->request->attributes->get('easyadmin');
-        $banco = $easyadmin['item'];
-
-        $hoy = new \DateTimeImmutable();
-
-        $period = new \DatePeriod(new \DateTimeImmutable(), new \DateInterval('P1D'), 180); // @todo Extract to config
-
-        foreach ($period as $dia) {
-            $banco->saldosProyectados[$dia->format('Y-m-d')] = $banco->getSaldoProyectado($dia);
-        }
-
-        $fields = $this->entity['show']['fields'];
-        $deleteForm = $this->createDeleteForm($this->entity['name'], $id);
-
-        $this->dispatch(EasyAdminEvents::POST_SHOW, array(
-            'deleteForm' => $deleteForm,
-            'fields' => $fields,
-            'entity' => $banco,
-        ));
-
-        $parameters = array(
-            'entity' => $banco,
-            'fields' => $fields,
-            'delete_form' => $deleteForm->createView(),
-        );
-
-        foreach ($banco->getSaldos() as $saldo) {
-            if ($hoy->diff($saldo->getFecha())->days > 15) { // @todo Extract to config
-                $banco->removeSaldo($saldo);
-            } else {
-                break;
-            }
-        }
-
-        return $this->executeDynamicMethod('render<EntityName>Template', array('show', $this->entity['templates']['show'], $parameters));
     }
 
     /**
@@ -381,5 +270,22 @@ class AdminController extends BaseAdminController
     protected function trans( $msg ) : string
     {
         return $this->get('translator')->trans( $msg );
+    }
+
+    public function undoDebitAction()
+    {
+        $id = $this->request->query->get('id');
+        $objectManager = $this->getDoctrine()->getManager();
+
+        $debit = $objectManager->getRepository('App:Movimiento')->find( $id );
+
+        $debit->dissociate();
+        $objectManager->persist($debit);
+        $objectManager->flush();
+
+        return $this->redirectToRoute('easyadmin', [
+            'entity' => 'Debito',
+            'action' => 'list',
+        ]);
     }
 }
