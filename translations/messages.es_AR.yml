@@ -105,3 +105,6 @@ payment:
   received: Cobranza
 action:
   undo: Deshacer
+match:
+  debit:
+    to: Pago de
