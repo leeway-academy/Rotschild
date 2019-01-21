@@ -11,7 +11,6 @@ namespace App\Controller;
 use App\Entity\AppliedCheck;
 use App\Entity\Movimiento;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -116,7 +115,7 @@ class AppliedCheckController extends AdminController
          */
         $formBuilder = $this->createFormBuilder();
 
-        $bancos = $this->getDoctrine()->getRepository('App:Bank')->findAll();
+        $banks = $this->getDoctrine()->getRepository('App:Bank')->findAll();
         $movimientoRepository = $this->getDoctrine()->getRepository('App:Movimiento');
         $debits = $movimientoRepository->findNonCheckProjectedDebits();
 
@@ -131,43 +130,32 @@ class AppliedCheckController extends AdminController
             return !($check->isAppliedOutside() || $check->isDeposited() || $movimientoRepository->findByWitness( $check ));
         } );
 
+        $destinationBanks = [];
+        foreach ( $banks as $bank ) {
+            $destinationBanks[ $bank->getNombre() ] = 'bank_'.$bank->getId();
+        }
+
+        $destinationDebits = [];
+        foreach ( $debits as $debit ) {
+            $destinationDebits[ $debit->getConcepto() ] = 'debit_'.$debit->getId();
+        }
+
+        $destinations = [
+            'Banks' => $destinationBanks,
+            'Debitos proyectados' => $destinationDebits,
+            'Other' => [
+                'Applied outside' => 'outside',
+            ]
+        ];
+
         foreach ($checks as $k => $check) {
             $formBuilder
                 ->add(
-                    'bank_' . $k,
+                    'check_' . $k,
                     ChoiceType::class,
                     [
-                        'choices' => $bancos,
-                        'choice_label' => function ($choiceValue, $key, $value) {
-
-                            return $choiceValue . '';
-                        },
-                        'choice_value' => 'id',
+                        'choices' => $destinations,
                         'required' => false,
-                    ]
-                )
-                ->add(
-                    'debit_' . $k,
-                    ChoiceType::class,
-                    [
-                        'choices' => $debits,
-                        'choice_label' => function ($choiceValue, $key, $value) {
-
-                            return $choiceValue . '';
-                        },
-                        'choice_value' => 'id',
-                        'required' => false,
-                    ]
-                )
-                ->add(
-                    'outside_'.$k,
-                    CheckboxType::class,
-                    [
-                        'required' => false,
-                        'label' => 'check.applied.outside',
-                        'attr' => [
-                            'class' => 'check_outside',
-                        ]
                     ]
                 )
             ;

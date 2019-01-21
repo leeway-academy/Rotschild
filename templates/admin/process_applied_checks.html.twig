@@ -26,8 +26,6 @@
                     <th>Monto</th>
                     <th>&nbsp;</th>
                     <th><span style="alignment: center">Destino</span></th>
-                    <th>&nbsp;</th>
-                    <th>{{ 'check.applied.outside' | trans }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -47,17 +45,7 @@
                     <td>&nbsp;</td>
                     <td> ${{ c.amount | number_format(2, ',', '.') }}</td>
                     <td>&nbsp;</td>
-                    <td>
-                        <table>
-                            <tr>
-                                <td>{{ form_widget(attribute(form, 'bank_' ~ k )) }}</td>
-                                <td>&nbsp;</td>
-                                <td>{{ form_widget(attribute(form, 'debit_' ~ k )) }}</td>
-                            </tr>
-                        </table>
-                    </td>
-                    <td>&nbsp;</td>
-                    <td>{{ form_widget(attribute(form, 'outside_' ~ k ), { 'class' : 'checkOutside'} ) }}</td>
+                    <td>{{ form_widget(attribute(form, 'check_' ~ k )) }}</td>
                 </tr>
             {% endfor %}
             </tbody>
