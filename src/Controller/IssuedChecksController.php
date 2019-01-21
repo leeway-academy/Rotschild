@@ -49,7 +49,7 @@ class IssuedChecksController extends AdminController
 
             foreach ($form->getData() as $name => $item) {
                 if (!is_null($item) && $item->getType() == 'file') {
-                    if (in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'application/octet-stream' ])) {
+                    if (in_array($item->getMimeType(), ['application/wps-office.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'application/octet-stream'])) {
                         $fileName = 'IssuedChecks_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
                         $item->move($this->getParameter('reports_path'), $fileName);
 
@@ -58,13 +58,16 @@ class IssuedChecksController extends AdminController
                         );
 
                         foreach ($lines as $k => $line) {
-                            $chequeEmitido = new ChequeEmitido();
-                            $chequeEmitido
+                            $issuedCheck = new ChequeEmitido();
+                            $issuedCheck
                                 ->setImporte($line['amount'])
                                 ->setFecha($line['date'])
                                 ->setBanco($em->getRepository('App:Bank')->findOneBy(['codigo' => $line['bankCode']]))
                                 ->setNumero($line['checkNumber']);
-                            $em->persist($chequeEmitido);
+
+                            $checkDebit = $issuedCheck->createChildDebit();
+                            $em->persist($checkDebit);
+                            $em->persist($issuedCheck);
                         }
 
                         $em->flush();
@@ -116,8 +119,8 @@ class IssuedChecksController extends AdminController
         ];
 
         foreach ($issuedChecks as $k => $check) {
-            if ( $check->getChildDebit() ) {
-                unset( $issuedChecks[$k] );
+            if ($check->getChildDebit()) {
+                unset($issuedChecks[$k]);
 
                 continue;
             }
@@ -125,14 +128,14 @@ class IssuedChecksController extends AdminController
                 'match_' . $check->getId(),
                 ChoiceType::class,
                 [
-                    'choices' => array_merge( $nullOptions, $debits->toArray() ),
-                    'choice_value' => function( $o ) use ( $nullOptions ) {
-                        if ( $o instanceof Movimiento ) {
+                    'choices' => array_merge($nullOptions, $debits->toArray()),
+                    'choice_value' => function ($o) use ($nullOptions) {
+                        if ($o instanceof Movimiento) {
 
                             return $o->getId();
-                        } elseif ( in_array( $o, $nullOptions ) ) {
+                        } elseif (in_array($o, $nullOptions)) {
 
-                            return array_search( $o, $nullOptions );
+                            return array_search($o, $nullOptions);
                         } else {
 
                             return "";
@@ -155,7 +158,7 @@ class IssuedChecksController extends AdminController
                 'submit',
                 SubmitType::class,
                 [
-                    'label' => $this->trans('Confirm' ),
+                    'label' => $this->trans('Confirm'),
                     'attr' => [
                         'class' => 'btn btn-primary',
                     ]
@@ -171,25 +174,17 @@ class IssuedChecksController extends AdminController
                 if ($datum) {
                     $parts = preg_split('/_/', $k);
                     $k = $parts[1];
-                    $check = current(array_filter( $issuedChecks, function( ChequeEmitido $c ) use ( $k ) {
+                    $check = current(array_filter($issuedChecks, function (ChequeEmitido $c) use ($k) {
 
                         return $c->getId() == $k;
                     }));
-                    /**
-                     * A new debit is created for the check itself
-                     */
-                    $checkDebit = $check->createChildDebit();
-                    $objectManager->persist( $checkDebit );
 
-                    if ( $datum instanceof Movimiento ) {
+                    if ($datum instanceof Movimiento) {
                         /**
                          * If it's an existing transaction this check marks it as payed
                          */
-                        $datum->setWitness( $check );
-                        $objectManager->persist( $datum );
-                        $checkDebit->setConcepto( $checkDebit->getConcepto().' ('.$datum->getConcepto().')' );
-                    } else {
-                        $checkDebit->setConcepto( $checkDebit->getConcepto().' ('. $this->trans($datum).')' );
+                        $datum->setWitness($check);
+                        $objectManager->persist($datum);
                     }
                 }
             }
