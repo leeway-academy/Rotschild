@@ -6,6 +6,7 @@ use App\Entity\Bank;
 use App\Entity\ExtractoBancario;
 use App\Entity\Movimiento;
 use App\Entity\RenglonExtracto;
+use App\Entity\SaldoBancario;
 use Doctrine\Common\Collections\Criteria;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
