@@ -115,7 +115,8 @@ class AppliedCheckController extends AdminController
          */
         $formBuilder = $this->createFormBuilder();
 
-        $banks = $this->getDoctrine()->getRepository('App:Bank')->findAll();
+        $bankRepository = $this->getDoctrine()->getRepository('App:Bank');
+        $banks = $bankRepository->findAll();
         $movimientoRepository = $this->getDoctrine()->getRepository('App:Movimiento');
         $debits = $movimientoRepository->findNonCheckProjectedDebits();
 
@@ -177,11 +178,20 @@ class AppliedCheckController extends AdminController
         if ($form->isSubmitted() && $form->isValid()) {
             $em = $this->getDoctrine()->getManager();
             foreach ($checks as $k => $check) {
-                $movimiento = $form['debit_' . $k]->getData();
-                $recipientBank = $form['bank_' . $k]->getData();
-                $outside = $form['outside_' . $k]->getData();
-                if (!empty($recipientBank) || !empty($movimiento)) {
-                    if (!empty($recipientBank)) {
+                $destination = $form['check_'.$k]->getData();
+
+                if ( empty( $destination ) ) {
+
+                    continue;
+                }
+                if ( $destination == 'outside' ) {
+                    $check->setAppliedOutside(true);
+                    $em->persist($check);
+                } else {
+                    $parts = preg_split('/_/', $destination );
+
+                    if ( $parts[0] == 'bank' ) {
+                        $recipientBank = $bankRepository->find( $parts[1] );
                         $movimiento = new Movimiento();
                         $movimiento
                             ->setBank($recipientBank)
@@ -193,13 +203,11 @@ class AppliedCheckController extends AdminController
                         $check->setChildCredit($movimiento);
                         $em->persist($movimiento);
                         $em->persist($check);
-                    } elseif (!empty($movimiento)) {
+                    } elseif ( $parts[0] == 'debit') {
+                        $movimiento = $movimientoRepository->find( $parts[1] );
                         $movimiento->setWitness( $check );
                         $em->persist( $movimiento );
                     }
-                } elseif ( $outside ) {
-                    $check->setAppliedOutside( true );
-                    $em->persist($check);
                 }
             }
 

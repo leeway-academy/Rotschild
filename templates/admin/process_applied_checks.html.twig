@@ -59,31 +59,4 @@
 
 {% block body_javascript %}
     {{ parent() }}
-    <script type="text/javascript">
-        $('select').each( function( i, s ) {
-            $(s).change( function () {
-                parts = s.id.split(/_/);
-                if ( s.id.indexOf('bank') > -1 ) {
-                    targetId = 'form_debit_' + parts[2];
-                } else if ( s.id.indexOf('debit') > -1 ) {
-                    targetId = 'form_bank_' + parts[2];
-                } else {
-                    alert( 'Changing something else');
-                }
-                $('#' + targetId + " option:selected").removeAttr("selected");
-                $('#form_outside_' + targetId.substr( targetId.lastIndexOf('_') + 1 ) ).prop('checked', false);
-            })
-        } );
-
-        $('.check_outside').on('change', function(e) {
-            var id = this.id;
-            var checkId = id.substr( id.lastIndexOf('_') + 1 );
-
-            var selectBankId = 'form_bank_' + checkId;
-            var selectTxId = 'form_debit_' + checkId;
-
-            $('#' + selectBankId).val([]);
-            $('#' + selectTxId).val([]);
-        });
-    </script>
 {% endblock %}
