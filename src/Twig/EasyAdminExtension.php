@@ -37,6 +37,9 @@ class EasyAdminExtension extends AbstractExtension
                         'icon' => null,
                         'target' => '_self',
                     ];
+                } elseif ( $item->getParentIssuedCheck() ) {
+                    unset($itemActions['delete']);
+                    unset($itemActions['edit']);
                 }
             } elseif ( $item->isCredit() ) {
                 if ( $item->isConcretado() ) {
