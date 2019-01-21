@@ -70,8 +70,12 @@ class Movimiento
     public function setWitness( Witness $w = null )
     {
         $this->witness = $w;
-        $this->witnessClass = get_class( $w );
-        $this->witnessId = $w->getId();
+        if ( $w ) {
+            $this->witnessClass = get_class( $w );
+            $this->witnessId = $w->getId();
+        } else {
+            $this->witnessClass = $this->witnessId = null;
+        }
 
         return $this;
     }
@@ -207,6 +211,13 @@ class Movimiento
     public function setParentAppliedCheck(?AppliedCheck $parentAppliedCheck): self
     {
         $this->parentAppliedCheck = $parentAppliedCheck;
+
+        return $this;
+    }
+
+    public function dissociate() : self
+    {
+        $this->setWitness(null);
 
         return $this;
     }
