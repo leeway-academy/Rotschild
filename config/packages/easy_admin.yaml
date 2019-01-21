@@ -37,7 +37,7 @@ easy_admin:
                 title: 'Credits'
                 fields: [ 'concepto', 'fecha', 'importe', 'bank', { property: 'concretado', label: 'Cobrado', type: 'boolean' } ]
                 actions:
-                    - { name: 'new', label: 'Nuevo Credito' }
+                    - { name: 'new', label: 'Nuevo Credit' }
                 dql_filter: 'entity.importe > 0'
             form:
                 fields: [ 'concepto', 'fecha', { property: 'importe', type: 'money', type_options: { currency: '%currency%' } }, 'bank' ]
