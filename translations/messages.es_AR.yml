@@ -102,3 +102,5 @@ debits:
     title: Débitos
 payment:
   received: Cobranza
+action:
+  undo: Deshacer
