@@ -14,7 +14,6 @@
                     <th width="10%">{{ 'Amount' | trans }}</th>
                     <th>{{ 'budgeted.credit' | trans }}</th>
                     <th>{{ 'new.credit' | trans }}</th>
-                    <th>&nbsp;</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -25,8 +24,6 @@
                         <td>$ {{ l.importe | number_format(2, ',', '.') }}</td>
                         <td>{{ form_widget(matchingForm['transaction_' ~ k], { 'attr' : { 'class' : 'selectTx' } }) }}</td>
                         <td>{{ form_widget(matchingForm['new_tx_' ~ k], { 'attr' : { 'class' : 'newTx' } }) }}</td>
-                        <td><a href="#" onclick="update_tx('Credito', '{{ matchingForm['transaction_' ~ k].vars.id }}');"
-                               style="display: none;" id="update_tx_{{ k }}">{{ ('Update Credito') | trans }}</a></td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -53,108 +50,6 @@
 
 {% block body_javascript %}
     {{ parent() }}
-    <script type="text/javascript">
-        $('.selectTx').on('change', function (e) {
-            var selectId = this.id;
-            var selectedValue = this.value;
-            var s = selectId.substr(selectId.lastIndexOf('_') + 1);
-
-            if (selectedValue) {
-                $('#update_tx_' + s).show();
-                $('#form_new_tx_' + s).val([]);
-            } else {
-                $('#update_tx_' + s).hide();
-            }
-        });
-
-        $('.newTx').on('change', function (e) {
-            var selectId = this.id;
-            var selectedValue = this.value;
-            var s = selectId.substr(selectId.lastIndexOf('_') + 1);
-
-            if (selectedValue) {
-                $('#form_transaction_' + s).val([]);
-            }
-        });
-
-        $(document).ajaxStart(function () {
-            $("#wait").css("display", "block");
-        });
-
-        $(document).ajaxComplete(function () {
-            $("#wait").css("display", "none");
-        });
-
-        function add_tx(txType, selectId) {
-            $.get(
-                Routing.generate('easyadmin', {'entity': txType, 'action': 'new'}),
-                function (data) {
-                    showModal(data, selectId, '{{ 'New' | trans }}' );
-                }
-            );
-        }
-
-        function update_tx(txType, selectId) {
-            txId = $('#' + selectId).val();
-            $.get(
-                Routing.generate('easyadmin', {'entity': txType, 'action': 'edit', 'id': txId}),
-                function (data) {
-                    showModal( data, selectId, '{{ 'Update' | trans }}' );
-                }
-            );
-        }
-
-        function showModal( data, selectId, operation ) {
-            $('.modal-body').html(data);
-            var title = operation + ' {{ 'transaction' | trans }}';
-            $('#txFormModalTitle').html(title);
-            /**
-             * @todo Find a way of preventing the generation of this link from the backend
-             */
-            $('.modal-body .action-list').hide();
-            $('.modal-body button').click(function () {
-                var form = $('.modal-body form');
-                var url = form.attr('action');
-                prevId = form.attr('data-entity-id');
-
-                $.post(
-                    url,
-                    form.serialize(),
-                    function ( data ) {
-                        if ( prevId ) {
-                            $('#' + selectId + ' option[value="' + prevId + '"]').remove();
-                        } else {
-                            $('#update_tx_' + selectId.split('-')[1] ).show();
-                        }
-                        $('#' + selectId).append(new Option( data.string, data.id ));
-                        $('#' + selectId).val(data.id);
-                        $('.modal-body').html('');
-                        $('#txFormModal').modal('hide');
-                    }
-                );
-
-                return false;
-            });
-            $('#txFormModal').modal({backdrop: false});
-            $(".modal-header").on("mousedown", function(mousedownEvt) {
-                var $draggable = $(this);
-                var x = mousedownEvt.pageX - $draggable.offset().left,
-                    y = mousedownEvt.pageY - $draggable.offset().top;
-                $("body").on("mousemove.draggable", function(mousemoveEvt) {
-                    $draggable.closest(".modal-dialog").offset({
-                        "left": mousemoveEvt.pageX - x,
-                        "top": mousemoveEvt.pageY - y
-                    });
-                });
-                $("body").one("mouseup", function() {
-                    $("body").off("mousemove.draggable");
-                });
-                $draggable.closest(".modal").one("bs.modal.hide", function() {
-                    $("body").off("mousemove.draggable");
-                });
-            });
-        }
-    </script>
     <script src="{{ asset('bundles/fosjsrouting/js/router.min.js') }}"></script>
     <script src="{{ path('fos_js_routing_js', { callback: 'fos.Router.setData' }) }}"></script>
     <script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
