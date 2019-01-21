@@ -105,8 +105,10 @@ class IssuedChecksController extends AdminController
 
         $managerRegistry = $this->getDoctrine();
 
-        $debits = $managerRegistry
-            ->getRepository('App:Movimiento')
+        $transactionRepository = $managerRegistry
+            ->getRepository('App:Movimiento');
+
+        $debits = $transactionRepository
             ->findNonCheckProjectedDebits();
 
         $issuedChecks = $managerRegistry
@@ -119,7 +121,7 @@ class IssuedChecksController extends AdminController
         ];
 
         foreach ($issuedChecks as $k => $check) {
-            if ($check->getChildDebit()) {
+            if ( $transactionRepository->findByWitness( $check ) ) {
                 unset($issuedChecks[$k]);
 
                 continue;
