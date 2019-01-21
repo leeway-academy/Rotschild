@@ -210,7 +210,7 @@ class BankController extends AdminController
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
      */
-    public function matchCreditSummaryLines( Bank $bank, Request $request )
+    public function matchCreditSummaryLines(Bank $bank, Request $request)
     {
         $existingTxPefix = 'transaction';
         $newTxPrefix = 'new_tx';
@@ -231,31 +231,31 @@ class BankController extends AdminController
         ];
 
         $formBuilder = $this->createFormBuilder();
-        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
-        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
+        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable($request->get('dateFrom')['date']) : null;
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable($request->get('dateTo')['date']) : null;
 
         $movimientosRepo = $this->getDoctrine()->getRepository('App:Movimiento');
 
-        foreach ( $bank->getExtractos() as $extracto ) {
+        foreach ($bank->getExtractos() as $extracto) {
             $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
 
-                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo ) && $r->getImporte() > 0;
+                $ret = (empty($dateFrom) || $r->getFecha() >= $dateFrom) && (empty($dateTo) || $r->getFecha() <= $dateTo) && $r->getImporte() > 0;
 
                 return $ret;
             });
 
             foreach ($lines as $k => $renglon) {
-                $transactions = $movimientosRepo->findByWitness( $renglon );
+                $transactions = $movimientosRepo->findByWitness($renglon);
 
-                if ( !empty($transactions) ) {
-                    unset( $lines[$k] );
+                if (!empty($transactions)) {
+                    unset($lines[$k]);
 
                     continue;
                 }
 
                 $formBuilder
                     ->add(
-                        $existingTxPefix.'_' . $renglon->getId(),
+                        $existingTxPefix . '_' . $renglon->getId(),
                         ChoiceType::class,
                         [
                             'choices' => $projectedCredits,
@@ -273,7 +273,7 @@ class BankController extends AdminController
                         ]
                     )
                     ->add(
-                        $newTxPrefix.'_'.$renglon->getId(),
+                        $newTxPrefix . '_' . $renglon->getId(),
                         ChoiceType::class,
                         [
                             'choices' => $newCreditConcepts,
@@ -281,15 +281,14 @@ class BankController extends AdminController
 
                                 return $choiceValue . '';
                             },
-                            'choice_value' => function ( $v ) use ( $newCreditConcepts ) {
+                            'choice_value' => function ($v) use ($newCreditConcepts) {
 
-                                return array_search( $v, $newCreditConcepts);
+                                return array_search($v, $newCreditConcepts);
                             },
                             'required' => false,
                         ]
-                    )
-                ;
-                $pendingCredits[ $renglon->getId() ] = $renglon;
+                    );
+                $pendingCredits[$renglon->getId()] = $renglon;
             }
         }
 
@@ -307,37 +306,36 @@ class BankController extends AdminController
         $matchingForm = $formBuilder->getForm();
         $matchingForm->handleRequest($request);
 
-        if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
+        if ($matchingForm->isSubmitted() && $matchingForm->isValid()) {
             $em = $this->getDoctrine()->getManager();
             $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
             foreach ($matchingForm->getData() as $name => $transaction) {
-                if ( !empty($transaction) ) {
+                if (!empty($transaction)) {
                     $summaryLineId = last(preg_split('/_/', $name));
 
                     if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
-                        if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix ) {
+                        if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix) {
                             /**
                              * @todo: Look into the case for multiple associations!
                              */
-                            if ( is_array( $transaction ) ) {
-                                foreach ( $transaction as $t ) {
-                                    $t->setWitness( $summaryLine );
+                            if (is_array($transaction)) {
+                                foreach ($transaction as $t) {
+                                    $t->setWitness($summaryLine);
                                     $em->persist($t);
                                 }
                             }
-                        } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
+                        } elseif (substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix) {
                             /**
                              * @todo Create new transaction
                              */
                             $newTransaction = new Movimiento();
                             $newTransaction
-                                ->setConcepto( $this->get('translator')->trans($transaction) )
-                                ->setFecha( $summaryLine->getFecha() )
-                                ->setImporte( $summaryLine->getImporte() )
-                                ->setWitness( $summaryLine )
-                                ->setBank( $summaryLine->getExtracto()->getBank() )
-                            ;
-                            $em->persist( $newTransaction );
+                                ->setConcepto($this->get('translator')->trans($transaction))
+                                ->setFecha($summaryLine->getFecha())
+                                ->setImporte($summaryLine->getImporte())
+                                ->setWitness($summaryLine)
+                                ->setBank($summaryLine->getExtracto()->getBank());
+                            $em->persist($newTransaction);
                         }
                     } else {
                         /**
@@ -376,89 +374,70 @@ class BankController extends AdminController
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|\Symfony\Component\HttpFoundation\Response
      * @todo Refactor this method and matchSummaryCreditLines (look for commanlities)
      */
-    public function matchSummaryDebitLines( Bank $bank, Request $request )
+    public function matchSummaryDebitLines(Bank $bank, Request $request)
     {
-        $existingTxPefix = 'transaction';
-        $newTxPrefix = 'new_tx';
-
         $summaryLines = [];
 
         $projectedDebits = $bank->getDebitosProyectados();
 
-        /**
-         * @todo Externalize this concepts into a db table
-         */
+        $mo = [];
+
+        foreach ($projectedDebits as $pd) {
+            $mo[$pd->getConcepto()] = $pd->getId();
+        }
+
         $newDebitConcepts = [
-            '-4' => 'bank.comission.charge',
-            '-5' => 'tax.payed',
-            '-6' => 'investment.fixed_term',
-            '-7' => 'fines',
-            '-8' => 'fees',
-            '-9' => 'salary.advances',
-            '-10' => 'transfer.own_account',
-            '-11' => 'expenses.shareholders',
-            '-12' => 'check.applied.rejection',
+            /**
+             * @todo Externalize this concepts into a db table
+             */
+            'bank.comission.charge' => '-4',
+            'tax.payed' => '-5',
+            'investment.fixed_term' => '-6',
+            'fines' => '-7',
+            'fees' => '-8',
+            'salary.advances' => '-9',
+            'transfer.own_account' => '-10',
+            'expenses.shareholders' => '-11',
+            'check.applied.rejection' => '-12',
+        ];
+        $matchingOptions = [
+            'Debitos proyectados' => $mo,
+            'Nuevo Debito' => $newDebitConcepts,
         ];
 
         $formBuilder = $this->createFormBuilder();
-        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable( $request->get('dateFrom')['date'] ) : null;
-        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo')['date'] ) : null;
+        $dateFrom = $request->get('dateFrom') ? new \DateTimeImmutable($request->get('dateFrom')['date']) : null;
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable($request->get('dateTo')['date']) : null;
 
         $movimientosRepo = $this->getDoctrine()->getRepository('App:Movimiento');
 
-        foreach ( $bank->getExtractos() as $extracto ) {
+        foreach ($bank->getExtractos() as $extracto) {
             $lines = $extracto->getRenglones()->filter(function (RenglonExtracto $r) use ($dateFrom, $dateTo) {
 
-                $ret = ( empty($dateFrom) || $r->getFecha() >= $dateFrom ) && ( empty($dateTo) || $r->getFecha() <= $dateTo ) && $r->getImporte() < 0;
+                $ret = (empty($dateFrom) || $r->getFecha() >= $dateFrom) && (empty($dateTo) || $r->getFecha() <= $dateTo) && $r->getImporte() < 0;
 
                 return $ret;
             });
 
             foreach ($lines as $k => $renglon) {
-                $transactions = $movimientosRepo->findByWitness( $renglon );
+                $transactions = $movimientosRepo->findByWitness($renglon);
 
-                if ( !empty($transactions) ) {
-                    unset( $lines[$k] );
+                if (!empty($transactions)) {
+                    unset($lines[$k]);
 
                     continue;
                 }
 
                 $formBuilder
                     ->add(
-                        $existingTxPefix.'_' . $renglon->getId(),
+                        'summaryLine_' . $renglon->getId(),
                         ChoiceType::class,
                         [
-                            'choices' => $projectedDebits,
-                            'choice_value' => function (Movimiento $movimiento = null) {
-
-                                return $movimiento ? $movimiento->getId() : '';
-                            },
-                            'choice_label' => function (Movimiento $movimiento) {
-
-                                return $movimiento->__toString();
-                            },
-                            'label' => $renglon->getFecha()->format('d/m/Y') . ': ' . $renglon->getConcepto() . ' ' . $renglon->getImporte(),
+                            'choices' => $matchingOptions,
                             'required' => false,
                         ]
-                    )
-                    ->add(
-                        $newTxPrefix.'_'.$renglon->getId(),
-                        ChoiceType::class,
-                        [
-                            'choices' => $newDebitConcepts,
-                            'choice_label' => function ($choiceValue, $key, $value) {
-
-                                return $choiceValue . '';
-                            },
-                            'choice_value' => function ( $v ) use ( $newDebitConcepts ) {
-
-                                return array_search( $v, $newDebitConcepts);
-                            },
-                            'required' => false,
-                        ]
-                    )
-                ;
-                $summaryLines[ $renglon->getId() ] = $renglon;
+                    );
+                $summaryLines[$renglon->getId()] = $renglon;
             }
         }
 
@@ -476,38 +455,27 @@ class BankController extends AdminController
         $matchingForm = $formBuilder->getForm();
         $matchingForm->handleRequest($request);
 
-        if ( $matchingForm->isSubmitted() && $matchingForm->isValid() ) {
+        if ($matchingForm->isSubmitted() && $matchingForm->isValid()) {
             $em = $this->getDoctrine()->getManager();
             $renglonExtractoRepository = $em->getRepository('App:RenglonExtracto');
-            foreach ($matchingForm->getData() as $name => $transaction) {
-                if ( !empty($transaction) ) {
+            foreach ($matchingForm->getData() as $name => $id) {
+                if (!empty($id)) {
                     $summaryLineId = last(preg_split('/_/', $name));
 
                     if ($summaryLine = $renglonExtractoRepository->find($summaryLineId)) {
-                        if (substr($name, 0, strlen($existingTxPefix)) == $existingTxPefix ) {
-                            /**
-                             * @todo: Look into the case for multiple associations!
-                             */
-                            $transaction->setWitness( $summaryLine );
-                            $em->persist($transaction);
-                        } elseif ( substr($name, 0, strlen($newTxPrefix)) == $newTxPrefix ) {
-                            /**
-                             * @todo Create new transaction
-                             */
-                            $newTransaction = new Movimiento();
-                            $newTransaction
-                                ->setConcepto( $this->get('translator')->trans($transaction) )
-                                ->setFecha( $summaryLine->getFecha() )
-                                ->setImporte( $summaryLine->getImporte() )
-                                ->setWitness( $summaryLine )
-                                ->setBank( $summaryLine->getExtracto()->getBank() )
-                            ;
-                            $em->persist( $newTransaction );
+                        if ($id > 0) {
+                            $transaction = $em->getRepository('App:Movimiento')->find($id);
+                        } else {
+                            $transaction = new Movimiento();
+                            $transaction
+                                ->setConcepto($this->get('translator')->trans( array_search( $id, $newDebitConcepts ) ) )
+                                ->setFecha($summaryLine->getFecha())
+                                ->setImporte($summaryLine->getImporte())
+                                ->setBank($summaryLine->getExtracto()->getBank());
                         }
-                    } else {
-                        /**
-                         * Something really wrong happened... Is somebody messing with the system??
-                         */
+
+                        $transaction->setWitness($summaryLine);
+                        $em->persist($transaction);
                     }
                 }
             }
@@ -527,8 +495,7 @@ class BankController extends AdminController
             'admin/match_bank_summary_debit_lines.html.twig',
             [
                 'matchingForm' => $matchingForm->createView(),
-                'summaryLines' => $summaryLines,
-                'newDebitConcepts' => $newDebitConcepts,
+                'summaryLines' => $summaryLines
             ]
         );
     }
@@ -540,13 +507,13 @@ class BankController extends AdminController
      * @return array
      * @throws \Exception
      */
-    private function calculateBalance(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo, array $banks ): array
+    private function calculateBalance(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo, array $banks): array
     {
         $criteria = new Criteria();
         $criteria
             ->where(Criteria::expr()->gte('fecha', $dateFrom))
             ->andWhere(Criteria::expr()->lte('fecha', $dateTo))
-            ->andWhere( $this->getDoctrine()->getRepository('App:Movimiento')->getProjectedCriteria() )
+            ->andWhere($this->getDoctrine()->getRepository('App:Movimiento')->getProjectedCriteria())
             ->orderBy(
                 [
                     'fecha' => 'ASC'
@@ -558,12 +525,12 @@ class BankController extends AdminController
         $oneDay = new \DateInterval('P1D');
         $today = new \DateTimeImmutable();
 
-        $past = new \DatePeriod( $dateFrom, $oneDay, $today <= $dateTo ? $today->sub($oneDay) : $dateTo->add($oneDay) );
+        $past = new \DatePeriod($dateFrom, $oneDay, $today <= $dateTo ? $today->sub($oneDay) : $dateTo->add($oneDay));
 
         $balances = [];
 
-        foreach ( $past as $pastDate ) {
-            if ( count($banks) == 1 ) {
+        foreach ($past as $pastDate) {
+            if (count($banks) == 1) {
                 $bank = current($banks);
                 $pastBalance = $bank->getBalance($pastDate);
                 $balances[$pastDate->format('d/m/Y')] = $pastBalance ? $pastBalance->getValor() : null;
@@ -578,11 +545,11 @@ class BankController extends AdminController
             }
         }
 
-        if ( count($banks) == 1 ) {
+        if (count($banks) == 1) {
             $bank = current($banks);
-            $criteria->andWhere( Criteria::expr()->eq('bank', $bank) );
+            $criteria->andWhere(Criteria::expr()->eq('bank', $bank));
 
-            $balance = $bank->getBalance( $today );
+            $balance = $bank->getBalance($today);
             $totalBalance = $balance ? $balance->getValor() : 0;
         } else {
             $totalBalance = 0;
@@ -632,15 +599,15 @@ class BankController extends AdminController
                 'bank',
                 ChoiceType::class,
                 [
-                    'choices' => array_merge( [ '' => $this->trans('bank.balance.consolidated') ], $banks),
+                    'choices' => array_merge(['' => $this->trans('bank.balance.consolidated')], $banks),
                     'required' => false,
                     'choice_label' => function ($b) {
 
-                        return ( $b instanceof Bank ) ? $b->__toString() : $b;
+                        return ($b instanceof Bank) ? $b->__toString() : $b;
                     },
                     'choice_value' => function ($b) {
 
-                        return ( $b instanceof Bank ) ? $b->getId() : '';
+                        return ($b instanceof Bank) ? $b->getId() : '';
                     },
                 ]
             )
@@ -683,7 +650,7 @@ class BankController extends AdminController
 
             $bank = $bank instanceof Bank ? $bank : null;
 
-            $balances = $this->calculateBalance( $dateFrom, $dateTo, $bank ? [ $bank ] : $banks );
+            $balances = $this->calculateBalance($dateFrom, $dateTo, $bank ? [$bank] : $banks);
         }
 
         return $this->render(
@@ -700,20 +667,20 @@ class BankController extends AdminController
      * @param Request $request
      * @Route(name="send_bank_balance", path="/bank/sendBalance", options={"expose"=true})
      */
-    public function sendBankBalance( Request $request )
+    public function sendBankBalance(Request $request)
     {
-        $dateFrom = new \DateTimeImmutable( $request->get('dateFrom') );
+        $dateFrom = new \DateTimeImmutable($request->get('dateFrom'));
         $days = $this->getParameter('projected_balances_days');
-        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable( $request->get('dateTo') ) : $dateFrom->add( new \DateInterval("P{$days}D") );
+        $dateTo = $request->get('dateTo') ? new \DateTimeImmutable($request->get('dateTo')) : $dateFrom->add(new \DateInterval("P{$days}D"));
         $bank = $request->get('bank');
 
-        $banks = $bank ? [ $this->getDoctrine()->getRepository('App:Bank')->find( $bank ) ] : $this->getDoctrine()->getRepository('App:Bank')->findAll();
+        $banks = $bank ? [$this->getDoctrine()->getRepository('App:Bank')->find($bank)] : $this->getDoctrine()->getRepository('App:Bank')->findAll();
 
-        $balances = $this->calculateBalance( $dateFrom, $dateTo, $banks );
+        $balances = $this->calculateBalance($dateFrom, $dateTo, $banks);
 
-        $message = ( new \Swift_Message($this->get('translator')->trans('Bank balances summary') ) )
+        $message = (new \Swift_Message($this->get('translator')->trans('Bank balances summary')))
             ->setFrom('rotschild@blasting.com.ar')
-            ->setTo( $this->getParameter('send_balances_to'))
+            ->setTo($this->getParameter('send_balances_to'))
             ->setBody(
                 $this->renderView(
                     'emails/balances.html.twig',
@@ -723,8 +690,7 @@ class BankController extends AdminController
                     ]
                 ),
                 'text/html'
-            )
-        ;
+            );
 
         $this->get('mailer')->send($message);
 
