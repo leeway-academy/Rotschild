@@ -27,7 +27,6 @@
                     <td>$ {{ c.importe | number_format( 2, ',', '.' ) }}</td>
                     <td>{{ c.banco }}</td>
                     <td>{{ form_widget(attribute(form, 'match_' ~ c.id )) }}</td>
-                    <td><a href="#" onclick="add_tx('Debito', '{{ form['match_' ~ c.id ].vars.id }}');">{{ ('Add Debito') | trans }}</a></td>
                     <td><a href="#" onclick="update_tx('Debito', '{{ form['match_' ~ c.id].vars.id }}');" style="display: none;" id="update_tx-{{ c.id }}">{{ ('Update Debito') | trans }}</a></td>
                 </tr>
             {% endfor %}
@@ -73,15 +72,6 @@
         $(document).ajaxComplete(function () {
             $("#wait").css("display", "none");
         });
-
-        function add_tx(txType, selectId) {
-            $.get(
-                Routing.generate('easyadmin', {'entity': txType, 'action': 'new'}),
-                function (data) {
-                    showModal(data, selectId, '{{ 'New' | trans }}' );
-                }
-            );
-        }
 
         function update_tx(txType, selectId) {
             txId = $('#' + selectId).val();
