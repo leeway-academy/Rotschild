@@ -38,7 +38,7 @@ class Movimiento
     private $bank;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\GastoFijo", inversedBy="movimientos")
+     * @ORM\ManyToOne(targetEntity="App\Entity\FixedExpense", inversedBy="movimientos")
      */
     private $clonDe;
 
@@ -151,12 +151,12 @@ class Movimiento
         $this->setFecha( new \DateTime() );
     }
 
-    public function getClonDe(): ?GastoFijo
+    public function getClonDe(): ?FixedExpense
     {
         return $this->clonDe;
     }
 
-    public function setClonDe(?GastoFijo $clonDe): self
+    public function setClonDe(?FixedExpense $clonDe): self
     {
         $this->clonDe = $clonDe;
 

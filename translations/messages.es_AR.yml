@@ -41,6 +41,7 @@ Balances for: Saldos para
 Apply: Aplicar
 Payment to providers: Pago a Proveedores
 fixedExpense.query: Consulta de gastos fijos
+FixedExpense: Gasto Fijo
 fixedExpenses:
   no:
     matching:
