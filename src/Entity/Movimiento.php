@@ -88,6 +88,16 @@ class Movimiento
         return $this->witness;
     }
 
+    public function getWitnessClass() : ?string
+    {
+        return $this->witnessClass;
+    }
+
+    public function getWitnessId(): ?int
+    {
+        return $this->witnessId;
+    }
+
     public function getId()
     {
         return $this->id;
