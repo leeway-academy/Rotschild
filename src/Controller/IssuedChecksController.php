@@ -111,21 +111,26 @@ class IssuedChecksController extends AdminController
         $debits = $transactionRepository
             ->findNonCheckProjectedDebits();
 
-        $issuedChecks = $managerRegistry
-            ->getRepository('App:ChequeEmitido')
-            ->findAll();
+        $chequeEmitidoRepository = $managerRegistry
+            ->getRepository('App:ChequeEmitido');
+        $nonProcessed = $chequeEmitidoRepository
+            ->findNonProcessed()
+        ;
+
+        $processed = array_filter(
+            $chequeEmitidoRepository
+                ->findProcessed(),
+            function( ChequeEmitido $c ) use ( $transactionRepository ) {
+
+                return empty($transactionRepository->findByWitness( $c ));
+            });
 
         $nullOptions = [
             '-1' => 'Payment to providers',
             '-2' => 'N/A',
         ];
 
-        foreach ($issuedChecks as $k => $check) {
-            if ( $transactionRepository->findByWitness( $check ) ) {
-                unset($issuedChecks[$k]);
-
-                continue;
-            }
+        foreach ($nonProcessed as $k => $check) {
             $formBuilder->add(
                 'match_' . $check->getId(),
                 ChoiceType::class,
@@ -179,7 +184,7 @@ class IssuedChecksController extends AdminController
                 if ($datum) {
                     $parts = preg_split('/_/', $k);
                     $k = $parts[1];
-                    $check = current(array_filter($issuedChecks, function (ChequeEmitido $c) use ($k) {
+                    $check = current(array_filter($nonProcessed, function (ChequeEmitido $c) use ($k) {
 
                         return $c->getId() == $k;
                     }));
@@ -191,6 +196,8 @@ class IssuedChecksController extends AdminController
                         $datum->setWitness($check);
                         $objectManager->persist($datum);
                     }
+
+                    $check->setProcessed(true);
                 }
             }
 
@@ -203,8 +210,29 @@ class IssuedChecksController extends AdminController
             'admin/process_issued_checks.html.twig',
             [
                 'form' => $form->createView(),
-                'checks' => $issuedChecks,
+                'nonProcessed' => $nonProcessed,
+                'processed' => $processed,
             ]
         );
+    }
+
+    /**
+     * @Route(name="mark_issued_check_unprocessed", path="/checks/issued/{id}/mark_unprocessed")
+     * @param ChequeEmitido $chequeEmitido
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse
+     */
+    public function markUnProcessed( ChequeEmitido $chequeEmitido )
+    {
+        $chequeEmitido->makeAvailable();
+        $entityManager = $this
+            ->getDoctrine()
+            ->getManager();
+        $entityManager
+            ->persist($chequeEmitido)
+            ;
+
+        $entityManager->flush();
+
+        return $this->redirectToRoute('process_issued_checks');
     }
 }

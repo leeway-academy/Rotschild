@@ -1,10 +1,11 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 {% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}{{ 'checks.issued' | trans }}{% if checks %} ({{ checks | length }}){% endif %}{% endblock %}
+{% block content_title %}{{ 'checks.issued' | trans }}{% endblock %}
 
 {% block main %}
-    {% if checks %}
+    {% if nonProcessed %}
+        <p>{{ 'checks.nonProcessed' | trans }}{% if nonProcessed %} ({{ nonProcessed | length }}){% endif %}</p>
         {{ form_start(form) }}
             {{ form_errors(form) }}
         <table width="30%" class="table table-striped table-bordered">
@@ -20,35 +21,62 @@
                 </tr>
             </thead>
             <tbody>
-            {% for c in checks %}
+            {% for c in nonProcessed %}
                 <tr>
                     <td>{{ c.fecha | date('d/m/Y') }}</td>
                     <td>{{ c.numero }}</td>
                     <td>$ {{ c.importe | number_format( 2, ',', '.' ) }}</td>
                     <td>{{ c.banco }}</td>
                     <td>{{ form_widget(attribute(form, 'match_' ~ c.id )) }}</td>
-                    <td><a href="#" onclick="update_tx('Debito', '{{ form['match_' ~ c.id].vars.id }}');" style="display: none;" id="update_tx-{{ c.id }}">{{ ('Update Debito') | trans }}</a></td>
+                    <td><a href="#" onclick="update_tx('Debit', '{{ form['match_' ~ c.id].vars.id }}');" style="display: none;" id="update_tx-{{ c.id }}">{{ ('Update Debito') | trans }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
         {{ form_end(form) }}
-        <!-- Modal -->
-        <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header" style="cursor: move;">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="txFormModalTitle"></h4>
-                    </div>
-                    <div class="modal-body" id="modal-body">
-                    </div>
+    {% else %}
+        <p>No quedan cheques para procesar</p>
+    {% endif %}
+    {% if processed %}
+        <p>{{ 'checks.processed' | trans }}{% if processed %} ({{ processed | length }}){% endif %}</p>
+        <table width="30%" class="table table-striped table-bordered">
+            <thead>
+            <tr>
+                <th width="10%">Fecha</th>
+                <th width="10%">N&uacute;mero</th>
+                <th width="10%">Monto</th>
+                <th width="10%">Banco</th>
+                <th>&nbsp;</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for c in processed %}
+                <tr>
+                    <td>{{ c.fecha | date('d/m/Y') }}</td>
+                    <td>{{ c.numero }}</td>
+                    <td>$ {{ c.importe | number_format( 2, ',', '.' ) }}</td>
+                    <td>{{ c.banco }}</td>
+                    <td><a href="{{ url('mark_issued_check_unprocessed', { id: c.id } ) }}">{{ 'checks.mark_unprocessed' | trans }}</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {{ form_end(form) }}
+    {% endif %}
+
+    <!-- Modal -->
+    <div class="modal fade" id="txFormModal" tabindex="-1" role="dialog" aria-labelledby="txFormModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="cursor: move;">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="txFormModalTitle"></h4>
+                </div>
+                <div class="modal-body" id="modal-body">
                 </div>
             </div>
         </div>
-    {% else %}
-        <p>No quedan cheques para conciliar</p>
-    {% endif %}
+    </div>
 {% endblock %}
 
 {% block body_javascript %}
@@ -58,7 +86,7 @@
             var selectId = this.id;
             var selectedValue = this.value;
 
-            if ( selectedValue && selectedValue != '-1' ) {
+            if ( selectedValue && selectedValue > 0 ) {
                 $('#update_tx-' + selectId.substr(selectId.lastIndexOf('_') + 1)).show();
             } else {
                 $('#update_tx-' + selectId.substr(selectId.lastIndexOf('_') + 1)).hide();
