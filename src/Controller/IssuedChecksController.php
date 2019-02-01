@@ -130,7 +130,10 @@ class IssuedChecksController extends AdminController
                 'match_' . $check->getId(),
                 ChoiceType::class,
                 [
-                    'choices' => array_merge($nullOptions, $debits->toArray()),
+                    'choices' => [
+                        'Gasto no proyectado' => $nullOptions,
+                        'Gasto proyectado' => $debits->toArray(),
+                    ],
                     'choice_value' => function ($o) use ($nullOptions) {
                         if ($o instanceof Movimiento) {
 
