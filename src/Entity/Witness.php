@@ -10,5 +10,5 @@ namespace App\Entity;
 
 interface Witness
 {
-
+    public function makeAvailable();
 }

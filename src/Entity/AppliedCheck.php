@@ -199,4 +199,9 @@ class AppliedCheck implements Witness
 
         return $this;
     }
+
+    public function makeAvailable()
+    {
+        // This method was implemented to alter the processed flag, initially only useful for issuedChecks but...
+    }
 }

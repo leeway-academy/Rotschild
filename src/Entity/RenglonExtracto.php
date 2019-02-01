@@ -156,4 +156,9 @@ class RenglonExtracto implements Witness
     {
         return $this->getExtracto()->getBank().' '.$this->getExtracto()->getFecha()->format('d/m/Y').': "'.$this->getConcepto().'" (linea '.$this->getLinea().')';
     }
+
+    public function makeAvailable()
+    {
+        // This method was implemented to alter the processed flag, initially only useful for issuedChecks but...
+    }
 }
