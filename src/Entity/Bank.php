@@ -32,7 +32,7 @@ class Bank
     private $movimientos;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\GastoFijo", mappedBy="bank")
+     * @ORM\OneToMany(targetEntity="App\Entity\FixedExpense", mappedBy="bank")
      */
     private $gastosFijos;
 
@@ -137,14 +137,14 @@ class Bank
     }
 
     /**
-     * @return Collection|GastoFijo[]
+     * @return Collection|FixedExpense[]
      */
     public function getGastosFijos(): Collection
     {
         return $this->gastosFijos;
     }
 
-    public function addGastoFijo(GastoFijo $gastosFijo): self
+    public function addGastoFijo(FixedExpense $gastosFijo): self
     {
         if (!$this->gastosFijos->contains($gastosFijo)) {
             $this->gastosFijos[] = $gastosFijo;
@@ -154,7 +154,7 @@ class Bank
         return $this;
     }
 
-    public function removeGastoFijo(GastoFijo $gastosFijo): self
+    public function removeGastoFijo(FixedExpense $gastosFijo): self
     {
         if ($this->gastosFijos->contains($gastosFijo)) {
             $this->gastosFijos->removeElement($gastosFijo);

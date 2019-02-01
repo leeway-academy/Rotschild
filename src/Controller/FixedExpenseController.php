@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Entity\GastoFijo;
+use App\Entity\FixedExpense;
 use App\Entity\Movimiento;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
@@ -12,7 +12,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class GastoFijoController extends BaseAdminController
+class FixedExpenseController extends BaseAdminController
 {
     /**
      * @Route("/fixedExpense/query", name="fixed_expense_query")
@@ -86,11 +86,11 @@ class GastoFijoController extends BaseAdminController
     }
 
     /**
-     * @param GastoFijo $gastoFijo
+     * @param FixedExpense $gastoFijo
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    protected function persistGastoFijoEntity(GastoFijo $gastoFijo)
+    protected function persistFixedExpenseEntity(FixedExpense $gastoFijo)
     {
         $this->em->persist($gastoFijo);
         $this->em->flush();
@@ -119,7 +119,8 @@ class GastoFijoController extends BaseAdminController
                 ->setFecha($initDate)
                 ->setImporte($gastoFijo->getImporte() * -1)
                 ->setBank($gastoFijo->getBank())
-                ->setClonDe($gastoFijo);
+                ->setClonDe($gastoFijo)
+            ;
 
             $this->em->persist($movimiento);
             $initDate = $initDate->add($oneMonth);
@@ -130,11 +131,11 @@ class GastoFijoController extends BaseAdminController
     }
 
     /**
-     * @param GastoFijo $gastoFijo
+     * @param FixedExpense $gastoFijo
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    protected function updateGastoFijoEntity(GastoFijo $gastoFijo)
+    protected function updateFixedExpenseEntity(FixedExpense $gastoFijo)
     {
         $today = new \DateTimeImmutable();
 
@@ -167,11 +168,11 @@ class GastoFijoController extends BaseAdminController
     }
 
     /**
-     * @param GastoFijo $gastoFijo
+     * @param FixedExpense $gastoFijo
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    protected function removeGastoFijoEntity(GastoFijo $gastoFijo)
+    protected function removeFixedExpenseEntity(FixedExpense $gastoFijo)
     {
         $today = new \DateTimeImmutable();
 

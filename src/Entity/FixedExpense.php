@@ -7,9 +7,10 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass="App\Repository\GastoFijoRepository")
+ * @ORM\Entity(repositoryClass="App\Repository\FixedExpenseRepository")
+ * @ORM\Table(name="gasto_fijo")
  */
-class GastoFijo
+class FixedExpense
 {
     /**
      * @ORM\Id()

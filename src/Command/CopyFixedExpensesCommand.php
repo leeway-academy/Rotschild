@@ -9,12 +9,11 @@
 namespace App\Command;
 
 use App\Entity\Movimiento;
-use App\Entity\GastoFijo;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
-use Doctrine\ORM\EntityManagerInterface;
 
 class CopyFixedExpensesCommand extends ContainerAwareCommand
 {
@@ -49,7 +48,7 @@ class CopyFixedExpensesCommand extends ContainerAwareCommand
 
         $twelveMonths = new \DateInterval('P12M');
         $dayNumberToday = date('d');
-        foreach ($em->getRepository('App:GastoFijo')->matching( $criteria ) as $gastoFijo) {
+        foreach ($em->getRepository('FixedExpense')->matching( $criteria ) as $gastoFijo) {
             $newDate = (new \DateTimeImmutable())->add($twelveMonths);
 
             if ( ($d = $gastoFijo->getDia()) > $dayNumberToday) {

@@ -2,21 +2,21 @@
 
 namespace App\Repository;
 
-use App\Entity\GastoFijo;
+use App\Entity\FixedExpense;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
- * @method GastoFijo|null find($id, $lockMode = null, $lockVersion = null)
- * @method GastoFijo|null findOneBy(array $criteria, array $orderBy = null)
- * @method GastoFijo[]    findAll()
- * @method GastoFijo[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method FixedExpense|null find($id, $lockMode = null, $lockVersion = null)
+ * @method FixedExpense|null findOneBy(array $criteria, array $orderBy = null)
+ * @method FixedExpense[]    findAll()
+ * @method FixedExpense[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class GastoFijoRepository extends ServiceEntityRepository
+class FixedExpenseRepository extends ServiceEntityRepository
 {
     public function __construct(RegistryInterface $registry)
     {
-        parent::__construct($registry, GastoFijo::class);
+        parent::__construct($registry, FixedExpense::class);
     }
 
 //    /**
