@@ -42,6 +42,11 @@ class ChequeEmitido implements Witness
      */
     private $childDebit;
 
+    /**
+     * @ORM\Column(type="boolean")
+     */
+    private $processed = false;
+
     public function getId()
     {
         return $this->id;
@@ -140,5 +145,22 @@ class ChequeEmitido implements Witness
         $this->setChildDebit($debit);
 
         return $debit;
+    }
+
+    public function isProcessed(): ?bool
+    {
+        return $this->processed;
+    }
+
+    public function setProcessed(bool $processed): self
+    {
+        $this->processed = $processed;
+
+        return $this;
+    }
+
+    public function makeAvailable()
+    {
+        $this->setProcessed(false);
     }
 }

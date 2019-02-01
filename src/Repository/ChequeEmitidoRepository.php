@@ -19,32 +19,29 @@ class ChequeEmitidoRepository extends ServiceEntityRepository
         parent::__construct($registry, ChequeEmitido::class);
     }
 
-//    /**
-//     * @return ChequeEmitido[] Returns an array of ChequeEmitido objects
-//     */
-    /*
-    public function findByExampleField($value)
+    /**
+     * @return mixed
+     */
+    public function findNonProcessed()
     {
         return $this->createQueryBuilder('c')
-            ->andWhere('c.exampleField = :val')
-            ->setParameter('val', $value)
-            ->orderBy('c.id', 'ASC')
-            ->setMaxResults(10)
+            ->andWhere('c.processed = :val')
+            ->setParameter('val', false )
             ->getQuery()
             ->getResult()
-        ;
+            ;
     }
-    */
 
-    /*
-    public function findOneBySomeField($value): ?ChequeEmitido
+    /**
+     * @return mixed
+     */
+    public function findProcessed()
     {
         return $this->createQueryBuilder('c')
-            ->andWhere('c.exampleField = :val')
-            ->setParameter('val', $value)
+            ->andWhere('c.processed = :val')
+            ->setParameter('val', true )
             ->getQuery()
-            ->getOneOrNullResult()
-        ;
+            ->getResult()
+            ;
     }
-    */
 }
