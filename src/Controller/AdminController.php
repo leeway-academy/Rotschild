@@ -175,7 +175,18 @@ class AdminController extends BaseAdminController
 
         $debit = $objectManager->getRepository('App:Movimiento')->find( $id );
 
+        // @todo Really ugly hack... this should be done inside the dissociate action... I didn't know how to propagate the saving though :(
+        if ( $wc = $debit->getWitnessClass() ) {
+            $witnessRepo = $objectManager->getRepository( $wc );
+
+            if ( $witness = $witnessRepo->find( $debit->getWitnessId() ) ) {
+                $witness->makeAvailable();
+                $objectManager->persist($witness);
+            }
+        }
+
         $debit->dissociate();
+
         $objectManager->persist($debit);
         $objectManager->flush();
 
