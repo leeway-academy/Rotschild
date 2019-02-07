@@ -5,7 +5,7 @@
 
 {% block main %}
     {% if nonProcessed %}
-        <p>{{ 'checks.nonProcessed' | trans }}{% if nonProcessed %} ({{ nonProcessed | length }}){% endif %}</p>
+        <p><b>{{ 'checks.nonProcessed' | trans }}{% if nonProcessed %} ({{ nonProcessed | length }}){% endif %}</b></p>
         {{ form_start(form) }}
             {{ form_errors(form) }}
         <table width="30%" class="table table-striped table-bordered">
@@ -38,7 +38,7 @@
         <p>No quedan cheques para procesar</p>
     {% endif %}
     {% if processed %}
-        <p>{{ 'checks.processed' | trans }}{% if processed %} ({{ processed | length }}){% endif %}</p>
+        <p><b>{{ 'checks.processed' | trans }}{% if processed %} ({{ processed | length }}){% endif %}</b></p>
         <table width="30%" class="table table-striped table-bordered">
             <thead>
             <tr>
@@ -56,7 +56,7 @@
                     <td>{{ c.numero }}</td>
                     <td>$ {{ c.importe | number_format( 2, ',', '.' ) }}</td>
                     <td>{{ c.banco }}</td>
-                    <td><a href="{{ url('mark_issued_check_unprocessed', { id: c.id } ) }}">{{ 'checks.mark_unprocessed' | trans }}</a></td>
+                    <td><button class="btn btn-primary btn" onclick="location.href='{{ url('mark_issued_check_unprocessed', { id: c.id } ) }}'">{{ 'checks.mark_unprocessed' | trans }}</button></td>
                 </tr>
             {% endfor %}
             </tbody>

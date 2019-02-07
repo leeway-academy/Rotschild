@@ -82,6 +82,9 @@ import:
     summaries: Importar extractos bancarios
 checks:
   issued: Cheques emitidos
+  nonProcessed: No procesados
+  processed: Procesados
+  mark_unprocessed: Deshacer
 tax:
   payed: Impuesto
   return: Devolucion de impuesto
