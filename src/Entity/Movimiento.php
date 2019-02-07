@@ -231,4 +231,9 @@ class Movimiento
 
         return $this;
     }
+
+    public function isCheckChild() : bool
+    {
+        return !empty($this->getParentIssuedCheck());
+    }
 }
