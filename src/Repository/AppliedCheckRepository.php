@@ -18,4 +18,11 @@ class AppliedCheckRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, AppliedCheck::class);
     }
+
+    public function findNonProcessed()
+    {
+        return $this->findBy(
+            [ 'processed' => false ]
+        );
+    }
 }
