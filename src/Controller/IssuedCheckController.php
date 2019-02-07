@@ -11,7 +11,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class IssuedChecksController extends AdminController
+class IssuedCheckController extends AdminController
 {
     /**
      * @param Request $request
