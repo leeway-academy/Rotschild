@@ -377,4 +377,24 @@ class Bank
 
         return $this;
     }
+
+    /**
+     * @param float $amount
+     * @param \DateTimeInterface $date
+     * @param string $concept
+     * @return Movimiento
+     */
+    public function createCredit( float $amount, \DateTimeInterface $date, string $concept )
+    {
+        $credit = new Movimiento();
+        $credit
+            ->setImporte( abs( $amount ) )
+            ->setFecha( $date )
+            ->setConcepto( $concept )
+        ;
+
+        $this->addMovimiento( $credit );
+
+        return $credit;
+    }
 }
