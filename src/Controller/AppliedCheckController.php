@@ -9,7 +9,6 @@
 namespace App\Controller;
 
 use App\Entity\AppliedCheck;
-use App\Entity\Movimiento;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -117,19 +116,14 @@ class AppliedCheckController extends AdminController
 
         $bankRepository = $this->getDoctrine()->getRepository('App:Bank');
         $banks = $bankRepository->findAll();
-        $movimientoRepository = $this->getDoctrine()->getRepository('App:Movimiento');
-        $debits = $movimientoRepository->findNonCheckProjectedDebits();
+        $transactionRepository = $this->getDoctrine()->getRepository('App:Movimiento');
+        $debits = $transactionRepository->findNonCheckProjectedDebits();
 
-        $checks = array_filter( $this
+        $checks = $this
             ->getDoctrine()
             ->getRepository('App:AppliedCheck')
-            ->findAll(), function(AppliedCheck $check ) use ( $movimientoRepository ) {
-            /**
-             * @todo Third condition = isAppliedInternally... could it be refactored into a check method?
-             */
-
-            return !($check->isAppliedOutside() || $check->isDeposited() || $movimientoRepository->findByWitness( $check ));
-        } );
+            ->findNonProcessed()
+        ;
 
         $destinationBanks = [];
         foreach ( $banks as $bank ) {
@@ -144,8 +138,8 @@ class AppliedCheckController extends AdminController
         $destinations = [
             'Banks' => $destinationBanks,
             'Debitos proyectados' => $destinationDebits,
-            'Other' => [
-                'Applied outside' => 'outside',
+            'checks.received.destination.other' => [
+                'checks.received.destination.applied_outside' => 'outside',
             ]
         ];
 
@@ -185,28 +179,27 @@ class AppliedCheckController extends AdminController
                     continue;
                 }
                 if ( $destination == 'outside' ) {
-                    $check->setAppliedOutside(true);
+                    $check->applyOutside();
                     $em->persist($check);
                 } else {
                     $parts = preg_split('/_/', $destination );
 
                     if ( $parts[0] == 'bank' ) {
                         $recipientBank = $bankRepository->find( $parts[1] );
-                        $movimiento = new Movimiento();
-                        $movimiento
-                            ->setBank($recipientBank)
-                            ->setImporte($check->getAmount())
-                            ->setFecha($check->getCreditDate())
-                            ->setConcepto($this->trans('check.acreditation') . ' ' . $check->getNumber())
-                        ;
+                        $childCredit = $recipientBank->createCredit(
+                            $check->getAmount(),
+                            $check->getCreditDate(),
+                            $this->trans('check.acreditation') . ' ' . $check->getNumber()
+                        );
 
-                        $check->setChildCredit($movimiento);
-                        $em->persist($movimiento);
+                        $check->setChildCredit( $childCredit );
                         $em->persist($check);
                     } elseif ( $parts[0] == 'debit') {
-                        $movimiento = $movimientoRepository->find( $parts[1] );
-                        $movimiento->setWitness( $check );
-                        $em->persist( $movimiento );
+                        if ( $projectedDebit = $transactionRepository->find( $parts[1] ) ) {
+                            $check->applyToDebit( $projectedDebit );
+                            $projectedDebit->setWitness( $check );
+                            $em->persist( $projectedDebit );
+                        }
                     }
                 }
             }
