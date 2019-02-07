@@ -61,6 +61,11 @@ class AppliedCheck implements Witness
      */
     private $appliedOutside = false;
 
+    /**
+     * @ORM\Column(type="boolean", nullable=true)
+     */
+    private $processed;
+
     public function getId()
     {
         return $this->id;
@@ -163,7 +168,7 @@ class AppliedCheck implements Witness
     public function setChildCredit(?Movimiento $childCredit): self
     {
         $this->childCredit = $childCredit;
-
+        $this->setProcessed( true );
         // set (or unset) the owning side of the relation if necessary
         $newParentAppliedCheck = $childCredit === null ? null : $this;
         if ($newParentAppliedCheck !== $childCredit->getParentAppliedCheck()) {
@@ -193,7 +198,7 @@ class AppliedCheck implements Witness
      * @param bool $appliedOutside
      * @return AppliedCheck
      */
-    public function setAppliedOutside(bool $appliedOutside): self
+    private function setAppliedOutside(bool $appliedOutside): self
     {
         $this->appliedOutside = $appliedOutside;
 
@@ -203,5 +208,44 @@ class AppliedCheck implements Witness
     public function makeAvailable()
     {
         // This method was implemented to alter the processed flag, initially only useful for issuedChecks but...
+    }
+
+    public function isProcessed(): ?bool
+    {
+        return $this->processed;
+    }
+
+    private function setProcessed(?bool $processed): self
+    {
+        $this->processed = $processed;
+
+        return $this;
+    }
+
+    /**
+     * @param Movimiento $debit
+     */
+    public function applyToDebit( Movimiento $debit )
+    {
+        if ( !$debit->isDebit() ) {
+
+            throw new \Exception('Transaction '.$debit->getId().' is not a debit');
+        }
+        if ( $debit->isCheckChild() ) {
+
+            throw new \Exception( 'Transaction '.$debit->getId().' is a debit for the check '.$debit->getParentIssuedCheck().'. A check can\'t be applied to pay for it' );
+        }
+        $debit->setWitness( $this );
+        $this->setProcessed( true );
+    }
+
+    public function applyOutside() : self
+    {
+        $this
+            ->setAppliedOutside( true )
+            ->setProcessed(true)
+        ;
+
+        return $this;
     }
 }
