@@ -135,9 +135,11 @@ class AppliedCheckController extends AdminController
             ]
         ];
 
-        $nonProcessed = $this
+        $appliedCheckRepository = $this
             ->getDoctrine()
-            ->getRepository('App:AppliedCheck')
+            ->getRepository('App:AppliedCheck');
+
+        $nonProcessed = $appliedCheckRepository
             ->findNonProcessed()
         ;
 
@@ -214,7 +216,30 @@ class AppliedCheckController extends AdminController
             [
                 'form' => $form->createView(),
                 'nonProcessed' => $nonProcessed,
+                'appliedOutside' => $appliedCheckRepository->findAppliedOutside(),
             ]
         );
+    }
+
+    /**
+     * @Route(name="received_check_unApplyOutside", path="/checks/received/{id}/unApplyOutside")
+     * @param ChequeEmitido $appliedCheck
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse
+     */
+    public function unApplyOutisde( AppliedCheck $appliedCheck )
+    {
+        $appliedCheck->unApplyOutside();
+
+        $entityManager = $this
+            ->getDoctrine()
+            ->getManager();
+
+        $entityManager
+            ->persist($appliedCheck)
+        ;
+
+        $entityManager->flush();
+
+        return $this->redirectToRoute('process_applied_checks');
     }
 }

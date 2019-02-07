@@ -242,11 +242,17 @@ class AppliedCheck implements Witness
 
     public function applyOutside() : self
     {
-        $this
+        return $this
             ->setAppliedOutside( true )
             ->setProcessed(true)
         ;
+    }
 
-        return $this;
+    public function unApplyOutside() : self
+    {
+        return $this
+            ->setAppliedOutside( false )
+            ->setProcessed( false )
+            ;
     }
 }

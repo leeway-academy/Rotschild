@@ -56,6 +56,51 @@
     {% else %}
         {{ 'checks.received.nonProcessed.empty' | trans }}
     {% endif %}
+    {% if appliedOutside|length > 0 %}
+        <p><b>{{ 'checks.received.appliedOutside.title' | trans }} ({{ appliedOutside | length }})</b></p>
+        <div class="table-responsive">
+            <table width="100%" class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>{{ 'check.number' | trans }}</th>
+                    <th>&nbsp;</th>
+                    <th>{{ 'check.bank' | trans }}</th>
+                    <th>&nbsp;</th>
+                    <th>{{ 'check.client' | trans }}</th>
+                    <th>&nbsp;</th>
+                    <th>{{ 'check.type' | trans }}</th>
+                    <th>&nbsp;</th>
+                    <th>Fecha</th>
+                    <th>&nbsp;</th>
+                    <th>Acreditaci&oacute;n</th>
+                    <th>&nbsp;</th>
+                    <th>Monto</th>
+                    <th>&nbsp;</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for k, c in appliedOutside %}
+                    <tr>
+                        <td>{{ c.number }}</td>
+                        <td>&nbsp;</td>
+                        <td>{{ c.sourceBank }}</td>
+                        <td>&nbsp;</td>
+                        <td>{{ c.issuer }}</td>
+                        <td>&nbsp;</td>
+                        <td>{{ c.type }}</td>
+                        <td>&nbsp;</td>
+                        <td>{{ c.date | date('d/m/Y')}}</td>
+                        <td>&nbsp;</td>
+                        <td>{{ c.creditDate | date('d/m/Y')}}</td>
+                        <td>&nbsp;</td>
+                        <td> ${{ c.amount | number_format(2, ',', '.') }}</td>
+                        <td><a href="{{ url('received_check_unApplyOutside', { id : c.id }) }}"><button class="btn btn-primary">{{ 'checks.received.appliedOutside.undo' | trans }}</button></a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block body_javascript %}

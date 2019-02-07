@@ -25,4 +25,11 @@ class AppliedCheckRepository extends ServiceEntityRepository
             [ 'processed' => false ]
         );
     }
+
+    public function findAppliedOutside()
+    {
+        return $this->findBy(
+            [ 'appliedOutside' => true ]
+        );
+    }
 }

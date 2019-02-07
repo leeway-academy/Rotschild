@@ -80,12 +80,16 @@ import:
     issued: Importación de Cheques emitidos
   bank:
     summaries: Importar extractos bancarios
+
 checks:
   issued: Cheques emitidos
   nonProcessed: No procesados
   processed: Procesados
   mark_unprocessed: Deshacer
   received:
+    appliedOutside:
+      title: Aplicados por fuera de Rotschild
+      undo: Deshacer
     title: Cheques aplicados
     destination:
       other: Otros
