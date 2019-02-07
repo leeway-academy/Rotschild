@@ -85,6 +85,10 @@ checks:
   nonProcessed: No procesados
   processed: Procesados
   mark_unprocessed: Deshacer
+  received:
+    destination:
+      other: Otros
+      applied_outside: Aplicado por fuera de Rotschild
 tax:
   payed: Impuesto
   return: Devolucion de impuesto
