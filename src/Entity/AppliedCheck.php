@@ -6,6 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\AppliedCheckRepository")
+ * @todo Rename to ReceivedCheck
  */
 class AppliedCheck implements Witness
 {

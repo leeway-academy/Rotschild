@@ -1,10 +1,11 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 {% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Cheques aplicados{% if checks|length > 0 %} ({{ checks | length }}){% endif %}{% endblock %}
+{% block content_title %}{{ 'checks.received.title' | trans }}{% endblock %}
 
 {% block main %}
-    {% if checks|length > 0 %}
+    {% if nonProcessed|length > 0 %}
+        <p><b>{{ 'checks.nonProcessed' | trans }} ({{ nonProcessed | length }})</b></p>
         {{ form_start(form) }}
         {{ form_errors(form) }}
 	<div class="table-responsive">
@@ -29,7 +30,7 @@
                 </tr>
             </thead>
             <tbody>
-            {% for k, c in checks %}
+            {% for k, c in nonProcessed %}
                 <tr>
                     <td>{{ c.number }}</td>
                     <td>&nbsp;</td>
@@ -53,7 +54,7 @@
 	</div>
         {{ form_end(form) }}
     {% else %}
-        No hay cheques aplicados por conciliar
+        {{ 'checks.received.nonProcessed.empty' | trans }}
     {% endif %}
 {% endblock %}
 

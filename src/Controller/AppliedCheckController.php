@@ -112,24 +112,16 @@ class AppliedCheckController extends AdminController
          * @todo This could be much more intelligent since the destination of the check is part of the
          * Excel file...
          */
-        $formBuilder = $this->createFormBuilder();
 
         $bankRepository = $this->getDoctrine()->getRepository('App:Bank');
         $banks = $bankRepository->findAll();
-        $transactionRepository = $this->getDoctrine()->getRepository('App:Movimiento');
-        $debits = $transactionRepository->findNonCheckProjectedDebits();
-
-        $checks = $this
-            ->getDoctrine()
-            ->getRepository('App:AppliedCheck')
-            ->findNonProcessed()
-        ;
-
         $destinationBanks = [];
         foreach ( $banks as $bank ) {
             $destinationBanks[ $bank->getNombre() ] = 'bank_'.$bank->getId();
         }
 
+        $transactionRepository = $this->getDoctrine()->getRepository('App:Movimiento');
+        $debits = $transactionRepository->findNonCheckProjectedDebits();
         $destinationDebits = [];
         foreach ( $debits as $debit ) {
             $destinationDebits[ $debit->getConcepto() ] = 'debit_'.$debit->getId();
@@ -143,7 +135,15 @@ class AppliedCheckController extends AdminController
             ]
         ];
 
-        foreach ($checks as $k => $check) {
+        $nonProcessed = $this
+            ->getDoctrine()
+            ->getRepository('App:AppliedCheck')
+            ->findNonProcessed()
+        ;
+
+        $formBuilder = $this->createFormBuilder();
+
+        foreach ($nonProcessed as $k => $check) {
             $formBuilder
                 ->add(
                     'check_' . $k,
@@ -171,7 +171,7 @@ class AppliedCheckController extends AdminController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $em = $this->getDoctrine()->getManager();
-            foreach ($checks as $k => $check) {
+            foreach ($nonProcessed as $k => $check) {
                 $destination = $form['check_'.$k]->getData();
 
                 if ( empty( $destination ) ) {
@@ -213,7 +213,7 @@ class AppliedCheckController extends AdminController
             'admin/process_applied_checks.html.twig',
             [
                 'form' => $form->createView(),
-                'checks' => $checks,
+                'nonProcessed' => $nonProcessed,
             ]
         );
     }

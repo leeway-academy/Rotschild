@@ -86,9 +86,12 @@ checks:
   processed: Procesados
   mark_unprocessed: Deshacer
   received:
+    title: Cheques aplicados
     destination:
       other: Otros
       applied_outside: Aplicado por fuera de Rotschild
+    nonProcessed:
+      empty: No quedan cheques recibidos por procesar
 tax:
   payed: Impuesto
   return: Devolucion de impuesto
