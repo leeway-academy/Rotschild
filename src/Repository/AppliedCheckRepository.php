@@ -22,7 +22,7 @@ class AppliedCheckRepository extends ServiceEntityRepository
     public function findNonProcessed()
     {
         return $this->findBy(
-            [ 'processed' => false ]
+            [ 'processed' => null ]
         );
     }
 
