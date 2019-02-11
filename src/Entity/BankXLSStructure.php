@@ -54,6 +54,8 @@ class BankXLSStructure
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * In case there are headers to be skipped, this word marks the first one to take into account
+     * After the appearance of this, firstRow rows are skipped
      */
     private $firstHeader;
 
