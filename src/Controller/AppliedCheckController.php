@@ -124,7 +124,7 @@ class AppliedCheckController extends AdminController
         $debits = $transactionRepository->findNonCheckProjectedDebits();
         $destinationDebits = [];
         foreach ( $debits as $debit ) {
-            $destinationDebits[ $debit->getConcepto() ] = 'debit_'.$debit->getId();
+            $destinationDebits[ $debit->getConcepto() . ' ('. $debit->getImporte().')' ] = 'debit_'.$debit->getId();
         }
 
         $destinations = [
