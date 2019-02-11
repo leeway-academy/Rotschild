@@ -376,7 +376,7 @@ class BankController extends AdminController
         $mo = [];
 
         foreach ($projectedDebits as $pd) {
-            $mo[$pd->getConcepto()] = $pd->getId();
+            $mo[ $pd->getConcepto() . ' ( $' . $pd->getImporte().')' ] = $pd->getId();
         }
 
         $newDebitConcepts = [
