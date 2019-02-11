@@ -15,7 +15,7 @@
         $("form").submit( function ( e, n ) {
             var saldoCargado = $('input[type="text"]').val();
             if ( saldoCargado != saldoProyectado ) {
-                alert( 'Alerta: El saldo cargado no coincide con el proyectado');
+                alert( 'Alerta: El saldo cargado no coincide con el proyectado. Diferencia: $ ' + ( saldoCargado - saldoProyectado ) );
             }
 
             return true;
