@@ -698,16 +698,16 @@ class BankController extends AdminController
     {
         $em = $this->getDoctrine()->getManager();
 
-        $fecha = new \DateTimeImmutable('Yesterday');
+        $yesterday = new \DateTimeImmutable('Yesterday');
 
-        if (($saldo = $bank->getBalance($fecha)) == null) {
-            $saldo = new SaldoBancario();
-            $saldo->setFecha($fecha);
-            $saldo->setBank($bank);
+        if (($balance = $bank->getBalance($yesterday)) == null) {
+            $balance = new SaldoBancario();
+            $balance->setFecha($yesterday);
+            $balance->setBank($bank);
         }
 
         $form = $this
-            ->createFormBuilder($saldo)
+            ->createFormBuilder($balance)
             ->setAttribute('class', 'form-horizontal new-form')
             ->add('valor', MoneyType::class,
                 [
@@ -724,12 +724,12 @@ class BankController extends AdminController
                 ])
             ->getForm();
 
-        $saldoProyectado = $bank->getProjectedBalance($fecha)->getValor();
+        $projectedBalance = $bank->getProjectedBalance($yesterday)->getValor();
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $saldo->setDiferenciaConProyectado($saldo->getValor() - $saldoProyectado);
-            $em->persist($saldo);
+            $balance->setDiferenciaConProyectado($balance->getValor() - $projectedBalance);
+            $em->persist($balance);
             $em->flush();
 
             return $this->redirectToRoute(
@@ -745,9 +745,9 @@ class BankController extends AdminController
                 'admin/load_bank_balance.html.twig',
                 [
                     'form' => $form->createView(),
-                    'entity' => $saldo,
-                    'fecha' => $fecha,
-                    'proyectado' => $saldoProyectado,
+                    'entity' => $balance,
+                    'fecha' => $yesterday,
+                    'proyectado' => $projectedBalance,
                 ]
             );
         }
