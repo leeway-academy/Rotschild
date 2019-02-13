@@ -13,7 +13,7 @@
     <script type="text/javascript">
         var saldoProyectado = {{ proyectado }};
         $("form").submit( function ( e, n ) {
-            var saldoCargado = $('input[type="text"]').val();
+            var saldoCargado = parseFloat( $('input[type="text"]').val() );
             if ( saldoCargado != saldoProyectado ) {
                 alert( 'Alerta: El saldo cargado no coincide con el proyectado. Diferencia: $ ' + ( saldoCargado - saldoProyectado ) );
             }
