@@ -106,16 +106,4 @@ class SaldoBancario
     {
         return $this->getFecha()->format('d/m/Y').': $'.number_format( $this->getValor(), 2, ',','.' );
     }
-
-    /**
-     * SaldoBancario constructor.
-     * @param \DateTimeInterface $date
-     * @param float $value
-     */
-    public function __construct( Bank $bank, \DateTimeInterface $date, float $value )
-    {
-        $this->setFecha( $date );
-        $this->setValor( $value );
-        $this->setBank( $bank );
-    }
 }

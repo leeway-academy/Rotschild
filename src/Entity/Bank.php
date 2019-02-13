@@ -230,7 +230,15 @@ class Bank
      */
     public function createBalance( \DateTimeInterface $date, float $value )
     {
-        return new SaldoBancario( $this, $date, $value );
+        $newBalance = new SaldoBancario();
+
+        $newBalance
+            ->setBank( $this )
+            ->setFecha( $date )
+            ->setValor( $value )
+            ;
+        
+        return $newBalance;
     }
 
     /**
