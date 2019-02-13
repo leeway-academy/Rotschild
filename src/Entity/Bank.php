@@ -224,35 +224,58 @@ class Bank
     }
 
     /**
-     * @param \DateTimeInterface $fecha
+     * @param float $value
+     * @return SaldoBancario
+     * @throws \Exception
+     */
+    public function createBalance( \DateTimeInterface $date, float $value )
+    {
+        return new SaldoBancario( $this, $date, $value );
+    }
+
+    /**
+     * @param \DateTimeInterface $desiredDate
+     * @return SaldoBancario|null
+     * @throws \Exception
+     */
+    private function getLastKnownBalanceBefore( \DateTimeInterface $desiredDate ) :? SaldoBancario
+    {
+        $balances = $this->getSaldos();
+
+        $lastKnownBalance = null;
+
+        $balanceIterator = $balances->getIterator();
+
+        while ( $balanceIterator->valid() ) {
+            $currentBalance = $balanceIterator->current();
+            if ( $currentBalance->getFecha() >= $desiredDate ) {
+
+                break;
+            } else {
+                $lastKnownBalance = $currentBalance;
+                $balanceIterator->next();
+            }
+        }
+
+        return $lastKnownBalance;
+    }
+
+    /**
+     * @param \DateTimeInterface $desiredBalanceDate
      * @return SaldoBancario
      */
-    public function getProjectedBalance(\DateTimeInterface $fecha): SaldoBancario
+    public function getProjectedBalance(\DateTimeInterface $desiredBalanceDate): SaldoBancario
     {
-        $unDia = new \DateInterval('P1D');
-        $fechaInicial = $fecha->sub( new \DateInterval('P1D') );
-        $saldos = $this->getSaldos();
+        $lastKnownBalance = $this->getLastKnownBalanceBefore($desiredBalanceDate);
+        $currentBalanceValue = $lastKnownBalance ? $lastKnownBalance->getValor() : 0;
 
-        $saldoActual = new SaldoBancario();
-        $saldoActual->setValor(0);
-        $saldoActual->setBank( $this );
-
-        $primerSaldo = $saldos->first();
-        if ( $primerSaldo ) {
-            $primeraFecha = $primerSaldo->getFecha()->format('Y-m-d');
-            while ( $fechaInicial->format('Y-m-d') != $primeraFecha && !$saldos->containsKey( $fechaInicial->format('Y-m-d') ) ) {
-                $fechaInicial = $fechaInicial->sub($unDia);
+        if ( $lastKnownBalance ) {
+            foreach ($this->getTransactionsBetween( $lastKnownBalance->getFecha(), $desiredBalanceDate, false ) as $movimiento) {
+                $currentBalanceValue += $movimiento->getImporte();
             }
-            $saldoActual = clone $saldos->get( $fechaInicial->format('Y-m-d') );
         }
 
-        foreach ($this->getTransactionsBetween( $fechaInicial, $fecha, false ) as $movimiento) {
-            $saldoActual->setValor( $saldoActual->getValor() + $movimiento->getImporte() );
-        }
-
-        $saldoActual->setFecha( $fecha );
-
-        return $saldoActual;
+        return $this->createBalance( $desiredBalanceDate, $currentBalanceValue );
     }
 
     /**
