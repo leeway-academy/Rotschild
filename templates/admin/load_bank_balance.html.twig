@@ -1,9 +1,31 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 {% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Saldo del Banco {{ entity.bank }} al día {{ fecha | date('d-m-Y') }} (Proyectado: <b>$ {{ proyectado | number_format( 2, ',', '.') }}.-</b>){% endblock %}
+{% block content_title %}Saldo del Banco {{ bank }} para el día {{ fecha | date('d-m-Y') }}{% endblock %}
 
 {% block main %}
+    <div class="table-responsive">
+        <table class="table">
+            <tbody>
+                <tr>
+                    <td><strong>Saldo inicial</strong>: $ {{ initialBalance.valor | number_format(2, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td>Movimientos del día {{ fecha | date('d-m-Y') }}</td>
+                </tr>
+                {% for t in transactions %}
+                    {% if t.concretado %}
+                        <tr>
+                            <td>{{ t }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+                <tr>
+                    <td><strong>Saldo final esperado</strong>: $ {{ finalBalance.valor | number_format(2, ',', '.') }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     {{ form(form) }}
 {% endblock %}
 
@@ -11,7 +33,7 @@
     {{ parent() }}
 
     <script type="text/javascript">
-        var saldoProyectado = {{ proyectado }};
+        var saldoProyectado = {{ finalBalance }};
         $("form").submit( function ( e, n ) {
             var saldoCargado = parseFloat( $('input[type="text"]').val() );
             if ( saldoCargado != saldoProyectado ) {
