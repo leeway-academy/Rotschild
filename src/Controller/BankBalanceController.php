@@ -14,7 +14,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class BankController extends AdminController
+class BankBalanceController extends AdminController
 {
     private function calculatePastBalances( \DatePeriod $past, array $banks ) : array
     {
@@ -211,7 +211,7 @@ class BankController extends AdminController
         $balances = [];
 
         foreach ($banks as $bank) {
-            $balances[ $bank->getId() ] = $bank->getPastCalculatedBalance( new \DateTimeImmutable('yesterday') );
+            $balances[ $bank->getId() ] = $bank->getExpectedBalance( new \DateTimeImmutable('yesterday') );
         }
 
         return $balances;
@@ -234,7 +234,8 @@ class BankController extends AdminController
         $firstDay = new \DateTimeImmutable();
 
         if ( $end < $firstDay ) {
-            throw new InvalidArgumentException('Start date must be before today');
+
+            return [];
         }
 
         if ( $start < $firstDay ) {
@@ -269,7 +270,8 @@ class BankController extends AdminController
         $lastDay = new \DateTimeImmutable('-2 days');
 
         if ( $start > $lastDay ) {
-            throw new InvalidArgumentException('Start date must be before today');
+
+            return [];
         }
 
         if ( $end > $lastDay ) {
@@ -282,7 +284,8 @@ class BankController extends AdminController
 
         foreach ( $period as $pastDate ) {
             foreach ( $banks as $bank ) {
-                $balances[ $pastDate->format('d/m/Y') ][ $bank->getId() ] = $bank->getPastCalculatedBalance( $pastDate );
+                $actualBalance = $bank->getPastActualBalance( $pastDate );
+                $balances[ $pastDate->format('d/m/Y') ][ $bank->getId() ] = $actualBalance ?: $bank->getExpectedBalance( $pastDate );
             }
         }
 
@@ -331,14 +334,30 @@ class BankController extends AdminController
         $date = new \DateTimeImmutable( $dateString );
         $em = $this->getDoctrine()->getManager();
 
-        if (($balance = $bank->getPastActualBalance($date)) == null) {
-            $balance = new SaldoBancario();
-            $balance->setFecha($date);
-            $balance->setBank($bank);
+        $startDate = $date->sub(new \DateInterval('P1D'));
+        $initialBalance = $bank->getExpectedBalance($startDate);
+        $transactionsBetween = $bank->getTransactionsBetween($startDate, $date, true);
+
+        $finalExpectedBalance = clone $initialBalance;
+        $finalExpectedBalance->setFecha( $date );
+
+        foreach ( $transactionsBetween as $transaction ) {
+            $finalExpectedBalance->setValor( $finalExpectedBalance->getValor() + $transaction->getImporte() );
+        }
+
+        $actualBalance = $bank->getPastActualBalance($date);
+
+        if ( empty($actualBalance) ) {
+            $actualBalance = new SaldoBancario();
+            $actualBalance
+                ->setFecha( $date )
+                ->setBank( $bank )
+                ->setValor( $finalExpectedBalance->getValor() )
+            ;
         }
 
         $form = $this
-            ->createFormBuilder($balance)
+            ->createFormBuilder($actualBalance)
             ->setAttribute('class', 'form-horizontal new-form')
             ->add('valor', MoneyType::class,
                 [
@@ -355,14 +374,10 @@ class BankController extends AdminController
                 ])
             ->getForm();
 
-        $startDate = $date->sub(new \DateInterval('P1D'));
-        $initialBalance = $bank->getPastCalculatedBalance($startDate);
-        $finalExpectedBalance = $bank->getPastCalculatedBalance($date);
-
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $balance->setDiferenciaConProyectado($balance->getValor() - $finalExpectedBalance->getValor());
-            $em->persist($balance);
+//            $actualBalance->setDiferenciaConProyectado($finalExpectedBalance->getValor() - $actualBalance->getValor());
+            $em->persist($actualBalance);
             $em->flush();
 
             return $this->redirectToRoute(
@@ -378,7 +393,7 @@ class BankController extends AdminController
                 'form' => $form->createView(),
                 'bank' => $bank,
                 'fecha' => $date,
-                'transactions' => $bank->getTransactionsBetween( $startDate, $date, true ),
+                'transactions' => $transactionsBetween,
                 'initialBalance' => $initialBalance,
                 'finalBalance' => $finalExpectedBalance,
             ]
