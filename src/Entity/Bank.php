@@ -199,8 +199,35 @@ class Bank
     }
 
     /**
+     * @param \DateTimeImmutable $date
+     * @return SaldoBancario
+     * @throws \Exception
+     */
+    public function getCalculatedBalance( \DateTimeImmutable $date ) : SaldoBancario
+    {
+        $lastActualBalance = $this->getLastActualBalanceBefore( $date );
+
+        if ( empty($lastActualBalance) ) {
+            $lastActualBalance = new SaldoBancario();
+            $lastActualBalance
+                ->setValor( 0 )
+                ->setBank( $this )
+                ->setFecha( $date )
+                ;
+        }
+
+        if ( $date > $lastActualBalance->getFecha() ) {
+            foreach ( $this->getTransactionsBetween( $lastActualBalance->getFecha(), $date ) as $transaction ) {
+                $lastActualBalance->setValor( $lastActualBalance->getValor() + $transaction->getImporte() );
+            }
+        }
+
+        return $lastActualBalance;
+    }
+    /**
      * @param \DateTimeInterface|null $date
      * @return SaldoBancario
+     * @deprecated use more specific methods instead
      */
     public function getBalance(\DateTimeImmutable $date = null ): ?SaldoBancario
     {
@@ -246,7 +273,7 @@ class Bank
      * @return SaldoBancario|null
      * @throws \Exception
      */
-    private function getLastKnownBalanceBefore( \DateTimeInterface $desiredDate ) :? SaldoBancario
+    private function getLastActualBalanceBefore(\DateTimeInterface $desiredDate ) :? SaldoBancario
     {
         $balances = $this->getSaldos();
 
@@ -274,7 +301,7 @@ class Bank
      */
     public function getProjectedBalance(\DateTimeInterface $desiredBalanceDate): SaldoBancario
     {
-        $lastKnownBalance = $this->getLastKnownBalanceBefore($desiredBalanceDate);
+        $lastKnownBalance = $this->getLastActualBalanceBefore($desiredBalanceDate);
         $currentBalanceValue = $lastKnownBalance ? $lastKnownBalance->getValor() : 0;
 
         if ( $lastKnownBalance ) {
