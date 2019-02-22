@@ -58,6 +58,10 @@ class IssuedCheckController extends AdminController
                         );
 
                         foreach ($lines as $k => $line) {
+                            if ( strtolower( $line['status'] ) == 'anulado' ) {
+
+                                continue;
+                            }
                             $issuedCheck = new ChequeEmitido();
                             $issuedCheck
                                 ->setImporte($line['amount'])

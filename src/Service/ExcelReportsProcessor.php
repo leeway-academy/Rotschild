@@ -101,6 +101,7 @@ class ExcelReportsProcessor
                 'amount' => $worksheet->getCellByColumnAndRow( 8, $row )->getValue(),
                 'bankCode' => $worksheet->getCellByColumnAndRow( 7, $row )->getValue(),
                 'checkNumber' => $worksheet->getCellByColumnAndRow( 2, $row )->getValue(),
+                'status' => $worksheet->getCellByColumnAndRow( 6, $row )->getValue(),
             ];
             $row++;
             $firstValue = $worksheet->getCellByColumnAndRow( 1, $row )->getValue();
