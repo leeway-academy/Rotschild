@@ -8,6 +8,7 @@ use App\Entity\Movimiento;
 use App\Entity\RenglonExtracto;
 use App\Entity\SaldoBancario;
 use Doctrine\Common\Collections\Criteria;
+use http\Exception\InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -586,11 +587,11 @@ class BankController extends AdminController
                 ;
         }
 
+        $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
+
         $balances[] = $todayBalance;
 
         $currentBalance = clone $todayBalance;
-
-        $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
 
         $period = new \DatePeriod($today->add( $oneDay ), $oneDay, $dateTo);
 
@@ -621,29 +622,13 @@ class BankController extends AdminController
      */
     public function showBankBalance(Request $request)
     {
-        $startDate = new \DateTimeImmutable();
+        $startDate = (new \DateTimeImmutable())->sub( new \DateInterval('P7D') );
         $days = $this->getParameter('projected_balances_days');
         $endDate = $startDate->add(new \DateInterval("P{$days}D"));
 
         $banks = $this->getDoctrine()->getRepository('App:Bank')->findAll();
         $form = $this
             ->createFormBuilder()
-            ->add(
-                'bank',
-                ChoiceType::class,
-                [
-                    'choices' => array_merge(['' => $this->trans('bank.balance.consolidated')], $banks),
-                    'required' => false,
-                    'choice_label' => function ($b) {
-
-                        return ($b instanceof Bank) ? $b->__toString() : $b;
-                    },
-                    'choice_value' => function ($b) {
-
-                        return ($b instanceof Bank) ? $b->getId() : '';
-                    },
-                ]
-            )
             ->add(
                 'dateFrom',
                 DateType::class,
@@ -673,30 +658,114 @@ class BankController extends AdminController
 
         $form->handleRequest($request);
 
-        $balances = [];
-        $bank = null;
-
         if ($form->isSubmitted() && $form->isValid()) {
-            $dateFrom = $form['dateFrom']->getData();
-            $dateTo = $form['dateTo']->getData();
-            $bank = $form['bank']->getData();
-
-            $bank = $bank instanceof Bank ? $bank : null;
-
-            $balances = $this->calculateBalances($dateFrom, $dateTo, $bank ? [$bank] : $banks);
+            $startDate = $form['dateFrom']->getData();
+            $endDate = $form['dateTo']->getData();
         }
+
+        $pastBalances = $this->generatePastBalances( $banks, $startDate, $endDate );
+        $toBeLoadedBalances = $this->generateToBeLoadedBalances( $banks );
+        $futureBalances = $this->generateFutureBalances( $banks, $startDate, $endDate );
 
         return $this->render(
             'admin/show_bank_balance.html.twig',
             [
                 'today' => new \DateTimeImmutable(),
                 'form' => $form->createView(),
-                'balances' => $balances,
-                'selectedBank' => $bank,
+                'pastBalances' => $pastBalances,
+                'futureBalances' => $futureBalances,
+                'toBeLoadedBalances' => $toBeLoadedBalances,
+                'banks' => $banks,
             ]
         );
     }
 
+    /**
+     * @param array $banks
+     * @return array
+     */
+    private function generateToBeLoadedBalances(array $banks ) : array
+    {
+        $balances = [];
+
+        foreach ($banks as $bank) {
+            $balances[ $bank->getId() ] = $bank->getPastCalculatedBalance( new \DateTimeImmutable('yesterday') );
+        }
+
+        return $balances;
+    }
+
+    /**
+     * @param array $banks
+     * @param \DateTimeInterface $start
+     * @param \DateTimeInterface $end
+     * @return array
+     * @throws \Exception
+     */
+    private function generateFutureBalances(array $banks, \DateTimeInterface $start, \DateTimeInterface $end) : array
+    {
+        if ( $end < $start ) {
+
+            throw new InvalidArgumentException('End date must be after start date');
+        }
+
+        $firstDay = new \DateTimeImmutable();
+
+        if ( $end < $firstDay ) {
+            throw new InvalidArgumentException('Start date must be before today');
+        }
+
+        if ( $start < $firstDay ) {
+            $start = $firstDay;
+        }
+
+        $balances = [];
+
+        $period = new \DatePeriod( $start, new \DateInterval('P1D'), $end );
+
+        foreach ( $period as $futureDate ) {
+            foreach ( $banks as $bank ) {
+                $balances[ $futureDate->format('d/m/Y')  ][ $bank->getId() ] = $bank->getFutureBalance( $futureDate );
+            }
+        }
+
+        return $balances;
+    }
+
+    /**
+     * @param array $banks
+     * @param \DateTimeInterface $start
+     * @param \DateTimeInterface $end
+     */
+    private function generatePastBalances( array $banks, \DateTimeInterface $start, \DateTimeInterface $end ) : array
+    {
+        if ( $end < $start ) {
+
+            throw new InvalidArgumentException('End date must be after start date');
+        }
+
+        $lastDay = new \DateTimeImmutable('-2 days');
+
+        if ( $start > $lastDay ) {
+            throw new InvalidArgumentException('Start date must be before today');
+        }
+
+        if ( $end > $lastDay ) {
+            $end = $lastDay;
+        }
+
+        $balances = [];
+
+        $period = new \DatePeriod( $start, new \DateInterval('P1D'), $end );
+
+        foreach ( $period as $pastDate ) {
+            foreach ( $banks as $bank ) {
+                $balances[ $pastDate->format('d/m/Y') ][ $bank->getId() ] = $bank->getPastCalculatedBalance( $pastDate );
+            }
+        }
+
+        return $balances;
+    }
     /**
      * @param Request $request
      * @Route(name="send_bank_balance", path="/bank/sendBalance", options={"expose"=true})
@@ -732,14 +801,15 @@ class BankController extends AdminController
     }
 
     /**
-     * @Route(name="load_bank_balance",path="/bank/{id}/loadBalance/{date}", options={"expose"=true})
+     * @Route(name="load_bank_balance",path="/bank/{id}/loadBalance/{dateString}", options={"expose"=true})
      * @ParamConverter(class="App\Entity\Bank", name="bank")
      */
-    public function loadBalance(Request $request, Bank $bank, \DateTimeImmutable $date )
+    public function loadBalance(Request $request, Bank $bank, string $dateString )
     {
+        $date = new \DateTimeImmutable( $dateString );
         $em = $this->getDoctrine()->getManager();
 
-        if (($balance = $bank->getBalance($date)) == null) {
+        if (($balance = $bank->getPastActualBalance($date)) == null) {
             $balance = new SaldoBancario();
             $balance->setFecha($date);
             $balance->setBank($bank);
@@ -750,7 +820,7 @@ class BankController extends AdminController
             ->setAttribute('class', 'form-horizontal new-form')
             ->add('valor', MoneyType::class,
                 [
-                    'label' => 'Amount',
+                    'label' => 'Saldo real',
                     'currency' => $this->getParameter('currency')
                 ])
             ->add('Save', SubmitType::class,
@@ -763,31 +833,33 @@ class BankController extends AdminController
                 ])
             ->getForm();
 
-        $projectedBalance = $bank->getProjectedBalance($date)->getValor();
+        $startDate = $date->sub(new \DateInterval('P1D'));
+        $initialBalance = $bank->getPastCalculatedBalance($startDate);
+        $finalExpectedBalance = $bank->getPastCalculatedBalance($date);
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $balance->setDiferenciaConProyectado($balance->getValor() - $projectedBalance);
+            $balance->setDiferenciaConProyectado($balance->getValor() - $finalExpectedBalance->getValor());
             $em->persist($balance);
             $em->flush();
 
             return $this->redirectToRoute(
                 'show_bank_balance',
                 [
-                    'bank' => $bank,
-                ]
-            );
-        } else {
-
-            return $this->render(
-                'admin/load_bank_balance.html.twig',
-                [
-                    'form' => $form->createView(),
-                    'entity' => $balance,
-                    'fecha' => $date,
-                    'proyectado' => $projectedBalance,
                 ]
             );
         }
+
+        return $this->render(
+            'admin/load_bank_balance.html.twig',
+            [
+                'form' => $form->createView(),
+                'bank' => $bank,
+                'fecha' => $date,
+                'transactions' => $bank->getTransactionsBetween( $startDate, $date, true ),
+                'initialBalance' => $initialBalance,
+                'finalBalance' => $finalExpectedBalance,
+            ]
+        );
     }
 }
