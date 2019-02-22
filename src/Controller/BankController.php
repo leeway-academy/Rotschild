@@ -503,11 +503,11 @@ class BankController extends AdminController
                 $pastBalance = $bank->getBalance($pastDate);
                 if ( empty( $pastBalance ) ) {
                     $pastBalance = new SaldoBancario();
-                    $pastBalance
-                        ->setValor( 0 )
-                        ->setFecha( $pastDate )
-                        ;
+                    $pastBalance->setValor( 0 );
+                } else {
+                    $pastBalance = clone $pastBalance;
                 }
+                $pastBalance->setFecha( $pastDate );
                 $balances[] = $pastBalance;
             } else {
                 $totalBalance = 0;
@@ -523,7 +523,7 @@ class BankController extends AdminController
                     ->setFecha( $pastDate )
                 ;
 
-                $balances[] = $consolidatedBalance;
+                $balances[] = clone $consolidatedBalance;
             }
         }
 
@@ -566,11 +566,11 @@ class BankController extends AdminController
             $todayBalance = $bank->getBalance($today);
             if ( empty( $todayBalance ) ) {
                 $todayBalance = new SaldoBancario();
-                $todayBalance
-                    ->setFecha( $today )
-                    ->setValor( 0 )
-                    ;
+                $todayBalance->setValor( 0 );
+            } else {
+                $todayBalance = clone $todayBalance;
             }
+            $todayBalance->setFecha( $today );
         } else {
             $totalBalance = 0;
 
@@ -592,7 +592,7 @@ class BankController extends AdminController
 
         $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
 
-        $period = new \DatePeriod($today, $oneDay, $dateTo);
+        $period = new \DatePeriod($today->add( $oneDay ), $oneDay, $dateTo);
 
         foreach ($period as $date) {
             $currentBalance->setFecha( $date );
@@ -732,18 +732,16 @@ class BankController extends AdminController
     }
 
     /**
-     * @Route(name="load_bank_balance",path="/bank/{id}/loadBalance", options={"expose"=true})
+     * @Route(name="load_bank_balance",path="/bank/{id}/loadBalance/{date}", options={"expose"=true})
      * @ParamConverter(class="App\Entity\Bank", name="bank")
      */
-    public function loadBalance(Bank $bank, Request $request)
+    public function loadBalance(Request $request, Bank $bank, \DateTimeImmutable $date )
     {
         $em = $this->getDoctrine()->getManager();
 
-        $yesterday = new \DateTimeImmutable('Yesterday');
-
-        if (($balance = $bank->getBalance($yesterday)) == null) {
+        if (($balance = $bank->getBalance($date)) == null) {
             $balance = new SaldoBancario();
-            $balance->setFecha($yesterday);
+            $balance->setFecha($date);
             $balance->setBank($bank);
         }
 
@@ -765,7 +763,7 @@ class BankController extends AdminController
                 ])
             ->getForm();
 
-        $projectedBalance = $bank->getProjectedBalance($yesterday)->getValor();
+        $projectedBalance = $bank->getProjectedBalance($date)->getValor();
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -774,10 +772,9 @@ class BankController extends AdminController
             $em->flush();
 
             return $this->redirectToRoute(
-                'easyadmin',
+                'show_bank_balance',
                 [
-                    'entity' => 'Bank',
-                    'action' => 'list'
+                    'bank' => $bank,
                 ]
             );
         } else {
@@ -787,7 +784,7 @@ class BankController extends AdminController
                 [
                     'form' => $form->createView(),
                     'entity' => $balance,
-                    'fecha' => $yesterday,
+                    'fecha' => $date,
                     'proyectado' => $projectedBalance,
                 ]
             );
