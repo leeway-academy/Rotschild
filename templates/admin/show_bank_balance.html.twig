@@ -10,7 +10,6 @@
         <tr>
             <td width="50%">{{ form_widget(form.bank) }}</td>
             <td width="10%">&nbsp;</td>
-            <td width="40%"><a href="{% if selectedBank %}{{ url('load_bank_balance', { 'id' : selectedBank.id }) }}{% endif %}" style="display:{% if selectedBank %}block;{% else %}none;{% endif %}" id="loadBalance">{{ 'Load balance' | trans }}</a></td>
         </tr>
     </table>
     {{ form_rest(form) }}
@@ -21,13 +20,15 @@
                 <tr>
                     <th>{{ 'Date' | trans }}</th>
                     <th>{{ 'Balance' | trans }}</th>
+                    <th>&nbsp;</th>
                 </tr>
             </thead>
             <tbody>
-            {% for d, b in balances %}
+            {% for b in balances %}
                 <tr>
-                    <td>{{ d }}</td>
-                    <td>{% if b is not null %}{% if b < 0 %}<span class="alert-danger">{% endif %}$ {{ b|number_format(2, ',', '.') }}{% if b < 0 %}</span>{% endif %}{% else %}{{ 'bank.balance.not_available' | trans }}{% endif %}</td>
+                    <td>{{ b.fecha | date('d/m/Y') }}</td>
+                    <td>{% if b.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ b.valor|number_format(2, ',', '.') }}{% if b.valor < 0 %}</span>{% endif %}</td>
+                    <td>{% if b.fecha <= today and selectedBank %}<a href="{{ url('load_bank_balance', { 'id' : selectedBank.id, 'date': b.fecha }) }}">Cambiar</a>{% endif %}</td>
                 </tr>
             {% endfor %}
             </tbody>
