@@ -28,7 +28,7 @@
                 <tr>
                     <td>{{ b.fecha | date('d/m/Y') }}</td>
                     <td>{% if b.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ b.valor|number_format(2, ',', '.') }}{% if b.valor < 0 %}</span>{% endif %}</td>
-                    <td>{% if b.fecha <= today and selectedBank %}<a href="{{ url('load_bank_balance', { 'id' : selectedBank.id, 'date': b.fecha }) }}">Cambiar</a>{% endif %}</td>
+                    <td>{% if b.fecha <= today and selectedBank %}<a href="{{ url('load_bank_balance', { 'id' : selectedBank.id, 'date': b.fecha | date('Y-m-d')}) }}">Cambiar</a>{% endif %}</td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -43,17 +43,6 @@
     <script src="{{ asset('bundles/fosjsrouting/js/router.min.js') }}"></script>
     <script src="{{ path('fos_js_routing_js', { callback: 'fos.Router.setData' }) }}"></script>
     <script type="text/javascript">
-        $('#form_bank').change( function() {
-            var v = this.value;
-            if ( this.value ) {
-                $('#loadBalance').attr('href', Routing.generate('load_bank_balance', { 'id' : this.value }));
-                $('#loadBalance').show();
-            } else {
-                $('#loadBalance').attr('href', '#');
-                $('#loadBalance').hide();
-            }
-        });
-
         $('#sendEmail').click( function() {
             $('#sendEmail').attr('disabled', 'disabled');
             $.ajax(
