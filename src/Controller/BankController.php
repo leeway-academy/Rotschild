@@ -493,6 +493,43 @@ class BankController extends AdminController
         );
     }
 
+    private function calculatePastBalances( \DatePeriod $past, array $banks ) : array
+    {
+        $balances = [];
+
+        foreach ($past as $pastDate) {
+            if (count($banks) == 1) {
+                $bank = current($banks);
+                $pastBalance = $bank->getBalance($pastDate);
+                if ( empty( $pastBalance ) ) {
+                    $pastBalance = new SaldoBancario();
+                    $pastBalance
+                        ->setValor( 0 )
+                        ->setFecha( $pastDate )
+                        ;
+                }
+                $balances[] = $pastBalance;
+            } else {
+                $totalBalance = 0;
+
+                foreach ($banks as $bank) {
+                    $balance = $bank->getBalance($pastDate);
+                    $totalBalance += $balance ? $balance->getValor() : 0;
+                }
+
+                $consolidatedBalance = new SaldoBancario();
+                $consolidatedBalance
+                    ->setValor( $totalBalance )
+                    ->setFecha( $pastDate )
+                ;
+
+                $balances[] = $consolidatedBalance;
+            }
+        }
+
+        return $balances;
+    }
+
     /**
      * @param $dateFrom
      * @param $dateTo
@@ -500,8 +537,17 @@ class BankController extends AdminController
      * @return array
      * @throws \Exception
      */
-    private function calculateBalance(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo, array $banks): array
+    private function calculateBalances(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo, array $banks): array
     {
+        $dateFrom = $dateFrom instanceof \DateTimeImmutable ? $dateFrom : \DateTimeImmutable::createFromMutable($dateFrom);
+
+        $oneDay = new \DateInterval('P1D');
+        $today = new \DateTimeImmutable();
+
+        $past = new \DatePeriod($dateFrom, $oneDay, $today <= $dateTo ? $today->sub($oneDay) : $dateTo->add($oneDay));
+
+        $balances = $this->calculatePastBalances( $past, $banks );
+
         $criteria = new Criteria();
         $criteria
             ->where(Criteria::expr()->gte('fecha', $dateFrom))
@@ -513,37 +559,18 @@ class BankController extends AdminController
                 ]
             );
 
-        $dateFrom = $dateFrom instanceof \DateTimeImmutable ? $dateFrom : \DateTimeImmutable::createFromMutable($dateFrom);
-
-        $oneDay = new \DateInterval('P1D');
-        $today = new \DateTimeImmutable();
-
-        $past = new \DatePeriod($dateFrom, $oneDay, $today <= $dateTo ? $today->sub($oneDay) : $dateTo->add($oneDay));
-
-        $balances = [];
-
-        foreach ($past as $pastDate) {
-            if (count($banks) == 1) {
-                $bank = current($banks);
-                $pastBalance = $bank->getBalance($pastDate);
-                $balances[$pastDate->format('d/m/Y')] = $pastBalance ? $pastBalance->getValor() : null;
-            } else {
-                $totalBalance = 0;
-
-                foreach ($banks as $bank) {
-                    $balance = $bank->getBalance($pastDate);
-                    $totalBalance += $balance ? $balance->getValor() : 0;
-                }
-                $balances[$pastDate->format('d/m/Y')] = $totalBalance;
-            }
-        }
-
         if (count($banks) == 1) {
             $bank = current($banks);
             $criteria->andWhere(Criteria::expr()->eq('bank', $bank));
 
-            $balance = $bank->getBalance($today);
-            $totalBalance = $balance ? $balance->getValor() : 0;
+            $todayBalance = $bank->getBalance($today);
+            if ( empty( $todayBalance ) ) {
+                $todayBalance = new SaldoBancario();
+                $todayBalance
+                    ->setFecha( $today )
+                    ->setValor( 0 )
+                    ;
+            }
         } else {
             $totalBalance = 0;
 
@@ -551,13 +578,25 @@ class BankController extends AdminController
                 $balance = $bank->getBalance($today);
                 $totalBalance += $balance ? $balance->getValor() : 0;
             }
+
+            $todayBalance = new SaldoBancario();
+            $todayBalance
+                ->setValor( $totalBalance )
+                ->setFecha( $today )
+                ;
         }
+
+        $balances[] = $todayBalance;
+
+        $currentBalance = clone $todayBalance;
 
         $transactions = $this->getDoctrine()->getRepository('App:Movimiento')->matching($criteria);
 
         $period = new \DatePeriod($today, $oneDay, $dateTo);
 
         foreach ($period as $date) {
+            $currentBalance->setFecha( $date );
+
             $dailyTransactions = $transactions->filter(function (Movimiento $transaction) use ($date) {
 
                 return $transaction->getFecha()->format('y-m-d') == $date->format('y-m-d');
@@ -568,8 +607,9 @@ class BankController extends AdminController
                 $dailyBalance += $transaction->getImporte();
             }
 
-            $totalBalance += $dailyBalance;
-            $balances[$date->format('d/m/Y')] = $totalBalance;
+            $currentBalance->setValor( $currentBalance->getValor() + $dailyBalance );
+            $balances[] = $currentBalance;
+            $currentBalance = clone last( $balances );
         }
 
         return $balances;
@@ -643,12 +683,13 @@ class BankController extends AdminController
 
             $bank = $bank instanceof Bank ? $bank : null;
 
-            $balances = $this->calculateBalance($dateFrom, $dateTo, $bank ? [$bank] : $banks);
+            $balances = $this->calculateBalances($dateFrom, $dateTo, $bank ? [$bank] : $banks);
         }
 
         return $this->render(
             'admin/show_bank_balance.html.twig',
             [
+                'today' => new \DateTimeImmutable(),
                 'form' => $form->createView(),
                 'balances' => $balances,
                 'selectedBank' => $bank,
@@ -669,7 +710,7 @@ class BankController extends AdminController
 
         $banks = $bank ? [$this->getDoctrine()->getRepository('App:Bank')->find($bank)] : $this->getDoctrine()->getRepository('App:Bank')->findAll();
 
-        $balances = $this->calculateBalance($dateFrom, $dateTo, $banks);
+        $balances = $this->calculateBalances($dateFrom, $dateTo, $banks);
 
         $message = (new \Swift_Message($this->get('translator')->trans('Bank balances summary')))
             ->setFrom('rotschild@blasting.com.ar')
