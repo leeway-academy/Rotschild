@@ -23,11 +23,12 @@
                     <td>{{ d }}</td>
                     {% set total = 0 %}
                     {% for b in pb %}
+                        {% set expected = b.bank.getExpectedBalance(b.fecha).valor %}
                         <td>
                             <a href="{{ url('load_bank_balance', { 'id' : b.bank.id, 'dateString': b.fecha | date('Y-m-d')}) }}">
-                                {% if b.getDiferenciaConProyectado %}<span class="alert-warning">{% endif %}
+                                {% if b.valor != expected %}<span class="alert-warning">{% endif %}
                                     $ {{ b.valor|number_format(2, ',', '.') }}
-                                {% if b.getDiferenciaConProyectado %}</span>{% endif %}
+                                {% if b.valor != expected %}</span>{% endif %}
                             </a>
                         </td>
                         {% set total = total + b.valor %}
