@@ -71,7 +71,7 @@ class BankTest extends TestCase
 
         $fechaActual = new \DateTimeImmutable('yesterday');
 
-        $this->assertEquals( 800, $banco->getProjectedBalance( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
+        $this->assertEquals( 800, $banco->getFutureBalance( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
 
         $movimiento3 = new Movimiento();
         $movimiento3->setFecha( $fecha1->add(new \DateInterval('P3D') ) );
@@ -80,6 +80,6 @@ class BankTest extends TestCase
 
         $banco->addMovimiento( $movimiento3 );
 
-        $this->assertEquals( 600, $banco->getProjectedBalance( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
+        $this->assertEquals( 600, $banco->getFutureBalance( $fechaActual )->getValor(), 'El saldo proyectado no coincide' );
     }
 }
