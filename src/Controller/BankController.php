@@ -21,6 +21,21 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class BankController extends AdminController
 {
+    private function getUsefulBankSummaryLines( array $lines ) : array
+    {
+        $maxDate = current($lines)['date'];
+
+        foreach ( $lines as $line ) {
+            if ( $line['date'] > $maxDate ) {
+                $maxDate = $line['date'];
+            }
+        }
+
+        return array_filter( $lines, function( $line ) use ( $maxDate ) {
+
+            return $line['date'] == $maxDate;
+        });
+    }
     /**
      * @param Request $request
      * @Route(path="/import/bankSummaries", name="import_bank_summaries")
@@ -78,10 +93,10 @@ class BankController extends AdminController
                         $fileName .= '_' . (new \DateTimeImmutable())->format('d-m-y') . '.' . $item->guessExtension();
                         $item->move($this->getParameter('reports_path'), $fileName);
 
-                        $lines = $this->getExcelReportProcessor()->getBankSummaryTransactions(
+                        $lines = $this->getUsefulBankSummaryLines( $this->getExcelReportProcessor()->getBankSummaryTransactions(
                             IOFactory::load($this->getParameter('reports_path') . DIRECTORY_SEPARATOR . $fileName),
                             $bank->getXLSStructure()
-                        );
+                        ) );
 
                         $extracto = new ExtractoBancario();
                         $extracto
@@ -89,6 +104,7 @@ class BankController extends AdminController
                             ->setBank($bank)
                             ->setFecha(new \DateTimeImmutable());
                         $em->persist($extracto);
+
                         foreach ($lines as $k => $line) {
                             $summaryLine = new RenglonExtracto();
                             $summaryLine
@@ -229,6 +245,7 @@ class BankController extends AdminController
             '-3' => 'bank.comission.return',
             '-4' => 'investment.recovery',
             '-5' => 'check.issued.rejection',
+            '-6' => 'Transferencia interna',
         ];
 
         $formBuilder = $this->createFormBuilder();
@@ -393,6 +410,7 @@ class BankController extends AdminController
             'transfer.own_account' => '-10',
             'expenses.shareholders' => '-11',
             'check.applied.rejection' => '-12',
+            'Transferencia a proveedores' => '-13',
         ];
         $matchingOptions = [
             'Debitos proyectados' => $mo,
