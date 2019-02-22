@@ -6,6 +6,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
+use http\Exception\InvalidArgumentException;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\BancoRepository")
@@ -199,31 +200,63 @@ class Bank
     }
 
     /**
-     * @param \DateTimeImmutable $date
+     * @param \DateTimeInterface $date
      * @return SaldoBancario
      * @throws \Exception
      */
-    public function getCalculatedBalance( \DateTimeImmutable $date ) : SaldoBancario
+    public function getPastCalculatedBalance(\DateTimeInterface $date) : SaldoBancario
     {
+        if ( $date > (new \DateTimeImmutable() ) ) {
+
+            throw new InvalidArgumentException( __METHOD__.' only works on past dates' );
+        }
+
         $lastActualBalance = $this->getLastActualBalanceBefore( $date );
 
-        if ( empty($lastActualBalance) ) {
-            $lastActualBalance = new SaldoBancario();
-            $lastActualBalance
+        if ( empty($lastActualBalance ) ) {
+            $calculatedBalance = new SaldoBancario();
+            $calculatedBalance
                 ->setValor( 0 )
                 ->setBank( $this )
                 ->setFecha( $date )
                 ;
+        } else {
+            $calculatedBalance = clone $lastActualBalance;
         }
 
-        if ( $date > $lastActualBalance->getFecha() ) {
-            foreach ( $this->getTransactionsBetween( $lastActualBalance->getFecha(), $date ) as $transaction ) {
-                $lastActualBalance->setValor( $lastActualBalance->getValor() + $transaction->getImporte() );
+        if ( $date > $calculatedBalance->getFecha() ) {
+            foreach ( $this->getTransactionsBetween( $calculatedBalance->getFecha(), $date, true ) as $transaction ) {
+                $calculatedBalance->setValor( $calculatedBalance->getValor() + $transaction->getImporte() );
             }
         }
 
-        return $lastActualBalance;
+        $calculatedBalance->setFecha( $date );
+
+        return $calculatedBalance;
     }
+
+    /**
+     * @param \DateTimeInterface $date
+     * @return SaldoBancario|null
+     * This method will simply search into the collection for a balance loaded by the user
+     */
+    public function getPastActualBalance( \DateTimeInterface $date ) :? SaldoBancario
+    {
+        if ( $date > (new \DateTimeImmutable() ) ) {
+
+            throw new InvalidArgumentException( __METHOD__.' only works on past dates' );
+        }
+
+        foreach ($this->getSaldos() as $saldoBancario ) {
+            if ( $date == $saldoBancario->getFecha() ) {
+
+                return $saldoBancario;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param \DateTimeInterface|null $date
      * @return SaldoBancario
@@ -283,7 +316,7 @@ class Bank
 
         while ( $balanceIterator->valid() ) {
             $currentBalance = $balanceIterator->current();
-            if ( $currentBalance->getFecha() >= $desiredDate ) {
+            if ( $currentBalance->getFecha() > $desiredDate ) {
 
                 break;
             } else {
@@ -299,8 +332,14 @@ class Bank
      * @param \DateTimeInterface $desiredBalanceDate
      * @return SaldoBancario
      */
-    public function getProjectedBalance(\DateTimeInterface $desiredBalanceDate): SaldoBancario
+    public function getFutureBalance(\DateTimeInterface $desiredBalanceDate): SaldoBancario
     {
+        $today = new \DateTimeImmutable( 'today 00:00:00' );
+        if ( $desiredBalanceDate < $today ) {
+
+            throw new InvalidArgumentException( __METHOD__.' only works on future dates' );
+        }
+
         $lastKnownBalance = $this->getLastActualBalanceBefore($desiredBalanceDate);
         $currentBalanceValue = $lastKnownBalance ? $lastKnownBalance->getValor() : 0;
 
@@ -323,11 +362,11 @@ class Bank
         $criteria = Criteria::create()
             ->andWhere(
                 Criteria::expr()
-                    ->gte('fecha', $fechaInicio)
+                    ->gt('fecha', $fechaInicio)
             )
             ->andWhere(
                 Criteria::expr()
-                    ->lt('fecha', $fechaFin)
+                    ->lte('fecha', $fechaFin)
             );
 
         return $this
