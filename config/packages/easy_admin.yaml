@@ -66,10 +66,10 @@ easy_admin:
             - { label: 'Bank summaries' }
             - { label: 'Importar', route: 'import_bank_summaries', default: true }
             - { label: 'Procesar', route: 'match_bank_summaries' }
-            - { label: 'Cheques propios' }
+            - { label: 'Cheques emitidos' }
             - { label: 'Importar', route: 'import_issued_checks' }
             - { label: 'Procesar', route: 'process_issued_checks' }
-            - { label: 'Cheques de terceros' }
+            - { label: 'Cheques recibidos' }
             - { label: 'Importar', route: 'import_applied_checks' }
             - { label: 'Procesar', route: 'process_applied_checks'}
             - { label: 'Banks' }
