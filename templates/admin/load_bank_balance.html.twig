@@ -1,7 +1,7 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 {% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Saldo del Banco {{ bank }} para el día {{ fecha | date('d-m-Y') }}{% endblock %}
+{% block content_title %}Saldo del Banco "{{ bank }}" para el día {{ fecha | date('d-m-Y') }}{% endblock %}
 
 {% block main %}
     <div class="table-responsive">
