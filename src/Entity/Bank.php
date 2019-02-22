@@ -204,30 +204,29 @@ class Bank
      * @return SaldoBancario
      * @throws \Exception
      */
-    public function getPastCalculatedBalance(\DateTimeInterface $date) : SaldoBancario
+    public function getExpectedBalance(\DateTimeInterface $date) : SaldoBancario
     {
         if ( $date > (new \DateTimeImmutable() ) ) {
 
             throw new InvalidArgumentException( __METHOD__.' only works on past dates' );
         }
 
-        $lastActualBalance = $this->getLastActualBalanceBefore( $date );
+        $prevDate = (new \DateTimeImmutable($date->format('Y/m/d')))->sub(new \DateInterval('P1D'));
+        $lastActualBalance = $this->getLastActualBalanceBefore($prevDate);
 
         if ( empty($lastActualBalance ) ) {
             $calculatedBalance = new SaldoBancario();
             $calculatedBalance
                 ->setValor( 0 )
                 ->setBank( $this )
-                ->setFecha( $date )
+                ->setFecha( $prevDate )
                 ;
         } else {
             $calculatedBalance = clone $lastActualBalance;
         }
 
-        if ( $date > $calculatedBalance->getFecha() ) {
-            foreach ( $this->getTransactionsBetween( $calculatedBalance->getFecha(), $date, true ) as $transaction ) {
-                $calculatedBalance->setValor( $calculatedBalance->getValor() + $transaction->getImporte() );
-            }
+        foreach ( $this->getTransactionsBetween( $calculatedBalance->getFecha(), $date, true ) as $transaction ) {
+            $calculatedBalance->setValor( $calculatedBalance->getValor() + $transaction->getImporte() );
         }
 
         $calculatedBalance->setFecha( $date );
