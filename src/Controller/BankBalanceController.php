@@ -267,7 +267,7 @@ class BankBalanceController extends AdminController
             throw new InvalidArgumentException('End date must be after start date');
         }
 
-        $lastDay = new \DateTimeImmutable('-2 days');
+        $lastDay = new \DateTimeImmutable('-1 days');
 
         if ( $start > $lastDay ) {
 
