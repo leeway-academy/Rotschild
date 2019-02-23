@@ -24,7 +24,7 @@
                     {% set total = 0 %}
                     {% for b in pb %}
                         {% set expected = b.bank.getExpectedBalance(b.fecha).valor %}
-                        {% set diff = expected - b.valor | abs %}
+                        {% set diff = ( expected - b.valor) | abs %}
                         <td>
                             <a href="{{ url('load_bank_balance', { 'id' : b.bank.id, 'dateString': b.fecha | date('Y-m-d')}) }}">
                                 {% if diff > 1 %}<span class="alert-warning">{% endif %}
