@@ -346,6 +346,10 @@ class BankBalanceController extends AdminController
         $initialBalance = $bank->getPastActualBalance($startDate);
         $transactionsBetween = $bank->getTransactionsBetween($startDate, $date, true);
 
+        if ( empty($initialBalance) ) {
+            $initialBalance = $bank->createBalance( $date, 0 );
+        }
+
         $finalExpectedBalance = clone $initialBalance;
         $finalExpectedBalance->setFecha( $date );
 
