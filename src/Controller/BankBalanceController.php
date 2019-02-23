@@ -206,12 +206,13 @@ class BankBalanceController extends AdminController
      * @param array $banks
      * @return array
      */
-    private function generateToBeLoadedBalances(array $banks ) : array
+    private function generateToBeLoadedBalances( array $banks ) : array
     {
         $balances = [];
+        $yesterday = new \DateTimeImmutable('yesterday');
 
         foreach ($banks as $bank) {
-            $balances[ $bank->getId() ] = $bank->getExpectedBalance( new \DateTimeImmutable('yesterday') );
+            $balances[ $bank->getId() ] = $bank->getPastActualBalance($yesterday) ?: $bank->createBalance( $yesterday, 0 );
         }
 
         return $balances;
