@@ -284,8 +284,16 @@ class BankBalanceController extends AdminController
 
         foreach ( $period as $pastDate ) {
             foreach ( $banks as $bank ) {
-                $actualBalance = $bank->getPastActualBalance( $pastDate );
-                $balances[ $pastDate->format('d/m/Y') ][ $bank->getId() ] = $actualBalance ?: $bank->getExpectedBalance( $pastDate );
+                if ( ($actualBalance = $bank->getPastActualBalance( $pastDate )) === null ) {
+                    $actualBalance = new SaldoBancario();
+                    $actualBalance
+                        ->setValor( 0 )
+                        ->setBank( $bank )
+                        ->setFecha( $pastDate )
+                    ;
+                }
+
+                $balances[ $pastDate->format('d/m/Y') ][ $bank->getId() ] = $actualBalance;
             }
         }
 
@@ -335,7 +343,7 @@ class BankBalanceController extends AdminController
         $em = $this->getDoctrine()->getManager();
 
         $startDate = $date->sub(new \DateInterval('P1D'));
-        $initialBalance = $bank->getExpectedBalance($startDate);
+        $initialBalance = $bank->getPastActualBalance($startDate);
         $transactionsBetween = $bank->getTransactionsBetween($startDate, $date, true);
 
         $finalExpectedBalance = clone $initialBalance;
