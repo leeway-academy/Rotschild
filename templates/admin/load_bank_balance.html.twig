@@ -33,11 +33,12 @@
     {{ parent() }}
 
     <script type="text/javascript">
-        var saldoProyectado = {{ finalBalance }};
+        var saldoProyectado = {{ finalBalance.valor }};
         $("form").submit( function ( e, n ) {
             var saldoCargado = parseFloat( $('input[type="text"]').val() );
-            if ( saldoCargado != saldoProyectado ) {
-                alert( 'Alerta: El saldo cargado no coincide con el proyectado. Diferencia: $ ' + ( saldoCargado - saldoProyectado ) );
+            var diff = Math.abs( saldoCargado - saldoProyectado);
+            if ( diff > 1 ) {
+                alert( 'Alerta: El saldo cargado no coincide con el proyectado. Diferencia: $ ' + ( diff ).toFixed(2) );
             }
 
             return true;
