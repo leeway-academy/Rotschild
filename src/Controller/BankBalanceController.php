@@ -189,36 +189,22 @@ class BankBalanceController extends AdminController
             $endDate = $form['dateTo']->getData();
         }
 
+        $today = new \DateTimeImmutable();
+
         return $this->render(
             'admin/show_bank_balance.html.twig',
             [
-                'today' => new \DateTimeImmutable(),
+                'today' => $today,
                 'form' => $form->createView(),
-                'toBeLoadedBalances' => $this->generateToBeLoadedBalances( $banks ),
                 'banks' => $banks,
+                'toBeLoadedBalances' => $endDate >= $today && $startDate <= $today,
                 'past' => $this->generatePastPeriod( $startDate, $endDate ),
                 'future' => $this->generateFuturePeriod( $startDate, $endDate ),
             ]
         );
     }
 
-    /**
-     * @param array $banks
-     * @return array
-     */
-    private function generateToBeLoadedBalances( array $banks ) : array
-    {
-        $balances = [];
-        $yesterday = new \DateTimeImmutable('yesterday');
-
-        foreach ($banks as $bank) {
-            $balances[ $bank->getId() ] = $bank->getPastActualBalance($yesterday) ?: $bank->createBalance( $yesterday, 0 );
-        }
-
-        return $balances;
-    }
-
-    private function generateFuturePeriod(\DateTimeInterface $start, \DateTimeInterface $end): \DatePeriod
+    private function generateFuturePeriod(\DateTimeInterface $start, \DateTimeInterface $end): ?\DatePeriod
     {
         if ( $end < $start ) {
 
@@ -229,7 +215,7 @@ class BankBalanceController extends AdminController
 
         if ( $end < $firstDay ) {
 
-            return [];
+            return null;
         }
 
         if ( $start < $firstDay ) {
@@ -239,18 +225,18 @@ class BankBalanceController extends AdminController
         return new \DatePeriod( $start, new \DateInterval('P1D'), $end );
     }
 
-    private function generatePastPeriod( \DateTimeInterface $start, \DateTimeInterface $end ) : \DatePeriod
+    private function generatePastPeriod( \DateTimeInterface $start, \DateTimeInterface $end ) : ?\DatePeriod
     {
         if ( $end < $start ) {
 
             throw new InvalidArgumentException('End date must be after start date');
         }
 
-        $lastDay = new \DateTimeImmutable('-1 days');
+        $lastDay = new \DateTimeImmutable('-2 days');
 
         if ( $start > $lastDay ) {
 
-            return [];
+            return null;
         }
 
         if ( $end > $lastDay ) {

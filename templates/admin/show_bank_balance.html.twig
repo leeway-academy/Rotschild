@@ -47,7 +47,7 @@
             </tbody>
         </table>
     {% endif %}
-    {% if toBeLoadedBalances | length > 0 %}
+    {% if toBeLoadedBalances %}
         <h4>Saldos para conciliar</h4>
         <table width="100%" class="table-bordered table-responsive table-striped">
             <thead>
@@ -61,13 +61,25 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ date('-1 days') | date('d/m/Y') }}</td>
+                    {% set d = date('-1 days') %}
+                    <td>{{ d | date('d/m/Y') }}</td>
                     {% set total = 0 %}
-                    {% for b in toBeLoadedBalances %}
-                        {% set total = total + b.valor %}
-                        <td><a href="{{ url('load_bank_balance', { 'id' : b.bank.id, 'dateString': b.fecha | date('Y-m-d')}) }}">{% if b.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ b.valor|number_format(2, ',', '.') }}{% if b.valor < 0 %}</span>{% endif %}</a></td>
+                    {% for b in banks %}
+                        {% set actual = b.getPastActualBalance( d ) %}
+                        {% set expected = b.getExpectedBalance( d ) %}
+                        {% set class = '' %}
+                        {% if not actual %}
+                            {% set actual = expected %}
+                            {% set class='alert-warning' %}
+                        {% endif %}
+                        {% set diff = ( expected.valor - actual.valor) | abs %}
+                        {% if diff > 1 %}
+                            {% set class='alert-warning' %}
+                        {% endif %}
+                        {% set total = total + actual.valor %}
+                        <td><a href="{{ url('load_bank_balance', { 'id' : b.id, 'dateString': d | date('Y-m-d')}) }}"><span class="{{ class }}">$ {{ actual.valor|number_format(2, ',', '.') }}</span></a></td>
                     {% endfor %}
-                    <td>$ {{ total |number_format(2, ',', '.') }}</td>
+                    <td>$ {{ total |number_format(2, ',', '.') }}</td></td>
                 </tr>
             </tbody>
         </table>
