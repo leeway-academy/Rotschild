@@ -189,18 +189,15 @@ class BankBalanceController extends AdminController
             $endDate = $form['dateTo']->getData();
         }
 
-        $toBeLoadedBalances = $this->generateToBeLoadedBalances( $banks );
-        $futureBalances = $this->generateFutureBalances( $banks, $startDate, $endDate );
-
         return $this->render(
             'admin/show_bank_balance.html.twig',
             [
                 'today' => new \DateTimeImmutable(),
                 'form' => $form->createView(),
-                'futureBalances' => $futureBalances,
-                'toBeLoadedBalances' => $toBeLoadedBalances,
+                'toBeLoadedBalances' => $this->generateToBeLoadedBalances( $banks ),
                 'banks' => $banks,
                 'past' => $this->generatePastPeriod( $startDate, $endDate ),
+                'future' => $this->generateFuturePeriod( $startDate, $endDate ),
             ]
         );
     }
@@ -221,14 +218,7 @@ class BankBalanceController extends AdminController
         return $balances;
     }
 
-    /**
-     * @param array $banks
-     * @param \DateTimeInterface $start
-     * @param \DateTimeInterface $end
-     * @return array
-     * @throws \Exception
-     */
-    private function generateFutureBalances(array $banks, \DateTimeInterface $start, \DateTimeInterface $end) : array
+    private function generateFuturePeriod(\DateTimeInterface $start, \DateTimeInterface $end): \DatePeriod
     {
         if ( $end < $start ) {
 
@@ -246,17 +236,7 @@ class BankBalanceController extends AdminController
             $start = $firstDay;
         }
 
-        $balances = [];
-
-        $period = new \DatePeriod( $start, new \DateInterval('P1D'), $end );
-
-        foreach ( $period as $futureDate ) {
-            foreach ( $banks as $bank ) {
-                $balances[ $futureDate->format('d/m/Y')  ][ $bank->getId() ] = $bank->getFutureBalance( $futureDate );
-            }
-        }
-
-        return $balances;
+        return new \DatePeriod( $start, new \DateInterval('P1D'), $end );
     }
 
     private function generatePastPeriod( \DateTimeInterface $start, \DateTimeInterface $end ) : \DatePeriod

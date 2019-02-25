@@ -47,33 +47,35 @@
             </tbody>
         </table>
     {% endif %}
-    <h4>Saldos para conciliar</h4>
-    <table width="100%" class="table-bordered table-responsive table-striped">
-        <thead>
-        <tr>
-            <th>{{ 'Date' | trans }}</th>
-            {% for b in banks %}
-                <th>{{ b }}</th>
-            {% endfor %}
-            <th>Consolidado</th>
-        </tr>
-        </thead>
-        <tbody>
+    {% if toBeLoadedBalances | length > 0 %}
+        <h4>Saldos para conciliar</h4>
+        <table width="100%" class="table-bordered table-responsive table-striped">
+            <thead>
             <tr>
-                <td>{{ date('-1 days') | date('d/m/Y') }}</td>
-                {% set total = 0 %}
-                {% for b in toBeLoadedBalances %}
-                    {% set total = total + b.valor %}
-                    <td><a href="{{ url('load_bank_balance', { 'id' : b.bank.id, 'dateString': b.fecha | date('Y-m-d')}) }}">{% if b.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ b.valor|number_format(2, ',', '.') }}{% if b.valor < 0 %}</span>{% endif %}</a></td>
+                <th>{{ 'Date' | trans }}</th>
+                {% for b in banks %}
+                    <th>{{ b }}</th>
                 {% endfor %}
-                <td>$ {{ total |number_format(2, ',', '.') }}</td>
+                <th>Consolidado</th>
             </tr>
-        </tbody>
-    </table>
-    {% if futureBalances | length > 0 and past | length > 0 %}
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ date('-1 days') | date('d/m/Y') }}</td>
+                    {% set total = 0 %}
+                    {% for b in toBeLoadedBalances %}
+                        {% set total = total + b.valor %}
+                        <td><a href="{{ url('load_bank_balance', { 'id' : b.bank.id, 'dateString': b.fecha | date('Y-m-d')}) }}">{% if b.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ b.valor|number_format(2, ',', '.') }}{% if b.valor < 0 %}</span>{% endif %}</a></td>
+                    {% endfor %}
+                    <td>$ {{ total |number_format(2, ',', '.') }}</td>
+                </tr>
+            </tbody>
+        </table>
+    {% endif %}
+    {% if future | length > 0 and past | length > 0 %}
         <hr/>
     {% endif %}
-    {% if futureBalances|length > 0 %}
+    {% if future|length > 0 %}
         <h4>Saldos proyectados</h4>
         <table width="100%" class="table-bordered table-responsive table-striped">
             <thead>
@@ -86,13 +88,14 @@
             </tr>
             </thead>
             <tbody>
-            {% for d, fb in futureBalances %}
+            {% for d in future %}
                 <tr>
-                    <td>{{ d }}</td>
+                    <td>{{ d | date('d/m/Y')}}</td>
                     {% set total = 0 %}
-                    {% for b in fb %}
-                        <td>{% if b.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ b.valor|number_format(2, ',', '.') }}{% if b.valor < 0 %}</span>{% endif %}</td>
-                        {% set total = total + b.valor %}
+                    {% for bank in banks %}
+                        {% set balance = bank.getFutureBalance( d ) %}
+                        <td>{% if balance.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ balance.valor|number_format(2, ',', '.') }}{% if balance.valor < 0 %}</span>{% endif %}</td>
+                        {% set total = total + balance.valor %}
                     {% endfor %}
                     <td>$ {{ total | number_format(2, ',', '.')}}</td>
                 </tr>
@@ -100,7 +103,7 @@
             </tbody>
         </table>
     {% endif %}
-    {% if past | length > 0 or futureBalances | length > 0 %}
+    {% if past | length > 0 or future | length > 0 %}
         <p><button id="sendEmail" class="btn btn-primary">{{ 'Send via email' | trans }}</button></p>
     {% endif %}
 {% endblock %}
