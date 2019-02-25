@@ -224,9 +224,16 @@ class BankBalanceController extends AdminController
         }
 
         $interval = new \DateInterval('P1D');
+
         return new \DatePeriod( $start, $interval, $end->add($interval) );
     }
 
+    /**
+     * @param \DateTimeInterface $start
+     * @param \DateTimeInterface $end
+     * @return \DatePeriod|null
+     * @throws \Exception
+     */
     private function generatePastPeriod( \DateTimeInterface $start, \DateTimeInterface $end ) : ?\DatePeriod
     {
         if ( $end < $start ) {
@@ -234,7 +241,7 @@ class BankBalanceController extends AdminController
             throw new InvalidArgumentException('End date must be after start date');
         }
 
-        $lastDay = new \DateTimeImmutable('-2 days');
+        $lastDay = new \DateTimeImmutable('-1 days 00:00:00');
 
         if ( $start > $lastDay ) {
 
