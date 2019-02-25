@@ -189,7 +189,8 @@ class BankBalanceController extends AdminController
             $endDate = $form['dateTo']->getData();
         }
 
-        $today = new \DateTimeImmutable();
+        $today = new \DateTimeImmutable('today 00:00:00');
+        $yesterday = new \DateTimeImmutable('-1 days 00:00:00');
 
         return $this->render(
             'admin/show_bank_balance.html.twig',
@@ -197,7 +198,7 @@ class BankBalanceController extends AdminController
                 'today' => $today,
                 'form' => $form->createView(),
                 'banks' => $banks,
-                'toBeLoadedBalances' => $endDate >= $today && $startDate <= $today,
+                'toBeLoadedBalances' => $endDate >= $yesterday && $startDate <= $yesterday,
                 'past' => $this->generatePastPeriod( $startDate, $endDate ),
                 'future' => $this->generateFuturePeriod( $startDate, $endDate ),
             ]
@@ -222,7 +223,8 @@ class BankBalanceController extends AdminController
             $start = $firstDay;
         }
 
-        return new \DatePeriod( $start, new \DateInterval('P1D'), $end );
+        $interval = new \DateInterval('P1D');
+        return new \DatePeriod( $start, $interval, $end->add($interval) );
     }
 
     private function generatePastPeriod( \DateTimeInterface $start, \DateTimeInterface $end ) : ?\DatePeriod
