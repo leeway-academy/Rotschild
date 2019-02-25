@@ -5,7 +5,7 @@
 
 {% block main %}
     {{ form(form) }}
-    {% if pastBalances|length > 0 %}
+    {% if past|length > 0 %}
         <h4>Saldos históricos</h4>
         <table width="100%" class="table-bordered table-responsive table-striped">
             <thead>
@@ -18,21 +18,28 @@
                 </tr>
             </thead>
             <tbody>
-            {% for d, pb in pastBalances %}
+            {% for d in past %}
                 <tr>
-                    <td>{{ d }}</td>
+                    <td>{{ d | date('d/m/Y') }}</td>
                     {% set total = 0 %}
-                    {% for b in pb %}
-                        {% set expected = b.bank.getExpectedBalance(b.fecha).valor %}
-                        {% set diff = ( expected - b.valor) | abs %}
+                    {% for b in banks %}
+                        {% set actual = b.getPastActualBalance( d ) %}
+                        {% set expected = b.getExpectedBalance( d ) %}
+                        {% set class = '' %}
+                        {% if not actual %}
+                            {% set actual = expected %}
+                            {% set class='alert-warning' %}
+                        {% endif %}
+                        {% set diff = ( expected.valor - actual.valor) | abs %}
+                        {% if diff > 1 %}
+                            {% set class='alert-warning' %}
+                        {% endif %}
                         <td>
-                            <a href="{{ url('load_bank_balance', { 'id' : b.bank.id, 'dateString': b.fecha | date('Y-m-d')}) }}">
-                                {% if diff > 1 %}<span class="alert-warning">{% endif %}
-                                    $ {{ b.valor|number_format(2, ',', '.') }}
-                                {% if diff > 1 %}</span>{% endif %}
+                            <a href="{{ url('load_bank_balance', { 'id' : b.id, 'dateString': d | date('Y-m-d')}) }}">
+                                <span class="{{ class }}">$ {{ actual.valor|number_format(2, ',', '.') }}</span>
                             </a>
                         </td>
-                        {% set total = total + b.valor %}
+                        {% set total = total + actual.valor %}
                     {% endfor %}
                     <td>$ {{ total | number_format(2, ',', '.')}}</td>
                 </tr>
@@ -48,20 +55,22 @@
             {% for b in banks %}
                 <th>{{ b }}</th>
             {% endfor %}
-            <th>&nbsp;</th>
+            <th>Consolidado</th>
         </tr>
         </thead>
         <tbody>
             <tr>
                 <td>{{ date('-1 days') | date('d/m/Y') }}</td>
+                {% set total = 0 %}
                 {% for b in toBeLoadedBalances %}
+                    {% set total = total + b.valor %}
                     <td><a href="{{ url('load_bank_balance', { 'id' : b.bank.id, 'dateString': b.fecha | date('Y-m-d')}) }}">{% if b.valor < 0 %}<span class="alert-danger">{% endif %}$ {{ b.valor|number_format(2, ',', '.') }}{% if b.valor < 0 %}</span>{% endif %}</a></td>
                 {% endfor %}
-                <td>&nbsp;</td>
+                <td>$ {{ total |number_format(2, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>
-    {% if futureBalances | length > 0 and pastBalances | length > 0 %}
+    {% if futureBalances | length > 0 and past | length > 0 %}
         <hr/>
     {% endif %}
     {% if futureBalances|length > 0 %}
@@ -91,7 +100,7 @@
             </tbody>
         </table>
     {% endif %}
-    {% if pastBalances | length > 0 or futureBalances | length > 0 %}
+    {% if past | length > 0 or futureBalances | length > 0 %}
         <p><button id="sendEmail" class="btn btn-primary">{{ 'Send via email' | trans }}</button></p>
     {% endif %}
 {% endblock %}
