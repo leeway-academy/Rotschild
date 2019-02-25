@@ -16,6 +16,9 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class BankBalanceController extends AdminController
 {
+    /**
+     * @deprecated
+     */
     private function calculatePastBalances( \DatePeriod $past, array $banks ) : array
     {
         $balances = [];
@@ -59,6 +62,7 @@ class BankBalanceController extends AdminController
      * @param array $banks
      * @return array
      * @throws \Exception
+     * @deprecated
      */
     private function calculateBalances(\DateTimeInterface $dateFrom, \DateTimeInterface $dateTo, array $banks): array
     {
@@ -185,7 +189,6 @@ class BankBalanceController extends AdminController
             $endDate = $form['dateTo']->getData();
         }
 
-        $pastBalances = $this->generatePastBalances( $banks, $startDate, $endDate );
         $toBeLoadedBalances = $this->generateToBeLoadedBalances( $banks );
         $futureBalances = $this->generateFutureBalances( $banks, $startDate, $endDate );
 
@@ -194,10 +197,10 @@ class BankBalanceController extends AdminController
             [
                 'today' => new \DateTimeImmutable(),
                 'form' => $form->createView(),
-                'pastBalances' => $pastBalances,
                 'futureBalances' => $futureBalances,
                 'toBeLoadedBalances' => $toBeLoadedBalances,
                 'banks' => $banks,
+                'past' => $this->generatePastPeriod( $startDate, $endDate ),
             ]
         );
     }
@@ -256,12 +259,7 @@ class BankBalanceController extends AdminController
         return $balances;
     }
 
-    /**
-     * @param array $banks
-     * @param \DateTimeInterface $start
-     * @param \DateTimeInterface $end
-     */
-    private function generatePastBalances( array $banks, \DateTimeInterface $start, \DateTimeInterface $end ) : array
+    private function generatePastPeriod( \DateTimeInterface $start, \DateTimeInterface $end ) : \DatePeriod
     {
         if ( $end < $start ) {
 
@@ -279,27 +277,9 @@ class BankBalanceController extends AdminController
             $end = $lastDay;
         }
 
-        $balances = [];
-
-        $period = new \DatePeriod( $start, new \DateInterval('P1D'), $end );
-
-        foreach ( $period as $pastDate ) {
-            foreach ( $banks as $bank ) {
-                if ( ($actualBalance = $bank->getPastActualBalance( $pastDate )) === null ) {
-                    $actualBalance = new SaldoBancario();
-                    $actualBalance
-                        ->setValor( 0 )
-                        ->setBank( $bank )
-                        ->setFecha( $pastDate )
-                    ;
-                }
-
-                $balances[ $pastDate->format('d/m/Y') ][ $bank->getId() ] = $actualBalance;
-            }
-        }
-
-        return $balances;
+        return new \DatePeriod( $start, new \DateInterval('P1D'), $end );
     }
+
     /**
      * @param Request $request
      * @Route(name="send_bank_balance", path="/bank/sendBalance", options={"expose"=true})
