@@ -303,11 +303,8 @@ class BankBalanceController extends AdminController
 
         $transactionsBetween = $bank->getTransactionsBetween( $initialBalance ? $initialBalance->getFecha() : $startDate, $date, true);
 
-        if ( empty($initialBalance) ) {
-            $initialBalance = $bank->createBalance( $date, 0 );
-        }
+        $finalExpectedBalance = $initialBalance ? clone $initialBalance : $bank->createBalance( $date, 0 );
 
-        $finalExpectedBalance = clone $initialBalance;
         $finalExpectedBalance->setFecha( $date );
 
         foreach ( $transactionsBetween as $transaction ) {
@@ -345,7 +342,6 @@ class BankBalanceController extends AdminController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-//            $actualBalance->setDiferenciaConProyectado($finalExpectedBalance->getValor() - $actualBalance->getValor());
             $em->persist($actualBalance);
             $em->flush();
 
