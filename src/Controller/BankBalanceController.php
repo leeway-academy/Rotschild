@@ -299,8 +299,7 @@ class BankBalanceController extends AdminController
         $em = $this->getDoctrine()->getManager();
 
         $startDate = $date->sub(new \DateInterval('P1D'));
-        $initialBalance = $bank->getPastActualBalance($startDate);
-        $transactionsBetween = $bank->getTransactionsBetween($startDate, $date, true);
+        $initialBalance = $bank->getLastActualBalanceBefore($startDate);
 
         if ( empty($initialBalance) ) {
             $initialBalance = $bank->createBalance( $date, 0 );
@@ -308,6 +307,8 @@ class BankBalanceController extends AdminController
 
         $finalExpectedBalance = clone $initialBalance;
         $finalExpectedBalance->setFecha( $date );
+
+        $transactionsBetween = $bank->getTransactionsBetween( $initialBalance ? $initialBalance->getFecha() : $startDate, $date, true);
 
         foreach ( $transactionsBetween as $transaction ) {
             $finalExpectedBalance->setValor( $finalExpectedBalance->getValor() + $transaction->getImporte() );

@@ -5,21 +5,27 @@
 
 {% block main %}
     <div class="table-responsive">
-        <table class="table">
+        <table class="table table-striped">
             <tbody>
                 <tr>
-                    <td><strong>Saldo inicial</strong>: $ {{ initialBalance.valor | number_format(2, ',', '.') }}</td>
+                    <td><strong>Ultimo saldo cargado</strong>: {{ initialBalance.fecha | date('d/m/y') }} $ {{ initialBalance.valor | number_format(2, ',', '.') }}</td>
                 </tr>
                 <tr>
-                    <td>Movimientos del día {{ fecha | date('d-m-Y') }}</td>
+                    <td><strong>Movimientos concretados desde {{ initialBalance.fecha | date('d/m/Y') }} hasta {{ fecha | date('d-m-Y') }}</strong></td>
                 </tr>
-                {% for t in transactions %}
-                    {% if t.concretado %}
-                        <tr>
-                            <td>{{ t }}</td>
-                        </tr>
-                    {% endif %}
-                {% endfor %}
+                <tr>
+                    <td>
+                        <table class="table table-bordered">
+                            {% for t in transactions %}
+                                {% if t.concretado %}
+                                    <tr>
+                                        <td>{{ t }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
                 <tr>
                     <td><strong>Saldo final esperado</strong>: $ {{ finalBalance.valor | number_format(2, ',', '.') }}</td>
                 </tr>
