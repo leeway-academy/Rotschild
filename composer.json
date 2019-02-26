@@ -28,12 +28,12 @@
         "symfony/validator": "^4.1",
         "symfony/web-link": "^4.1",
         "symfony/yaml": "^4.1",
-        "twig/extensions": "^1.5"
+        "twig/extensions": "^1.5",
+        "symfony/dotenv": "^4.1"
     },
     "require-dev": {
         "sensiolabs/security-checker": "^4.1",
         "symfony/debug-pack": "*",
-        "symfony/dotenv": "^4.1",
         "symfony/maker-bundle": "^1.0",
         "symfony/phpunit-bridge": "*",
         "symfony/profiler-pack": "*",
