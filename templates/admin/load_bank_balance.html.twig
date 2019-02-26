@@ -8,10 +8,10 @@
         <table class="table table-striped">
             <tbody>
                 <tr>
-                    <td><strong>Ultimo saldo cargado</strong>: {{ initialBalance.fecha | date('d/m/y') }} $ {{ initialBalance.valor | number_format(2, ',', '.') }}</td>
+                    <td><strong>Ultimo saldo cargado</strong>: {% if initialBalance %}{{ initialBalance.fecha | date('d/m/y') }} $ {{ initialBalance.valor | number_format(2, ',', '.') }}{% else %}N/D{% endif %}</td>
                 </tr>
                 <tr>
-                    <td><strong>Movimientos concretados desde el {{ initialBalance.fecha | date('d/m/Y') }} hasta el {{ fecha | date('d/m/Y') }}</strong></td>
+                    <td><strong>{% if initialBalance %}Movimientos concretados desde el {{ initialBalance.fecha | date('d/m/Y') }} hasta el {{ fecha | date('d/m/Y') }}{% else %}Ultimos movimientos concretados{% endif %}</strong></td>
                 </tr>
                 <tr>
                     <td>
