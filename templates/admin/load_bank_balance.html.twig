@@ -1,7 +1,7 @@
 {% extends '@EasyAdmin/default/layout.html.twig' %}
 {% form_theme form with easyadmin_config('design.form_theme') %}
 
-{% block content_title %}Saldo del Banco "{{ bank }}" para el día {{ fecha | date('d-m-Y') }}{% endblock %}
+{% block content_title %}Saldo del Banco "{{ bank }}" para el día {{ fecha | date('d/m/Y') }}{% endblock %}
 
 {% block main %}
     <div class="table-responsive">
@@ -11,7 +11,7 @@
                     <td><strong>Ultimo saldo cargado</strong>: {{ initialBalance.fecha | date('d/m/y') }} $ {{ initialBalance.valor | number_format(2, ',', '.') }}</td>
                 </tr>
                 <tr>
-                    <td><strong>Movimientos concretados desde {{ initialBalance.fecha | date('d/m/Y') }} hasta {{ fecha | date('d-m-Y') }}</strong></td>
+                    <td><strong>Movimientos concretados desde el {{ initialBalance.fecha | date('d/m/Y') }} hasta el {{ fecha | date('d/m/Y') }}</strong></td>
                 </tr>
                 <tr>
                     <td>
