@@ -301,14 +301,14 @@ class BankBalanceController extends AdminController
         $startDate = $date->sub(new \DateInterval('P1D'));
         $initialBalance = $bank->getLastActualBalanceBefore($startDate);
 
+        $transactionsBetween = $bank->getTransactionsBetween( $initialBalance ? $initialBalance->getFecha() : $startDate, $date, true);
+
         if ( empty($initialBalance) ) {
             $initialBalance = $bank->createBalance( $date, 0 );
         }
 
         $finalExpectedBalance = clone $initialBalance;
         $finalExpectedBalance->setFecha( $date );
-
-        $transactionsBetween = $bank->getTransactionsBetween( $initialBalance ? $initialBalance->getFecha() : $startDate, $date, true);
 
         foreach ( $transactionsBetween as $transaction ) {
             $finalExpectedBalance->setValor( $finalExpectedBalance->getValor() + $transaction->getImporte() );
