@@ -305,7 +305,7 @@ class Bank
      * @return SaldoBancario|null
      * @throws \Exception
      */
-    private function getLastActualBalanceBefore(\DateTimeInterface $desiredDate ) :? SaldoBancario
+    public function getLastActualBalanceBefore(\DateTimeInterface $desiredDate ) :? SaldoBancario
     {
         $balances = $this->getSaldos();
 
