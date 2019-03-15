@@ -32,6 +32,7 @@
         "symfony/dotenv": "^4.1"
     },
     "require-dev": {
+        "easycorp/easy-deploy-bundle": "^1.0",
         "sensiolabs/security-checker": "^4.1",
         "symfony/debug-pack": "*",
         "symfony/maker-bundle": "^1.0",
