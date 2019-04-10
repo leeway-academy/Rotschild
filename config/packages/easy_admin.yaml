@@ -80,6 +80,5 @@ easy_admin:
             - { label: 'Gasto Fijo total', route: 'fixed_expense_query' }
             - Debit
             - Credit
-        form_theme: '@EasyAdmin/form/bootstrap_3_layout.html.twig'
     formats:
         date: 'd/m/Y'
